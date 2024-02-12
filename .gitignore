@@ -1,0 +1,8 @@
+﻿*.vsidx
+.vs
+Bin/Win64/Engine.dll
+Bin/Win64/Engine.exp
+Bin/Win64/Engine.lib
+Bin/Win64
+Intermediate
+x64/Debug
