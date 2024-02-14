@@ -158,18 +158,23 @@ public:
 class InputManager
 {
 public:
-    ENGINE_API static InputManager& Instance();
+
+    ENGINE_API static InputManager& Instance()
+    {
+        static InputManager Inst;
+        return Inst;
+    }
+
     ENGINE_API void OnKey(const KeyEvent& key);
     ENGINE_API void OnMouse(const MouseEvent& mev);
 
-
-
+private:
+    InputManager() = default;
     InputManager(const InputManager& rhs) = delete;
     InputManager(InputManager&& rhs) = delete;
     InputManager& operator=(const InputManager& rhs) = delete;
     InputManager& operator=(InputManager&& rhs) = delete;
 
 private:
-    InputManager() = default;
     std::vector<InputHandler*> Handler;
 };

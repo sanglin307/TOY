@@ -2,6 +2,10 @@
 #include "../Engine/GameEngine.h"
 #include "../Engine/Input.h"
 
+// for DirectX12 Agility SDK.
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 611; }
+extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
+
 static u32 KeyMods(void)
 {
     u32 mods = 0;
@@ -139,8 +143,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
                 };
                 InputManager::Instance().OnKey(keyEvent);
             }
-            OutputDebugString(L"Keyup message!\n");
-
         }
         return 0;
     case WM_LBUTTONDOWN:
