@@ -1,26 +1,16 @@
 #pragma once
 
 #include "Defines.h"
+#include "Command.h"
+#include "Resource.h"
 
-#include <concepts>
-
-enum class RenderDeviceType
-{
-	DX12,
-	Vulkan,
-	Metal,
-};
-
-template <typename T>
-concept IRenderDevice = requires(T t) {
-	t.Init();
-	t.Destroy();
-};
-
-
-template <IRenderDevice T>
-class RenderDevice : public T
+class RenderDevice
 {
 public:
+	virtual void Init() = 0;
+	virtual void Destroy() = 0;
+
+	virtual CommandQueue* CreateCommandQueue(const CommandQueue::Type type) = 0;
+	virtual SwapChain* CreateSwapChain(const SwapChain::Config& config, CommandQueue* queue, void* hwnd = nullptr) = 0;
 
 };

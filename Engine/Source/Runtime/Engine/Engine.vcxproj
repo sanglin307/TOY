@@ -115,8 +115,9 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>DX12.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>DX12.dll</DelayLoadDLLs>
+      <AdditionalDependencies>Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,12 +137,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="GameEngine.h" />
+    <ClInclude Include="Engine.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Defines.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GameEngine.cpp" />
+    <ClCompile Include="Engine.cpp" />
     <ClCompile Include="Input.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

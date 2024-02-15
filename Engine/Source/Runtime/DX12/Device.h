@@ -4,33 +4,19 @@
 #include "../Renderer/Device.h"
 #include "Defines.h"
 
-#include <d3d12.h>
-#include <dxgi1_6.h>
 
-class DX12_API DX12Device
+class DX12_API DX12Device : public RenderDevice
 {
 public :
 
-    static DX12Device& Instance()
-    {
-        static DX12Device Inst;
-        return Inst;
-    }
-
-	void Init();
-	void Destroy();
-
+	virtual void Init() override;
+	virtual void Destroy() override;
+	virtual CommandQueue* CreateCommandQueue(const CommandQueue::Type type) override;
+	virtual SwapChain* CreateSwapChain(const SwapChain::Config& config, CommandQueue* queue, void* hwnd = nullptr) override;
 
 private:
-    DX12Device() = default;
-    DX12Device(const DX12Device& rhs) = delete;
-    DX12Device(DX12Device&& rhs) = delete;
-    DX12Device& operator=(const DX12Device& rhs) = delete;
-    DX12Device& operator=(DX12Device&& rhs) = delete;
-
-private:
-    IDXGIAdapter1* Adapter = nullptr;
-    ID3D12Device5* Device = nullptr;
-
+	IDXGIFactory4* _Factory = nullptr;
+    IDXGIAdapter1* _Adapter = nullptr;
+    ID3D12Device5* _Device = nullptr;
 };
 

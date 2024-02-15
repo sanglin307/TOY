@@ -1,5 +1,5 @@
 #include "Win64.h"
-#include "../Engine/GameEngine.h"
+#include "../Engine/Engine.h"
 #include "../Engine/Input.h"
 
 // for DirectX12 Agility SDK.
@@ -239,7 +239,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     }
     LocalFree(argv);
 
-    GameEngine::Instance().Init(cmdlineSet);
+    GameEngine::Instance().ParseCmds(cmdlineSet);
 
     // Initialize the window class.
     WNDCLASSEX windowClass = { 0 };
@@ -275,6 +275,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         hInstance,
         nullptr);
  
+    GameEngine::Instance().Init(hwnd);
+
     ShowWindow(hwnd, nCmdShow);
 
     MSG msg = {};

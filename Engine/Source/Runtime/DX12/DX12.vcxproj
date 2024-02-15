@@ -133,11 +133,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Command.h" />
     <ClInclude Include="Defines.h" />
     <ClInclude Include="Device.h" />
+    <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Command.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Resource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

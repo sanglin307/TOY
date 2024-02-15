@@ -176,5 +176,5 @@ private:
     InputManager& operator=(InputManager&& rhs) = delete;
 
 private:
-    std::vector<InputHandler*> Handler;
+    std::vector<InputHandler*> _Handlers;
 };
