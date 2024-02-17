@@ -8,17 +8,33 @@ class DX12CommandQueue : public CommandQueue
 {
 	friend class DX12Device;
 public:
-	static D3D12_COMMAND_LIST_TYPE TranslateType(const CommandQueue::Type t);
-
 	ID3D12CommandQueue* Handle() { return _Handle; };
 	
-	virtual ~DX12CommandQueue();
+	virtual ~DX12CommandQueue() { _Handle->Release(); _Handle = nullptr; }
 
 private:
-	DX12CommandQueue(ID3D12CommandQueue* handle)
+	DX12CommandQueue(CommandType type, ID3D12CommandQueue* handle)
 		:_Handle(handle)
 	{
+		_Type = type;
 	}
 
 	ID3D12CommandQueue* _Handle = nullptr;
+};
+
+class DX12CommandAllocator : public CommandAllocator
+{
+	friend class DX12Device;
+public:
+	virtual ~DX12CommandAllocator() { _Handle->Release(); _Handle = nullptr; }
+
+private:
+	DX12CommandAllocator(CommandType type,ID3D12CommandAllocator* handle)
+		:_Handle(handle)
+	{
+		_Type = type;
+	}
+
+	ID3D12CommandAllocator* _Handle = nullptr;
+	
 };

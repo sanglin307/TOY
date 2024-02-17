@@ -25,10 +25,10 @@ private:
     Renderer& operator=(Renderer&& rhs) = delete;
 
 private:
-
     RenderDevice* _Device = nullptr;
     CommandQueue* _DirectQueue = nullptr;
     SwapChain* _SwapChain = nullptr;
+    CommandAllocator* _CommandAllocator = nullptr;
     u32 _FrameIndex = 0;
 
 

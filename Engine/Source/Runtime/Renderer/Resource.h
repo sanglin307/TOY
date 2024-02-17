@@ -3,7 +3,7 @@
 #include "../Core/Types.h"
 #include "Defines.h"
 
-enum class GraphicFormat : u32
+enum class PixelFormat : u32
 {
     UNKNOWN = 0,
     R32G32B32A32_TYPELESS,
@@ -108,6 +108,106 @@ enum class GraphicFormat : u32
     MAX
 };
 
+enum class DescriptorType
+{
+    CBV_SRV_UAV = 0,
+    Sampler,
+    RVT,
+    DSV,
+    Max
+};
+
+class DescriptorHeap
+{
+public:
+    struct Config
+    {
+        DescriptorType Type;
+        u32 Number;
+        u32 Size;
+        bool GPUVisible;
+    };
+
+    virtual ~DescriptorHeap() {};
+
+protected:
+    Config _Config;
+};
+
+ 
+class RenderResource
+{
+public :
+
+    virtual ~RenderResource() {};
+};
+
+enum class ViewDimension
+{
+    Buffer = 0,
+    Texture1D,
+    Texture1DArray,
+    Texture2D,
+    Texture2DArray,
+    Texture2DMS,
+    Texture2DMSArray,
+    Texture3D
+};
+
+class ResourceView
+{
+public:
+    virtual ~ResourceView() {};
+};
+
+class RenderTargetView : public ResourceView
+{
+public:
+    struct Config
+    {
+        PixelFormat Format;
+        ViewDimension Dimension;
+        u64 FirstElement = 0;
+        u32 NumElements = 0;
+        u32 MipSlice = 0;
+        u32 PlaneSlice = 0;
+        u32 FirstArraySlice = 0;
+        u32 ArraySize = 0;
+        u32 FirstDepthSlice = 0;
+        i32 DepthSize = -1;
+    };
+
+    ~RenderTargetView() {};
+
+protected:
+    RenderResource* _Resource = nullptr;
+    Config _Config;
+};
+
+class UnorderedAccessView : public ResourceView
+{
+private:
+    RenderResource* _Resource = nullptr;
+    RenderResource* _CounterResource = nullptr;
+};
+
+class ShaderResourceView : public ResourceView
+{
+private:
+    RenderResource* _Resource = nullptr;
+};
+
+class ConstantBufferView : public ResourceView
+{
+private:
+};
+
+class DepthStencilView : public ResourceView
+{
+private:
+    RenderResource* _Resource = nullptr;
+};
+
 class SwapChain
 {
 public:
@@ -115,10 +215,10 @@ public:
     {
         u32 Width;
         u32 Height;
-        GraphicFormat Format;
         u16 SampleCount;
         u16 SampleQuality;
         u32 BufferCount;
+        PixelFormat Format;
     };
 
     virtual u32 CurrentFrameIndex() { return 0; };
@@ -126,4 +226,7 @@ public:
 
 protected:
     Config _Config;
+    DescriptorHeap* _DescriptorHeap = nullptr;
+    std::vector<RenderResource*> _RenderTargets;
+    std::vector<RenderTargetView*> _RenderTargetViews;
 };

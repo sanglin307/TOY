@@ -11,8 +11,11 @@ public :
 
 	virtual void Init() override;
 	virtual void Destroy() override;
-	virtual CommandQueue* CreateCommandQueue(const CommandQueue::Type type) override;
+	virtual CommandQueue* CreateCommandQueue(const CommandType type) override;
+	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
 	virtual SwapChain* CreateSwapChain(const SwapChain::Config& config, CommandQueue* queue, void* hwnd = nullptr) override;
+	virtual RootSignature* CreateRootSignature() override;
+	
 
 private:
 	IDXGIFactory4* _Factory = nullptr;

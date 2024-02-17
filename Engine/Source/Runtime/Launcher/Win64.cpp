@@ -1,4 +1,5 @@
 #include "Win64.h"
+#include "../Core/Platform.h"
 #include "../Engine/Engine.h"
 #include "../Engine/Input.h"
 
@@ -230,11 +231,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
     char utf8Cmdline[256];
     std::set<std::string> cmdlineSet;
-    for (int i = 1; i < argc; i++)
+    for (i32 i = 1; i < argc; i++)
     {
-        int utf8Length = WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, nullptr, 0, nullptr, nullptr);
-        assert(utf8Length <= 256);
-        WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, utf8Cmdline, utf8Length, nullptr, nullptr);
+        std::string utf8Cmdline;
+        PlatformUtils::UTF16ToUTF8(argv[i], utf8Cmdline);
         cmdlineSet.insert(utf8Cmdline);
     }
     LocalFree(argv);
@@ -254,17 +254,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     RECT windowRect = { 0, 0, static_cast<LONG>(GameEngine::Instance().GetWidth()), static_cast<LONG>(GameEngine::Instance().GetHeight())};
     AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
-    auto ConvertToLPCWSTR = [](const std::string& str) 
-    {
-        int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
-        std::vector<wchar_t> buffer(size);
-        MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buffer.data(), size);
-        return buffer.data();
-    };
-
+    std::wstring title;
+    PlatformUtils::UTF8ToUTF16(GameEngine::Instance().GetTitle(), title);
     HWND hwnd = CreateWindow(
         windowClass.lpszClassName,
-        ConvertToLPCWSTR(GameEngine::Instance().GetTitle()),
+        title.c_str(),
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,
         CW_USEDEFAULT,

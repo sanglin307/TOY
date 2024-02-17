@@ -114,6 +114,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <DelayLoadDLLs>dxcompiler.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,12 +137,18 @@
     <ClInclude Include="Command.h" />
     <ClInclude Include="Defines.h" />
     <ClInclude Include="Device.h" />
+    <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="ShaderCompiler.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Command.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="Resource.cpp" />
+    <ClCompile Include="ShaderCompiler.cpp" />
+    <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
