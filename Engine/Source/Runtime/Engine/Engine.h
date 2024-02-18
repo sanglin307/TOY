@@ -4,6 +4,7 @@
 #include <string>
 
 #include "../Core/Types.h"
+#include "../Core/Log.h"
 #include "Defines.h"
 
 enum class ENGINE_API RenderAPI

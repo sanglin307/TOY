@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{EA4F99
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E6359BD8-1834-439D-87A0-4D9622E03538}"
 	ProjectSection(SolutionItems) = preProject
-		shader.hlsl = shader.hlsl
+		Engine\Shaders\shader.hlsl = Engine\Shaders\shader.hlsl
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{DE228176-294A-425A-9BEC-C2E76C9B9AA9}"

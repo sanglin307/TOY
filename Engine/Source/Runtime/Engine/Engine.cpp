@@ -19,12 +19,14 @@ void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 
 void GameEngine::Init(void* hwnd)
 {
+	LogUtil::Init();
 	Renderer::Instance().Init(_Config,hwnd);	
 }
 
 void GameEngine::Destroy()
 {
 	Renderer::Instance().Destroy();
+	LogUtil::Destroy();
 }
 
 void GameEngine::Update()

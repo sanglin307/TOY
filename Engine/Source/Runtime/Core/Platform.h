@@ -3,8 +3,7 @@
 #include "Defines.h"
 #include "Types.h"
 
-#include <vector>
-#include <string>
+
 
 #ifdef WINDOWS
 #ifndef WIN32_LEAN_AND_MEAN
@@ -20,6 +19,7 @@ class CORE_API WindowsUtils
 public:
 	static void UTF16ToUTF8(const std::wstring& utf16, std::string& utf8);
 	static void UTF8ToUTF16(const std::string&, std::wstring& utf16);
+	static void TimeNow(std::string_view str);
 	
 };
 

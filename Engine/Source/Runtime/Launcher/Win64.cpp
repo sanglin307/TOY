@@ -1,5 +1,6 @@
 #include "Win64.h"
 #include "../Core/Platform.h"
+#include "../Core/Log.h"
 #include "../Engine/Engine.h"
 #include "../Engine/Input.h"
 
@@ -209,12 +210,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
             InputManager::Instance().OnMouse(mouseEvent);
         }
         return 0;
-    case WM_PAINT:
-        {
-            GameEngine::Instance().Update();
-            GameEngine::Instance().Render();
-        }
-        return 0;
 
     case WM_DESTROY:
         PostQuitMessage(0);
@@ -229,7 +224,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     int argc;
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
-    char utf8Cmdline[256];
     std::set<std::string> cmdlineSet;
     for (i32 i = 1; i < argc; i++)
     {
@@ -282,6 +276,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+
+        GameEngine::Instance().Update();
+        GameEngine::Instance().Render();
     }
 
     GameEngine::Instance().Destroy();

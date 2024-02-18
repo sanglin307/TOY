@@ -133,10 +133,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h" />
+    <ClInclude Include="Log.h" />
     <ClInclude Include="Platform.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Log.cpp" />
     <ClCompile Include="Platform.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
