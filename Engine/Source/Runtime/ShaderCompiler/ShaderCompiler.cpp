@@ -2,22 +2,28 @@
 
 #pragma comment(lib, "dxcompiler")  
 
-IDxcUtils* ShaderCompiler::_DXCUtils;
-IDxcCompiler3* ShaderCompiler::_DXCCompiler;
+ShaderCompiler& ShaderCompiler::Instance()
+{
+    static ShaderCompiler Inst;
+    return Inst;
+}
 
 void ShaderCompiler::Init()
 {
-    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&_DXCUtils));
-    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&_DXCCompiler));
+    assert(SUCCEEDED(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&_DXCUtils))));
+    assert(SUCCEEDED(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&_DXCCompiler))));
 }
 
 void ShaderCompiler::Destroy()
 {
     _DXCCompiler->Release();
     _DXCUtils->Release();
+
+    _DXCCompiler = nullptr;
+    _DXCUtils = nullptr;
 }
 
-void ShaderCompiler::Compile(const std::string& shaderFileName,const std::string& entryPoint, const std::vector<std::string>& defines,bool debugInfo)
+void ShaderCompiler::CompileHLSL(const CompileArgs& args)
 {
 //    IDxcIncludeHandler* dxcIncludeHandler;
 //    _DXCUtils->CreateDefaultIncludeHandler(&dxcIncludeHandler);

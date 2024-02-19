@@ -8,12 +8,7 @@
 class RENDERER_API Renderer
 {
 public:
-    static Renderer& Instance()
-    {
-        static Renderer Inst;
-        return Inst;
-    }
-
+    static Renderer& Instance();
     void Init(const GameEngine::Config& config, void* hwnd);
     void Destroy();
 

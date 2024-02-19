@@ -2,6 +2,12 @@
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Device.h"
 
+GameEngine& GameEngine::Instance()
+{
+	static GameEngine Inst;
+	return Inst;
+}
+
 void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 {
 	_Params = cmds;
@@ -20,18 +26,22 @@ void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 void GameEngine::Init(void* hwnd)
 {
 	LogUtil::Init();
+	_FrameRate.Init();
+
 	Renderer::Instance().Init(_Config,hwnd);	
 }
 
 void GameEngine::Destroy()
 {
 	Renderer::Instance().Destroy();
+	_FrameRate.Destroy();
 	LogUtil::Destroy();
 }
 
 void GameEngine::Update()
 {
-
+	double delta = _FrameRate.Update();
+	LogUtil::Update(delta);
 }
 
 void GameEngine::Render()

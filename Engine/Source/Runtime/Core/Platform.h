@@ -19,7 +19,8 @@ class CORE_API WindowsUtils
 public:
 	static void UTF16ToUTF8(const std::wstring& utf16, std::string& utf8);
 	static void UTF8ToUTF16(const std::string&, std::wstring& utf16);
-	static void TimeNow(std::string_view str);
+	static std::string TimeNowString();
+	static std::string DateNowString();
 	
 };
 

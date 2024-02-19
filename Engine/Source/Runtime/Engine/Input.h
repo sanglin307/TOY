@@ -117,7 +117,7 @@ enum class KeyModifier : u32
     NumLock = 0x20,
 };
 
-struct ENGINE_API KeyEvent
+struct KeyEvent
 {
     enum class ActionType
     {
@@ -130,7 +130,7 @@ struct ENGINE_API KeyEvent
     u32 modifier;
 };
 
-struct ENGINE_API MouseEvent
+struct MouseEvent
 {
     enum class ActionType
     {
@@ -159,11 +159,7 @@ class InputManager
 {
 public:
 
-    ENGINE_API static InputManager& Instance()
-    {
-        static InputManager Inst;
-        return Inst;
-    }
+    ENGINE_API static InputManager& Instance();
 
     ENGINE_API void OnKey(const KeyEvent& key);
     ENGINE_API void OnMouse(const MouseEvent& mev);

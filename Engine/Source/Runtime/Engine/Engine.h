@@ -4,8 +4,10 @@
 #include <string>
 
 #include "../Core/Types.h"
+#include "../Core/Path.h"
 #include "../Core/Log.h"
 #include "Defines.h"
+#include "FrameRate.h"
 
 enum class ENGINE_API RenderAPI
 {
@@ -27,11 +29,7 @@ public:
 		std::string Title;
 	};
 
-	ENGINE_API static GameEngine& Instance()
-	{
-		static GameEngine Inst;
-		return Inst;
-	}
+	ENGINE_API static GameEngine& Instance();
 
 	ENGINE_API void ParseCmds(const std::set<std::string>& cmds);
 	ENGINE_API void Init(void* hwnd);
@@ -55,4 +53,5 @@ private:
 	std::set<std::string> _Params;
 
 	Config _Config;
+	FrameRate _FrameRate;
 };

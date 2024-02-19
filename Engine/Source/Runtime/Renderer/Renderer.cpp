@@ -2,6 +2,12 @@
 #include "../DX12/Device.h"
 #include "../Engine/Engine.h"
 
+Renderer& Renderer::Instance()
+{
+	static Renderer Inst;
+	return Inst;
+}
+
 void Renderer::Init(const GameEngine::Config& config, void* hwnd)
 {
 	if (config.API == RenderAPI::DX12)
