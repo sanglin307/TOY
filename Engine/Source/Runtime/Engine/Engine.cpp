@@ -10,25 +10,24 @@ GameEngine& GameEngine::Instance()
 
 void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 {
+	if (cmds.size() > 0)
+	{
+		for (auto cmd : cmds)
+		{
+			TOY_LOG(Engine, std::format("launch argument:{}", cmd));
+		}
+	}
+
 	_Params = cmds;
-
-	_Config.Width = 1280;
-	_Config.Height = 720;
-	_Config.SampleCount = 1;
-	_Config.BufferCount = 3;
-	_Config.API = RenderAPI::DX12;
-	_Config.Title = "TOY";
-
-	if (cmds.contains("-vulkan"))
-		_Config.API = RenderAPI::Vulkan;
+	Renderer::Instance().ParseCmds(cmds);
 }
 
-void GameEngine::Init(void* hwnd)
+void GameEngine::Init(std::any hwnd)
 {
 	LogUtil::Init();
 	_FrameRate.Init();
 
-	Renderer::Instance().Init(_Config,hwnd);	
+	Renderer::Instance().Init(hwnd);	
 }
 
 void GameEngine::Destroy()
@@ -42,9 +41,15 @@ void GameEngine::Update()
 {
 	double delta = _FrameRate.Update();
 	LogUtil::Update(delta);
+
+	//Update world
+
+	Renderer::Instance().Render();
 }
 
-void GameEngine::Render()
+void GameEngine::FrameSize(u32& Width, u32& Height)
 {
-
+	const RenderConfig& Config = Renderer::Instance().Config();
+	Width = Config.FrameWidth;
+	Height = Config.FrameHeight;
 }

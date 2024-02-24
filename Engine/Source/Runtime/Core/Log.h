@@ -20,7 +20,7 @@ public:
 	CORE_API static void Destroy();
 
 	CORE_API static void Update(double delta);
-	CORE_API static void Log(LogType type,const std::string& log);
+	CORE_API static void Log(const std::string& category, LogType type,const std::string& log);
 
 private:
 	static void Flush();
@@ -31,3 +31,7 @@ private:
 	static std::mutex _LogMutex;
 	static std::vector<std::string> _LogCache;
 };
+
+#define TOY_LOG(Category,Str)  LogUtil::Log(#Category,LogType::Info,Str)
+#define TOY_Warning(Category,Str) LogUtil::Log(#Category,LogType::Warning,Str)
+#define TOY_ERROR(Category,Str)  LogUtil::Log(#Category,LogType::Error,Str)

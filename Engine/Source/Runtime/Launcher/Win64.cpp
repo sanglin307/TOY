@@ -245,14 +245,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     windowClass.lpszClassName = L"TOY";
     RegisterClassEx(&windowClass);
 
-    RECT windowRect = { 0, 0, static_cast<LONG>(GameEngine::Instance().GetWidth()), static_cast<LONG>(GameEngine::Instance().GetHeight())};
+    u32 Width, Height;
+    GameEngine::Instance().FrameSize(Width, Height);
+    RECT windowRect = { 0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height)};
     AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
-    std::wstring title;
-    PlatformUtils::UTF8ToUTF16(GameEngine::Instance().GetTitle(), title);
     HWND hwnd = CreateWindow(
         windowClass.lpszClassName,
-        title.c_str(),
+        L"TOY",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
@@ -263,7 +263,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         hInstance,
         nullptr);
  
-    GameEngine::Instance().Init(hwnd);
+    std::any awnd = hwnd;
+    GameEngine::Instance().Init(awnd);
 
     ShowWindow(hwnd, nCmdShow);
 
@@ -278,7 +279,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         }
 
         GameEngine::Instance().Update();
-        GameEngine::Instance().Render();
     }
 
     GameEngine::Instance().Destroy();

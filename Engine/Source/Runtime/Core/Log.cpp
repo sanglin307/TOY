@@ -70,7 +70,7 @@ void LogUtil::Flush()
 	_LogCache.clear();
 }
 
-void LogUtil::Log(LogType type, const std::string& log)
+void LogUtil::Log(const std::string& category, LogType type, const std::string& log)
 {
 	const char* tt = "Log";
 	if (type == LogType::Warning)
@@ -78,7 +78,7 @@ void LogUtil::Log(LogType type, const std::string& log)
 	else if (type == LogType::Error)
 		tt = "Error";
 
-	std::string logString = std::format("[{}] {} : {}\n", tt, PlatformUtils::TimeNowString(), log);
+	std::string logString = std::format("[{}] [{}] {} : {}\n", category, tt, PlatformUtils::TimeNowString(), log);
 	std::lock_guard<std::mutex> guard(_LogMutex);
 	_LogCache.push_back(std::move(logString));
 }

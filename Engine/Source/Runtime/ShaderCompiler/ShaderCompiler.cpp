@@ -16,11 +16,10 @@ void ShaderCompiler::Init()
 
 void ShaderCompiler::Destroy()
 {
-    _DXCCompiler->Release();
-    _DXCUtils->Release();
+    _DXCCompiler.Reset();
+    _DXCUtils.Reset();
 
-    _DXCCompiler = nullptr;
-    _DXCUtils = nullptr;
+   
 }
 
 void ShaderCompiler::CompileHLSL(const CompileArgs& args)

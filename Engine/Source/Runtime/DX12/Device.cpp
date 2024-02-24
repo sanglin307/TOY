@@ -3,31 +3,34 @@
 #include "Resource.h"
 #include "Utils.h"
 
+
 #pragma comment(lib, "d3d12")   
-#pragma comment(lib, "dxgi")   
+#pragma comment(lib, "dxgi")  
 
+#ifdef _DEBUG
+#pragma comment(lib, "dxguid")   
+#endif
 
-void DX12Device::Init()
+DX12Device::DX12Device()
 {
     DX12Util::Init();
 
     u32 dxgiFactoryFlags = 0;
 
-#if defined(_DEBUG)
+#ifdef _DEBUG
     {
-        ID3D12Debug* debug = nullptr;
+        ComPtr<ID3D12Debug> debug = nullptr;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debug))))
         {
             debug->EnableDebugLayer();
             dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-            debug->Release();
         }
     }
 #endif
 
     if (SUCCEEDED(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&_Factory))))
     {
-        IDXGIFactory6* factory6 = nullptr;
+        ComPtr<IDXGIFactory6> factory6;
         if (SUCCEEDED(_Factory->QueryInterface(IID_PPV_ARGS(&factory6))))
         {
             for (u32 index = 0;SUCCEEDED(factory6->EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&_Adapter))); ++index)
@@ -40,13 +43,12 @@ void DX12Device::Init()
                     continue;
                 }
 
-                if (SUCCEEDED(D3D12CreateDevice(_Adapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&_Device))))
+                if (SUCCEEDED(D3D12CreateDevice(_Adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&_Device))))
                 {
                     break;
                 }
             }
         }
-        factory6->Release();
 
         if (!_Adapter)
         {
@@ -60,7 +62,7 @@ void DX12Device::Init()
                     continue;
                 }
 
-                if (SUCCEEDED(D3D12CreateDevice(_Adapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&_Device))))
+                if (SUCCEEDED(D3D12CreateDevice(_Adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&_Device))))
                 {
                     break;
                 }
@@ -78,25 +80,24 @@ void DX12Device::Init()
 
 }
 
-void DX12Device::Destroy()
+void DX12Device::ReportLiveObjects()
 {
-    if (_Device)
+#ifdef _DEBUG
+    ComPtr<IDXGIDebug1> dxgiDebug;
+    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug))))
     {
-        _Device->Release();
-        _Device = nullptr;
+        dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
     }
+#endif
+}
 
-    if (_Adapter)
-    {
-        _Adapter->Release();
-        _Adapter = nullptr;
-    }
+DX12Device::~DX12Device()
+{
+    _Device.Reset();
+    _Adapter.Reset();
+    _Factory.Reset();
 
-    if (_Factory)
-    {
-        _Factory->Release();
-        _Factory = nullptr;
-    }
+    ReportLiveObjects();
 }
 
 CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
@@ -107,7 +108,7 @@ CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
         .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE
     };
  
-    ID3D12CommandQueue* commandQueue = nullptr;
+    ComPtr<ID3D12CommandQueue> commandQueue;
     if (SUCCEEDED(_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue))))
     {
         return new DX12CommandQueue(type,commandQueue);
@@ -120,7 +121,7 @@ CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
 CommandAllocator* DX12Device::CreateCommandAllocator(const CommandType type)
 {
     assert(_Device);
-    ID3D12CommandAllocator* commandAlloc = nullptr;
+    ComPtr<ID3D12CommandAllocator> commandAlloc;
     if (SUCCEEDED(_Device->CreateCommandAllocator(DX12Util::TranslateCommandType(type), IID_PPV_ARGS(&commandAlloc))))
     {
         return new DX12CommandAllocator(type,commandAlloc);
@@ -130,7 +131,7 @@ CommandAllocator* DX12Device::CreateCommandAllocator(const CommandType type)
     return nullptr;
 }
 
-SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQueue* queue,void* hwnd)
+SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQueue* queue, const std::any hwnd)
 {
     assert(_Factory);
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {
@@ -143,23 +144,23 @@ SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQu
         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
     };
 
-    DX12CommandQueue* dxQueue = dynamic_cast<DX12CommandQueue*>(queue);
-    IDXGISwapChain1* swapChain = nullptr;
-    if (SUCCEEDED(_Factory->CreateSwapChainForHwnd(dxQueue->Handle(),
-        static_cast<HWND>(hwnd),
+    ComPtr<IDXGISwapChain1> swapChain;
+    assert(hwnd.has_value());
+    const HWND Handle = std::any_cast<HWND>(hwnd);
+    if (SUCCEEDED(_Factory->CreateSwapChainForHwnd(std::any_cast<ID3D12CommandQueue*>(queue->Handle()),
+        Handle,
         &swapChainDesc,
         nullptr,
         nullptr,
         &swapChain)
     ))
     {
-        _Factory->MakeWindowAssociation(static_cast<HWND>(hwnd), DXGI_MWA_NO_ALT_ENTER);
-        IDXGISwapChain3* swapChain3 = nullptr;
-        assert(SUCCEEDED(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), ((void**)&swapChain3))));
-        swapChain->Release();
+        _Factory->MakeWindowAssociation(Handle, DXGI_MWA_NO_ALT_ENTER);
+        ComPtr<IDXGISwapChain3> swapChain3;
+        assert(SUCCEEDED(swapChain.As<IDXGISwapChain3>(&swapChain3)));
 
         //RVT descriptor heap
-        ID3D12DescriptorHeap* rvtHeap = nullptr;
+        ComPtr<ID3D12DescriptorHeap> rvtHeap;
         D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {
             .Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
             .NumDescriptors = config.BufferCount,
@@ -183,9 +184,9 @@ SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQu
         D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = rvtHeap->GetCPUDescriptorHandleForHeapStart();
         for (u32 n = 0; n < config.BufferCount; n++)
         {
-            ID3D12Resource* res = nullptr;
+            ComPtr<ID3D12Resource> res;
             assert(SUCCEEDED(swapChain3->GetBuffer(n, IID_PPV_ARGS(&res))));
-            _Device->CreateRenderTargetView(res, nullptr, rvtHandle);
+            _Device->CreateRenderTargetView(res.Get(), nullptr, rvtHandle);
 
        
             rtResources[n] = new DX12Resource(res);
@@ -198,7 +199,7 @@ SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQu
             rvtHandle.ptr += hc.Size;
         }
 
-        return new DX12SwapChain(config,descriptorHeap,rtResources,rvts, swapChain3);
+        return new DX12SwapChain(config,descriptorHeap,rtResources, rvts, swapChain3);
     }
 
 

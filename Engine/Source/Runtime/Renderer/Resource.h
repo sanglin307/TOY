@@ -129,6 +129,7 @@ public:
     };
 
     virtual ~DescriptorHeap() {};
+    virtual std::any Handle() { return nullptr; }
 
 protected:
     Config _Config;
@@ -140,6 +141,7 @@ class RenderResource
 public :
 
     virtual ~RenderResource() {};
+    virtual std::any Handle() { return nullptr; }
 };
 
 enum class ViewDimension
@@ -223,6 +225,7 @@ public:
 
     virtual u32 CurrentFrameIndex() { return 0; };
     virtual ~SwapChain() {};
+    virtual std::any Handle() { return nullptr; }
 
 protected:
     Config _Config;

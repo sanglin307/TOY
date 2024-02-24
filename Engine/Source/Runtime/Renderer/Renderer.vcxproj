@@ -113,7 +113,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Core.lib;DX12.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Core.lib;DX12.lib;ShaderCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>DX12.dll</DelayLoadDLLs>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
     </Link>
@@ -140,11 +140,15 @@
     <ClInclude Include="Device.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="RenderPath.h" />
+    <ClInclude Include="RenderScene.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RenderScene.cpp" />
+    <ClCompile Include="VisibilityBuffer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

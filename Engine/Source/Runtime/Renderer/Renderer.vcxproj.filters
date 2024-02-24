@@ -33,12 +33,24 @@
     <ClInclude Include="Pipeline.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RenderPath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Device.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VisibilityBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

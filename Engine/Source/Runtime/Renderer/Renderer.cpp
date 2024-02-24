@@ -8,54 +8,43 @@ Renderer& Renderer::Instance()
 	return Inst;
 }
 
-void Renderer::Init(const GameEngine::Config& config, void* hwnd)
+void Renderer::ParseCmds(const std::set<std::string>& cmds)
 {
-	if (config.API == RenderAPI::DX12)
-	{
-		_Device = new DX12Device;
-	}
-
-
-	_Device->Init();
-	_DirectQueue = _Device->CreateCommandQueue(CommandType::Direct);
-	_CommandAllocator = _Device->CreateCommandAllocator(CommandType::Direct);
-
-	SwapChain::Config sc = {
-		.Width = config.Width,
-		.Height = config.Height,
-		.SampleCount = config.SampleCount,
-		.SampleQuality = 0,
-		.BufferCount = config.BufferCount,
-		.Format = PixelFormat::R8G8B8A8_UNORM,
+	_Config = {
+		.API = RenderAPI::DX12,
+		.RenderPath = RenderPathType::VisibilityBuffer,
+		.FrameCount = 3,
+		.FrameWidth = 1280,
+		.FrameHeight = 800,
 	};
-	_SwapChain = _Device->CreateSwapChain(sc, _DirectQueue, hwnd);
-	_FrameIndex = _SwapChain->CurrentFrameIndex();
+}
+
+void Renderer::Init(std::any hwnd)
+{
+	_HWND = hwnd;
+
+	_Scene = new RenderScene;
+	_Scene->Init();
+
+	if (_Config.RenderPath == RenderPathType::VisibilityBuffer)
+	{
+		_RenderPath = new VisibilityBufferRP;
+		_RenderPath->Init();
+	}
+}
+
+void Renderer::Render()
+{
+	_RenderPath->Render();
 }
 
 void Renderer::Destroy()
 {
-	if (_SwapChain)
-	{
-		delete _SwapChain;
-		_SwapChain = nullptr;
-	}
+	_Scene->Destroy();
+	delete _Scene;
+	_Scene = nullptr;
 
-	if (_DirectQueue)
-	{
-		delete _DirectQueue;
-		_DirectQueue = nullptr;
-	}
-
-	if (_CommandAllocator)
-	{
-		delete _CommandAllocator;
-		_CommandAllocator = nullptr;
-	}
-
-	if (_Device)
-	{
-		_Device->Destroy();
-		delete _Device;
-		_Device = nullptr;
-	}
+	_RenderPath->Destroy();
+	delete _RenderPath;
+	_RenderPath = nullptr;
 }

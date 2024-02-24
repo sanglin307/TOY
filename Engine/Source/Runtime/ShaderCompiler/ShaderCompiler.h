@@ -35,7 +35,7 @@ public:
 	void CompileHLSL(const CompileArgs& args);
 
 private:
-	IDxcUtils* _DXCUtils;
-	IDxcCompiler3* _DXCCompiler;
+	ComPtr<IDxcUtils> _DXCUtils;
+	ComPtr<IDxcCompiler3> _DXCCompiler;
 
 };

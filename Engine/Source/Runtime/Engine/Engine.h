@@ -9,38 +9,19 @@
 #include "Defines.h"
 #include "FrameRate.h"
 
-enum class ENGINE_API RenderAPI
-{
-	DX12,
-	Vulkan,
-	Metal,
-};
-
 class GameEngine
 {
 public:
-	struct Config
-	{
-		u32 Width;
-		u32 Height;
-		u16 SampleCount;
-		u32 BufferCount;
-		RenderAPI API;
-		std::string Title;
-	};
 
 	ENGINE_API static GameEngine& Instance();
 
 	ENGINE_API void ParseCmds(const std::set<std::string>& cmds);
-	ENGINE_API void Init(void* hwnd);
+	ENGINE_API void Init(std::any hwnd);
 	ENGINE_API void Destroy();
 
 	ENGINE_API void Update();
-	ENGINE_API void Render();
 
-	ENGINE_API u32 GetWidth() const { return _Config.Width; }
-	ENGINE_API u32 GetHeight() const { return _Config.Height; }
-	ENGINE_API std::string& GetTitle() { return _Config.Title; }
+	ENGINE_API void FrameSize(u32& Width, u32& Height);
 
 private:
 	GameEngine() = default;
@@ -51,7 +32,5 @@ private:
 
 private:
 	std::set<std::string> _Params;
-
-	Config _Config;
 	FrameRate _FrameRate;
 };

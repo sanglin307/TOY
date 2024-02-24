@@ -1,16 +1,42 @@
 #pragma once
 
 #include "Device.h"
-#include "Command.h"
 #include "../Engine/Engine.h"
+#include "RenderPath.h"
+#include "RenderScene.h"
 
+enum class RenderAPI
+{
+    DX12,
+    Vulkan,
+    Metal,
+};
 
-class RENDERER_API Renderer
+enum class RenderPathType
+{
+    VisibilityBuffer = 0,
+};
+
+struct RenderConfig
+{
+    RenderAPI API;
+    RenderPathType RenderPath;
+    u32 FrameCount;
+    u32 FrameWidth;
+    u32 FrameHeight;
+
+};
+
+class Renderer
 {
 public:
-    static Renderer& Instance();
-    void Init(const GameEngine::Config& config, void* hwnd);
-    void Destroy();
+    RENDERER_API static Renderer& Instance();
+    RENDERER_API void ParseCmds(const std::set<std::string>& cmds);
+    RENDERER_API void Init(std::any hwnd);
+    RENDERER_API void Destroy();
+    RENDERER_API void Render();
+    RENDERER_API const RenderConfig& Config() const { return _Config; }
+    const std::any HWND() const { return _HWND; }
 
 private:
     Renderer() = default;
@@ -20,12 +46,10 @@ private:
     Renderer& operator=(Renderer&& rhs) = delete;
 
 private:
-    RenderDevice* _Device = nullptr;
-    CommandQueue* _DirectQueue = nullptr;
-    SwapChain* _SwapChain = nullptr;
-    CommandAllocator* _CommandAllocator = nullptr;
-    u32 _FrameIndex = 0;
 
-
+    RenderConfig _Config;
+    RenderScene* _Scene;
+    RenderPath* _RenderPath;
+    std::any _HWND;
 
 };

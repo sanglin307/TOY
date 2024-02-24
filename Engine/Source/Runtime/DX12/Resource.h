@@ -12,12 +12,11 @@ class DX12SwapChain : public SwapChain
 {
 	friend class DX12Device;
 public:
-
-	virtual ~DX12SwapChain() { _Handle->Release(); _Handle = nullptr; }
+	virtual ~DX12SwapChain();
 	virtual u32 CurrentFrameIndex() override;
 private:
 	DX12SwapChain(const SwapChain::Config& config, DescriptorHeap* descriptorHeap, std::vector<RenderResource*>& renderTargets,
-	              std::vector<RenderTargetView*>& renderTargetViews, IDXGISwapChain3* handle)
+	              std::vector<RenderTargetView*>& renderTargetViews, ComPtr<IDXGISwapChain3> handle)
 	{
 		_Config = config;
 		_DescriptorHeap = descriptorHeap;
@@ -26,36 +25,37 @@ private:
 		_Handle = handle;
 	}
 
-	IDXGISwapChain3* _Handle = nullptr;
+	ComPtr<IDXGISwapChain3> _Handle;
 };
 
 class DX12DescriptorHeap : public DescriptorHeap
 {
 	friend class DX12Device;
 public:
-	virtual ~DX12DescriptorHeap() { _Handle->Release(); _Handle = nullptr; };
+	virtual ~DX12DescriptorHeap() { _Handle.Reset(); }
+
 private:
-	DX12DescriptorHeap(const DescriptorHeap::Config& config, ID3D12DescriptorHeap* handle)
+	DX12DescriptorHeap(const DescriptorHeap::Config& config, ComPtr<ID3D12DescriptorHeap> handle)
 	{
 		_Config = config;
 		_Handle = handle;
 	}
-	ID3D12DescriptorHeap* _Handle = nullptr;
+	ComPtr<ID3D12DescriptorHeap> _Handle = nullptr;
 };
 
 class DX12Resource : public RenderResource
 {
 	friend class DX12Device;
 public:
-	virtual ~DX12Resource() { _Handle->Release(); _Handle = nullptr; }
+	virtual ~DX12Resource() { _Handle.Reset(); }
 private:
 
-	DX12Resource(ID3D12Resource* handle)
+	DX12Resource(ComPtr<ID3D12Resource> handle)
 	{
 		_Handle = handle;
 	}
 
-	ID3D12Resource* _Handle = nullptr;
+	ComPtr<ID3D12Resource> _Handle;
 };
 
 class DX12RenderTargetView : public RenderTargetView
