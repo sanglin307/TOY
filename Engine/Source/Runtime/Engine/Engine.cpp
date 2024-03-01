@@ -14,7 +14,7 @@ void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 	{
 		for (auto cmd : cmds)
 		{
-			TOY_LOG(Engine, std::format("launch argument:{}", cmd));
+			TOY_Log(Engine, std::format("launch argument:{}", cmd));
 		}
 	}
 

@@ -227,9 +227,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     std::set<std::string> cmdlineSet;
     for (i32 i = 1; i < argc; i++)
     {
-        std::string utf8Cmdline;
-        PlatformUtils::UTF16ToUTF8(argv[i], utf8Cmdline);
-        cmdlineSet.insert(utf8Cmdline);
+        cmdlineSet.insert(PlatformUtils::UTF16ToUTF8(argv[i]));
     }
     LocalFree(argv);
 

@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include "VisibilityBufferRP.h"
 #include "../DX12/Device.h"
 #include "../Engine/Engine.h"
 
@@ -22,7 +23,7 @@ void Renderer::ParseCmds(const std::set<std::string>& cmds)
 void Renderer::Init(std::any hwnd)
 {
 	_HWND = hwnd;
-
+ 
 	_Scene = new RenderScene;
 	_Scene->Init();
 

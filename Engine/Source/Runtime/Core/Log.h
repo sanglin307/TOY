@@ -32,6 +32,6 @@ private:
 	static std::vector<std::string> _LogCache;
 };
 
-#define TOY_LOG(Category,Str)  LogUtil::Log(#Category,LogType::Info,Str)
+#define TOY_Log(Category,Str)  LogUtil::Log(#Category,LogType::Info,Str)
 #define TOY_Warning(Category,Str) LogUtil::Log(#Category,LogType::Warning,Str)
-#define TOY_ERROR(Category,Str)  LogUtil::Log(#Category,LogType::Error,Str)
+#define TOY_Error(Category,Str)  LogUtil::Log(#Category,LogType::Error,Str)

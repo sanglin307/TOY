@@ -66,7 +66,7 @@ void LogUtil::Flush()
 	{
 		_Ofstream << str;
 	}
-
+	_Ofstream.flush();
 	_LogCache.clear();
 }
 

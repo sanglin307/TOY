@@ -8,9 +8,9 @@
 #include <wrl/client.h>
 using namespace Microsoft::WRL;
 
-#include <d3d12.h>
-#include <dxcapi.h>
-#include <d3d12shader.h>
+
+#include "dxcapi.h"    // load from thirdparty folder.
+#include "d3d12shader.h"
 
 #endif
 

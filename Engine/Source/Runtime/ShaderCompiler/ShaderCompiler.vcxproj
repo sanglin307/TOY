@@ -109,12 +109,18 @@
       <PreprocessorDefinitions>_DEBUG;WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\Source\Thirdparty\DXC\inc\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>dxcompiler.dll</DelayLoadDLLs>
+      <AdditionalDependencies>Core.lib;dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\;$(SolutionDir)Engine\Source\Thirdparty\DXC\lib\x64\</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(SolutionDir)Engine\Source\Thirdparty\DXC\bin\x64\dxcompiler.dll $(SolutionDir)Bin\Win64\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -134,10 +140,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h" />
-    <ClInclude Include="ShaderCompiler.h" />
+    <ClInclude Include="Compiler.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ShaderCompiler.cpp" />
+    <ClCompile Include="Compiler.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

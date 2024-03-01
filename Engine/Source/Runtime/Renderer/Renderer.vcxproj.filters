@@ -39,6 +39,9 @@
     <ClInclude Include="RenderScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VisibilityBufferRP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Device.cpp">
@@ -47,10 +50,13 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VisibilityBuffer.cpp">
+    <ClCompile Include="VisibilityBufferRP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RenderScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

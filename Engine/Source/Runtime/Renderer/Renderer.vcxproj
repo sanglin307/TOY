@@ -143,12 +143,14 @@
     <ClInclude Include="RenderPath.h" />
     <ClInclude Include="RenderScene.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="VisibilityBufferRP.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RenderPath.cpp" />
     <ClCompile Include="RenderScene.cpp" />
-    <ClCompile Include="VisibilityBuffer.cpp" />
+    <ClCompile Include="VisibilityBufferRP.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
