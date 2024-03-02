@@ -6,3 +6,4 @@ Bin/Win64/Engine.lib
 Bin/Win64
 Intermediate
 x64/Debug
+Engine/Shaders/Output
