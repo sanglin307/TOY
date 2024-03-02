@@ -1,6 +1,4 @@
-#include "RenderPath.h"
-#include "Renderer.h"
-#include "../DX12/Device.h"
+#include "Private.h"
 
 void RenderPath::Init()
 {

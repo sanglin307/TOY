@@ -1,6 +1,4 @@
-#include "Log.h"
-#include "Platform.h"
-#include "Path.h"
+#include "Private.h"
 
 double LogUtil::_TimeDelta = 0;
 std::ofstream LogUtil::_Ofstream;

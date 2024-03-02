@@ -1,9 +1,5 @@
 #pragma once
 
-#include "../Core/Types.h"
-#include "Defines.h"
-#include <chrono>
-
 class FrameRate
 {
 	using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;

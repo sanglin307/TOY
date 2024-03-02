@@ -1,10 +1,5 @@
 #pragma once
 
-#include "Device.h"
-#include "../Engine/Engine.h"
-#include "RenderPath.h"
-#include "RenderScene.h"
-
 enum class RenderAPI
 {
     DX12,

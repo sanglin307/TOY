@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Defines.h"
-#include "../Renderer/Resource.h"
-
 struct DX12FormatInfo
 {
 	DXGI_FORMAT   DXFormat;

@@ -1,9 +1,5 @@
 #pragma once
 
-#include "Defines.h"
-#include "Resource.h"
-#include "Command.h"
-
 class DX12Util
 {
 public:

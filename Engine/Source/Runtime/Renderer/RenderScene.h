@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Defines.h"
 
 class RenderScene
 {

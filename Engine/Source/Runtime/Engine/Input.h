@@ -1,9 +1,5 @@
 #pragma once
 
-#include "../Core/Types.h"
-#include "Defines.h"
-#include <vector>
-
 enum class KeyType : u32
 {
      MouseScrollUp = 0,

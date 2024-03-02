@@ -132,10 +132,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Defines.h" />
+    <ClInclude Include="Private.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="Path.h" />
     <ClInclude Include="Platform.h" />
+    <ClInclude Include="Public.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,4 @@
-#include "Compiler.h"
-#include "../Core/Path.h"
-#include "../Core/Platform.h"
-#include "../Core/Log.h"
+#include "Private.h"
  
 std::wstring GetTargetProfile(ShaderProfile profile)
 {
@@ -54,10 +51,15 @@ bool ShaderCompiler::CompileHLSL(const CompileArgs& args)
 
     auto fillArgs = [&argsBuffer, &ArgsBufferLength, &argsOffset, &argsParam](const std::wstring& arg) 
         {
-            assert(argsOffset + arg.size() + 1 < ArgsBufferLength);
+            assert(argsOffset + arg.size() < ArgsBufferLength);
             argsParam.push_back(&argsBuffer[argsOffset]);
-            std::wcscpy(&argsBuffer[argsOffset], arg.c_str());
-            argsOffset += (u32)arg.size() + 1;
+            arg.copy(&argsBuffer[argsOffset], arg.size());
+            argsOffset += (u32)arg.size();
+            // \0 process
+            if (argsBuffer[argsOffset - 1] != 0)
+            {
+                argsBuffer[argsOffset++] = 0;
+            }
         };
 
    
@@ -120,7 +122,7 @@ bool ShaderCompiler::CompileHLSL(const CompileArgs& args)
         DxcShaderHash* dxcHashBuf = (DxcShaderHash*)dxcHash->GetBufferPointer();
         for (int i = 0; i < _countof(dxcHashBuf->HashDigest); i++)
         {
-            shaderHash += std::format("{:2x}", dxcHashBuf->HashDigest[i]);
+            shaderHash += std::format("{:02X}", dxcHashBuf->HashDigest[i]);
         }
     }
 

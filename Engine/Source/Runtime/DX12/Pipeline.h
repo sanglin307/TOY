@@ -1,8 +1,5 @@
 #pragma once
 
-#include "../Renderer/Pipeline.h"
-#include "Defines.h"
-
 class DX12RootSignature : public RootSignature
 {
 	friend class DX12Device;

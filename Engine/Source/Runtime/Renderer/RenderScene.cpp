@@ -1,5 +1,4 @@
-#include "RenderScene.h"
-#include "../ShaderCompiler/Compiler.h"
+#include "Private.h"
 
 void RenderScene::Init()
 {

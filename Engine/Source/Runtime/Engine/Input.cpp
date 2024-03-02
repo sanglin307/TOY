@@ -1,4 +1,4 @@
-#include "Input.h"
+#include "Private.h"
 
 InputManager& InputManager::Instance()
 {

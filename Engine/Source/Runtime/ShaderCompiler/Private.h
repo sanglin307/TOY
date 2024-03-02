@@ -14,6 +14,8 @@ using namespace Microsoft::WRL;
 
 #endif
 
-#include <assert.h>
-#include <vector>
-#include <string>
+
+#include "../Core/Public.h"
+
+
+#include "Compiler.h"

@@ -136,9 +136,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Command.h" />
-    <ClInclude Include="Defines.h" />
+    <ClInclude Include="Private.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="Pipeline.h" />
+    <ClInclude Include="Public.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RenderPath.h" />
     <ClInclude Include="RenderScene.h" />

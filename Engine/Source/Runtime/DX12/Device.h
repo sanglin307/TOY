@@ -1,10 +1,5 @@
 #pragma once
 
-#include "../Core/Types.h"
-#include "../Renderer/Device.h"
-#include "Defines.h"
-
-
 class DX12Device : public RenderDevice
 {
 public :

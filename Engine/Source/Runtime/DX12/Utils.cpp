@@ -1,4 +1,4 @@
-#include "Utils.h"
+#include "Private.h"
 
 std::vector<DX12FormatInfo> DX12Util::_Formats;
 

@@ -1,7 +1,4 @@
-#include "Renderer.h"
-#include "VisibilityBufferRP.h"
-#include "../DX12/Device.h"
-#include "../Engine/Engine.h"
+#include "Private.h"
 
 Renderer& Renderer::Instance()
 {

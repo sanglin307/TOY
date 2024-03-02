@@ -1,4 +1,4 @@
-#include "Path.h"
+#include "Private.h"
 
 static std::filesystem::path bin_path = std::filesystem::current_path();
 static std::filesystem::path log_path = bin_path / "Logs";

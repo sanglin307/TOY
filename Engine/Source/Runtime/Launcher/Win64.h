@@ -8,9 +8,8 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <WinUser.h>
-
-#include <string>
-#include <set>
-#include <vector>
 #include <shellapi.h>
-#include <cassert>
+
+
+#include "../Core/Public.h"
+#include "../Engine/Public.h"

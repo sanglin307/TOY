@@ -1,9 +1,5 @@
 #pragma once
 
-#include "../Renderer/Command.h"
-#include "Defines.h"
-#include "Device.h"
-
 class DX12CommandQueue : public CommandQueue
 {
 	friend class DX12Device;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Defines.h"
-
 enum class CommandType
 {
 	Direct = 0,

@@ -1,9 +1,7 @@
 #pragma once
 
-#include "Defines.h"
-#include "Device.h"
-#include "Resource.h"
-
+class RenderDevice;
+class SwapChain;
 
 class RenderPath
 {

@@ -1,4 +1,4 @@
-#include "Platform.h"
+#include "Private.h"
 
 #ifdef WINDOWS
 std::string WindowsUtils::UTF16ToUTF8(const std::wstring& utf16)

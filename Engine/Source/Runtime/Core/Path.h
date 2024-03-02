@@ -1,10 +1,5 @@
 #pragma once
 
-#include "Defines.h"
-#include "Types.h"
-#include "filesystem"
-
-
 class CORE_API PathUtil
 {
 public:

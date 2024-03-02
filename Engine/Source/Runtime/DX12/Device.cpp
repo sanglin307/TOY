@@ -1,8 +1,4 @@
-#include "Device.h"
-#include "Command.h"
-#include "Resource.h"
-#include "Utils.h"
-
+#include "Private.h"
 
 #pragma comment(lib, "d3d12")   
 #pragma comment(lib, "dxgi")  

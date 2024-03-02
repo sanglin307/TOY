@@ -1,8 +1,5 @@
 #pragma once
 
-#include "../Core/Types.h"
-#include "Defines.h"
-
 enum class PixelFormat : u32
 {
     UNKNOWN = 0,

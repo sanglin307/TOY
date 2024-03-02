@@ -1,4 +1,4 @@
-#include "Resource.h"
+#include "Private.h"
 
 u32 DX12SwapChain::CurrentFrameIndex()
 {

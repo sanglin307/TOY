@@ -1,5 +1,4 @@
-#include "VisibilityBufferRP.h"
-#include "Renderer.h"
+#include "Private.h"
 
 void VisibilityBufferRP::Init()
 {

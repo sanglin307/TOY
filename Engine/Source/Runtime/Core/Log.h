@@ -1,11 +1,5 @@
 #pragma once
 
-#include "Defines.h"
-#include <format>
-#include <filesystem>
-#include <fstream>
-#include <mutex>
-
 enum class LogType
 {
 	Info = 0,

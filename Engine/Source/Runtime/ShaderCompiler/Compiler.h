@@ -1,9 +1,5 @@
 #pragma once
 
-#include "Defines.h"
-
-
-
 enum class ShaderProfile
 {
 	Vertex = 0,

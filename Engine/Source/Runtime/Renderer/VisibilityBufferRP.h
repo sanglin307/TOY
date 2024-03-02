@@ -1,7 +1,5 @@
 #pragma once
 
-#include "RenderPath.h"
-
 class VisibilityBufferRP : public RenderPath
 {
 public:

@@ -1,7 +1,8 @@
 #pragma once
 
-#define DX12_API __declspec(dllexport)
+#ifdef WINDOWS
 
+#define DX12_API __declspec(dllexport)
 #include <wrl/client.h>
 using namespace Microsoft::WRL;
 
@@ -13,9 +14,7 @@ using namespace Microsoft::WRL;
 #include <dxgidebug.h>
 #endif
 
-#include <assert.h>
+#endif
 
+#include "Device.h"
 
-#include <vector>
-#include <string>
-#include <any>

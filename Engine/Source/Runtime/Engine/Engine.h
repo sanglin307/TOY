@@ -1,14 +1,5 @@
 #pragma once
 
-#include <set>
-#include <string>
-
-#include "../Core/Types.h"
-#include "../Core/Path.h"
-#include "../Core/Log.h"
-#include "Defines.h"
-#include "FrameRate.h"
-
 class GameEngine
 {
 public:

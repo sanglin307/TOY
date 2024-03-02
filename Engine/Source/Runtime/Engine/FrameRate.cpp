@@ -1,4 +1,4 @@
-#include "FrameRate.h"
+#include "Private.h"
 
 void FrameRate::Init()
 {

@@ -1,10 +1,5 @@
 #pragma once
 
-#include "Defines.h"
-#include "Command.h"
-#include "Resource.h"
-#include "Pipeline.h"
-
 class RenderDevice
 {
 public:

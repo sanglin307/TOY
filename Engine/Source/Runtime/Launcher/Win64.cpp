@@ -1,8 +1,4 @@
 #include "Win64.h"
-#include "../Core/Platform.h"
-#include "../Core/Log.h"
-#include "../Engine/Engine.h"
-#include "../Engine/Input.h"
 
 // for DirectX12 Agility SDK.
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 611; }

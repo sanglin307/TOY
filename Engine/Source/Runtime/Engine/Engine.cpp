@@ -1,6 +1,4 @@
-#include "Engine.h"
-#include "../Renderer/Renderer.h"
-#include "../Renderer/Device.h"
+#include "Private.h"
 
 GameEngine& GameEngine::Instance()
 {
