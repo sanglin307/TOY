@@ -217,6 +217,4 @@ public:
 	};
 
 	virtual ~GraphicPipeline() {}
-protected:
-	Desc _Desc;
 };

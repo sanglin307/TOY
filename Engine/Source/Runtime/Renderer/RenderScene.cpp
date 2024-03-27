@@ -35,6 +35,8 @@ void RenderScene::Init()
 	    .PixelShader = ps
 	};
 
+	RootSignatureManager::Add(desc.RootSignature);
+
 	RHI.CreateInputLayout(shaders, InputSlotMapping::Interleaved, desc.InputLayout);
 	GraphicPipeline* pso = RHI.CreateGraphicPipeline(desc);
 	PipelineManager::Add(pso);

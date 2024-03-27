@@ -21,3 +21,14 @@ public:
 private:
 	static std::set<GraphicPipeline*> _Pipelines;
 };
+
+class RootSignatureManager
+{
+public:
+	static void Add(RootSignature* rs);
+	static void Remove(RootSignature* rs);
+	static void Destroy();
+
+private:
+	static std::set<RootSignature*> _RootSignatures;
+};

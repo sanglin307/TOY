@@ -60,3 +60,25 @@ void PipelineManager::Destroy()
 
 	_Pipelines.clear();
 }
+
+std::set<RootSignature*> RootSignatureManager::_RootSignatures;
+
+void RootSignatureManager::Add(RootSignature* rs)
+{
+	_RootSignatures.insert(rs);
+}
+
+void RootSignatureManager::Remove(RootSignature* rs)
+{
+	_RootSignatures.erase(rs);
+}
+
+void RootSignatureManager::Destroy()
+{
+	for (auto iter : _RootSignatures)
+	{
+		delete iter;
+	}
+
+	_RootSignatures.clear();
+}

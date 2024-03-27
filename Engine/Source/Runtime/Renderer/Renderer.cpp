@@ -54,6 +54,7 @@ void Renderer::Destroy()
 	delete _RenderPath;
 	_RenderPath = nullptr;
 
+	RootSignatureManager::Destroy();
 	PipelineManager::Destroy();
 	ShaderManager::Destroy();
 
