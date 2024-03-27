@@ -1,5 +1,64 @@
 #include "Private.h"
  
+static std::map<D3D_SHADER_VARIABLE_TYPE, ShaderVariableType> sVariableTypeMap;
+struct ShaderVariableTypeMapInitializer
+{
+    ShaderVariableTypeMapInitializer()
+    {
+        assert(sVariableTypeMap.size() == 0);
+        if (sVariableTypeMap.size() == 0)
+        {
+#define VARTYPE(T)  sVariableTypeMap.insert(std::pair<D3D_SHADER_VARIABLE_TYPE,ShaderVariableType>(D3D_SVT_##T,ShaderVariableType::T));
+            VARTYPE(BOOL)
+            VARTYPE(INT)
+            VARTYPE(FLOAT)
+            VARTYPE(TEXTURE)
+            VARTYPE(TEXTURE1D)
+            VARTYPE(TEXTURE2D)
+            VARTYPE(TEXTURE3D)
+            VARTYPE(TEXTURECUBE)
+            VARTYPE(SAMPLER)
+            VARTYPE(SAMPLER1D)
+            VARTYPE(SAMPLER2D)
+            VARTYPE(SAMPLER3D)
+            VARTYPE(SAMPLERCUBE)
+            VARTYPE(UINT)
+            VARTYPE(UINT8)
+            VARTYPE(TEXTURE1DARRAY)
+            VARTYPE(TEXTURE2DARRAY)
+            VARTYPE(TEXTURE2DMS)
+            VARTYPE(TEXTURE2DMSARRAY)
+            VARTYPE(TEXTURECUBEARRAY)
+            VARTYPE(DOUBLE)
+            VARTYPE(RWTEXTURE1D)
+            VARTYPE(RWTEXTURE1DARRAY)
+            VARTYPE(RWTEXTURE2D)
+            VARTYPE(RWTEXTURE2DARRAY)
+            VARTYPE(RWTEXTURE3D)
+            VARTYPE(RWBUFFER)
+            VARTYPE(BYTEADDRESS_BUFFER)
+            VARTYPE(RWBYTEADDRESS_BUFFER)
+            VARTYPE(STRUCTURED_BUFFER)
+            VARTYPE(RWSTRUCTURED_BUFFER)
+            VARTYPE(APPEND_STRUCTURED_BUFFER)
+            VARTYPE(CONSUME_STRUCTURED_BUFFER)
+            VARTYPE(MIN8FLOAT)
+            VARTYPE(MIN10FLOAT)
+            VARTYPE(MIN16FLOAT)
+            VARTYPE(MIN12INT)
+            VARTYPE(MIN16INT)
+            VARTYPE(MIN16UINT)
+            VARTYPE(INT16)
+            VARTYPE(UINT16)
+            VARTYPE(FLOAT16)
+            VARTYPE(INT64)
+            VARTYPE(UINT64)
+#undef VARTYPE
+        }
+    }
+};
+ShaderVariableTypeMapInitializer sShaderVariableTypeMapInitializer;
+
 std::wstring GetTargetProfile(ShaderProfile profile)
 {
     // use max 6.6
@@ -30,7 +89,196 @@ std::wstring GetTargetProfile(ShaderProfile profile)
     return L"";
 }
 
-bool ShaderCompiler::CompileHLSL(const CompileArgs& args)
+ShaderVariableClass TranslateVariableClass(D3D_SHADER_VARIABLE_CLASS c)
+{
+    switch (c)
+    {
+    case D3D_SVC_SCALAR:
+        return ShaderVariableClass::SCALAR;
+    case D3D_SVC_VECTOR:
+        return ShaderVariableClass::VECTOR;
+    case D3D_SVC_MATRIX_ROWS:
+        return ShaderVariableClass::MATRIX_ROWS;
+    case D3D_SVC_MATRIX_COLUMNS:
+        return ShaderVariableClass::MATRIX_COLUMNS;
+    default:
+        assert(0);  // todo.
+        break;
+    }
+
+    return ShaderVariableClass::MAX;
+}
+
+ShaderComponentType TranslateComponentType(D3D_REGISTER_COMPONENT_TYPE c)
+{
+    switch (c)
+    {
+    case D3D_REGISTER_COMPONENT_UINT32:
+        return ShaderComponentType::UINT32;
+    case D3D_REGISTER_COMPONENT_SINT32:
+        return ShaderComponentType::SINT32;
+    case D3D_REGISTER_COMPONENT_FLOAT32:
+        return ShaderComponentType::FLOAT32;
+    default:
+        assert(0);  // todo.
+        break;
+    }
+
+    return ShaderComponentType::MAX;
+}
+
+ShaderInputType TranslateShaderInputType(D3D_SHADER_INPUT_TYPE t)
+{
+    switch (t)
+    {
+    case D3D_SIT_CBUFFER:
+        return ShaderInputType::CBUFFER;
+    case D3D_SIT_TBUFFER:
+        return ShaderInputType::TBUFFER;
+    case D3D_SIT_TEXTURE:
+        return ShaderInputType::TEXTURE;
+    case D3D_SIT_SAMPLER:
+        return ShaderInputType::SAMPLER;
+    case D3D_SIT_UAV_RWTYPED:
+        return ShaderInputType::UAV_RWTYPED;
+    case D3D_SIT_STRUCTURED:
+        return ShaderInputType::STRUCTURED;
+    case D3D_SIT_UAV_RWSTRUCTURED:
+        return ShaderInputType::UAV_RWSTRUCTURED;
+    case D3D_SIT_BYTEADDRESS:
+        return ShaderInputType::BYTEADDRESS;
+    case D3D_SIT_UAV_RWBYTEADDRESS:
+        return ShaderInputType::UAV_RWBYTEADDRESS;
+    case D3D_SIT_UAV_APPEND_STRUCTURED:
+        return ShaderInputType::UAV_APPEND_STRUCTURED;
+    case D3D_SIT_UAV_CONSUME_STRUCTURED:
+        return ShaderInputType::UAV_CONSUME_STRUCTURED;
+    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+        return ShaderInputType::UAV_RWSTRUCTURED_WITH_COUNTER;
+    case D3D_SIT_RTACCELERATIONSTRUCTURE:
+        return ShaderInputType::RTACCELERATIONSTRUCTURE;
+    case D3D_SIT_UAV_FEEDBACKTEXTURE:
+        return ShaderInputType::UAV_FEEDBACKTEXTURE;
+    default:
+        assert(0);  // todo.
+        break;
+    }
+
+    return ShaderInputType::MAX;
+}
+
+ShaderVariableType TranslateVariableType(D3D_SHADER_VARIABLE_TYPE t)
+{
+    auto iter = sVariableTypeMap.find(t);
+    if (iter != sVariableTypeMap.end())
+        return iter->second;
+    else
+    {
+        assert(0); // not implemented. todo.
+    }
+
+    return ShaderVariableType::MAX;
+}
+
+
+ShaderReflection* GenerateReflection(ComPtr<ID3D12ShaderReflection> ref)
+{
+    ShaderReflection* reflectData = new ShaderReflection;
+    D3D12_SHADER_DESC desc;
+    ref->GetDesc(&desc);
+
+    reflectData->InstructionCount = desc.InstructionCount;
+    reflectData->TempRegisterCount = desc.TempRegisterCount;
+    reflectData->StaticFlowControlCount = desc.StaticFlowControlCount;
+    reflectData->DynamicFlowControlCount = desc.DynamicFlowControlCount;
+    ref->GetThreadGroupSize(&reflectData->ThreadGroupSizeX, &reflectData->ThreadGroupSizeY, &reflectData->ThreadGroupSizeZ);
+
+    // const buffers.
+    reflectData->ConstBuffers.reserve(desc.ConstantBuffers);
+    for (u32 i = 0; i < desc.ConstantBuffers; i++)
+    {
+        ID3D12ShaderReflectionConstantBuffer* cb = ref->GetConstantBufferByIndex(i);
+        D3D12_SHADER_BUFFER_DESC bufferDesc;
+        cb->GetDesc(&bufferDesc);
+        reflectData->ConstBuffers.push_back(SRConstBuffer{
+            .Name = bufferDesc.Name,
+            .Size = bufferDesc.Size
+            });
+
+        reflectData->ConstBuffers[i].Variables.reserve(bufferDesc.Variables);
+        for (u32 j = 0; j < bufferDesc.Variables; j++)
+        {
+            ID3D12ShaderReflectionVariable* var = cb->GetVariableByIndex(j);
+            D3D12_SHADER_VARIABLE_DESC varDesc;
+            var->GetDesc(&varDesc);
+
+            ID3D12ShaderReflectionType* varType = var->GetType();
+            D3D12_SHADER_TYPE_DESC typeDesc;
+            varType->GetDesc(&typeDesc);
+            reflectData->ConstBuffers[i].Variables.push_back(SRVariable{
+                .VarName = varDesc.Name,
+                .TypeName = typeDesc.Name,
+                .Type = TranslateVariableType(typeDesc.Type),
+                .Class = TranslateVariableClass(typeDesc.Class),
+                .Offset = varDesc.StartOffset,
+                .Size = varDesc.Size,
+                .TextureOffset = varDesc.StartTexture,
+                .TextureSize = varDesc.TextureSize,
+                .SamplerOffset = varDesc.StartSampler,
+                .SamplerSize = varDesc.SamplerSize
+                });
+
+        }
+    }
+
+    // bound resources.
+    reflectData->BoundResources.reserve(desc.BoundResources);
+    for (u32 i = 0; i < desc.BoundResources; i++)
+    {
+        D3D12_SHADER_INPUT_BIND_DESC desc;
+        ref->GetResourceBindingDesc(i, &desc);
+        reflectData->BoundResources.push_back(SRBoundResource{
+            .Name = desc.Name,
+            .Type = TranslateShaderInputType(desc.Type),
+            .BindPoint = desc.BindPoint,
+            .BindCount = desc.BindCount,
+            .BindSpace = desc.Space
+            });
+    }
+
+    // input parameter.
+    reflectData->InputParameter.reserve(desc.InputParameters);
+    for (u32 i = 0; i < desc.InputParameters; i++)
+    {
+        D3D12_SIGNATURE_PARAMETER_DESC desc;
+        ref->GetInputParameterDesc(i, &desc);
+        reflectData->InputParameter.push_back(SRSignatureParameter{
+            .SemanticName = desc.SemanticName,
+            .SemanticIndex = desc.SemanticIndex,
+            .ComponentType = TranslateComponentType(desc.ComponentType),
+            .ComponentMask = desc.Mask
+            });
+    }
+
+    //output parameter
+    reflectData->OutputParameter.reserve(desc.OutputParameters);
+    for (u32 i = 0; i < desc.OutputParameters; i++)
+    {
+        D3D12_SIGNATURE_PARAMETER_DESC desc;
+        ref->GetOutputParameterDesc(i, &desc);
+        reflectData->OutputParameter.push_back(SRSignatureParameter{
+            .SemanticName = desc.SemanticName,
+            .SemanticIndex = desc.SemanticIndex,
+            .ComponentType = TranslateComponentType(desc.ComponentType),
+            .ComponentMask = desc.Mask
+            });
+    }
+
+
+    return reflectData;
+}
+
+ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
 {
     ComPtr<IDxcUtils> _DXCUtils;
     ComPtr<IDxcCompiler3> _DXCCompiler;
@@ -87,7 +335,7 @@ bool ShaderCompiler::CompileHLSL(const CompileArgs& args)
 
     // load source file.
     ComPtr<IDxcBlobEncoding> dxcSource;
-    assert(SUCCEEDED(_DXCUtils->LoadFile(fileNamePath.wstring().c_str(), nullptr, &dxcSource)));
+    _DXCUtils->LoadFile(fileNamePath.wstring().c_str(), nullptr, &dxcSource);
     DxcBuffer sourceBuffer = {
          .Ptr = dxcSource->GetBufferPointer(),
          .Size = dxcSource->GetBufferSize(),
@@ -95,24 +343,28 @@ bool ShaderCompiler::CompileHLSL(const CompileArgs& args)
     };
 
     ComPtr<IDxcResult> dxcResults;
-    assert(SUCCEEDED(_DXCCompiler->Compile(&sourceBuffer, argsParam.data(), (u32)argsParam.size(), _DXCIncludeHandler.Get(), IID_PPV_ARGS(&dxcResults))));
+    _DXCCompiler->Compile(&sourceBuffer, argsParam.data(), (u32)argsParam.size(), _DXCIncludeHandler.Get(), IID_PPV_ARGS(&dxcResults));
 
     ComPtr<IDxcBlobUtf8> dxcErrors;
     dxcResults->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&dxcErrors), nullptr);
 
+    std::string errors;
     if (dxcErrors.Get() != nullptr && dxcErrors->GetStringLength() != 0)
     {
-        std::string errors(dxcErrors->GetStringPointer(), dxcErrors->GetStringLength());
-        TOY_Warning(ShaderCompile, std::format("Shader {} compile warning & error : {}", args.FileName, errors));
+        errors = std::string(dxcErrors->GetStringPointer(), dxcErrors->GetStringLength());
     }
 
     HRESULT hrStatus;
     dxcResults->GetStatus(&hrStatus);
     if (FAILED(hrStatus))
     {
-        TOY_Error(ShaderCompile, std::format("Shader {} compile failed", args.FileName));
-        return false;
+        TOY_Error(ShaderCompiler, std::format("Shader {} {} compile error: {}", args.FileName, args.EntryName, errors));
+        return nullptr;
     }
+
+    ShaderObject* shader = new ShaderObject;
+    shader->Profile = args.Profile;
+    shader->DebugName = std::format("File({}) Entry({})", args.FileName, args.EntryName);
 
     std::string shaderHash;
     ComPtr<IDxcBlob> dxcHash;
@@ -124,6 +376,8 @@ bool ShaderCompiler::CompileHLSL(const CompileArgs& args)
         {
             shaderHash += std::format("{:02X}", dxcHashBuf->HashDigest[i]);
         }
+
+        shader->Hash = shaderHash;
     }
 
     std::filesystem::path path = PathUtil::ShaderOutput();
@@ -147,6 +401,9 @@ bool ShaderCompiler::CompileHLSL(const CompileArgs& args)
         std::ofstream fout(binfile, std::ios::binary | std::ios::trunc);
         fout.write((const char*)dxcShader->GetBufferPointer(), dxcShader->GetBufferSize());
         fout.close();
+        shader->BlobSize = dxcShader->GetBufferSize();
+        shader->BlobData = new u8[shader->BlobSize];
+        std::memcpy(shader->BlobData, dxcShader->GetBufferPointer(), shader->BlobSize);
     }
 
     ComPtr<IDxcBlob> dxcPDB;
@@ -177,19 +434,9 @@ bool ShaderCompiler::CompileHLSL(const CompileArgs& args)
 
         ComPtr<ID3D12ShaderReflection> dxcReflection;
         _DXCUtils->CreateReflection(&ReflectionData, IID_PPV_ARGS(&dxcReflection));
+
+        shader->Reflection = GenerateReflection(dxcReflection);
     }
 
-    ComPtr<IDxcBlob> dxcRootSigData;
-    dxcResults->GetOutput(DXC_OUT_ROOT_SIGNATURE, IID_PPV_ARGS(&dxcRootSigData), nullptr);
-    if (dxcRootSigData != nullptr)
-    {
-        DxcBuffer RSData = {
-            .Ptr = dxcRootSigData->GetBufferPointer(),
-            .Size = dxcRootSigData->GetBufferSize(),
-            .Encoding = DXC_CP_ACP
-        };
-
-    }
-
-    return true;
+    return shader;
 }

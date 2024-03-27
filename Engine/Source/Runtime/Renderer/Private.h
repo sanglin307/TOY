@@ -12,10 +12,11 @@
 #include "Command.h"
 #include "Resource.h"
 #include "Pipeline.h"
+#include "PipelineCache.h"
 #include "RenderPath.h"
 #include "VisibilityBufferRP.h"
 #include "RenderScene.h"
 #include "Renderer.h"
 #include "Device.h"
 
-#include "../DX12/Public.h"
+#include "../DX12/Public.h"  // dx12 implementation need renderer's base class, so include it here.

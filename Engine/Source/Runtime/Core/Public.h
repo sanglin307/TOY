@@ -14,6 +14,8 @@
 #include <cassert>
 #include <any>
 #include <set>
+#include <map>
+#include <array>
 
 #include "Types.h"
 #include "Log.h"

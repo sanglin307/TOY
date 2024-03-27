@@ -32,6 +32,7 @@ public:
     RENDERER_API void Render();
     RENDERER_API const RenderConfig& Config() const { return _Config; }
     const std::any HWND() const { return _HWND; }
+    inline RenderDevice& GetDevice() { return *_Device; }
 
 private:
     Renderer() = default;
@@ -41,10 +42,11 @@ private:
     Renderer& operator=(Renderer&& rhs) = delete;
 
 private:
-
+    RenderDevice* _Device;
     RenderConfig _Config;
     RenderScene* _Scene;
     RenderPath* _RenderPath;
     std::any _HWND;
-
 };
+
+#define RHI Renderer::Instance().GetDevice()

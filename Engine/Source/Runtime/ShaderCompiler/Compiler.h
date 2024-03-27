@@ -10,15 +10,34 @@ enum class ShaderProfile
 	Hull,
 	Mesh,
 	Amplification,
-	Lib
+	Lib,
+	MAX
 };
 
+struct ShaderObject
+{
+	~ShaderObject() 
+	{
+		if (BlobData)
+			delete BlobData;
+
+		if (Reflection)
+			delete Reflection;
+	}
+
+	ShaderProfile Profile;
+	std::string Hash;
+	std::string DebugName;
+	u8* BlobData = nullptr;
+	u64 BlobSize;
+	ShaderReflection* Reflection = nullptr;
+};
 
 class ShaderCompiler
 {
 public:
 
-	struct CompileArgs
+	struct Args
 	{
 		ShaderProfile Profile;
 		std::string FileName;
@@ -27,7 +46,5 @@ public:
 		bool Debug;
 	};
 
-	static SHADER_API bool CompileHLSL(const CompileArgs& args);
-
- 
+	static SHADER_API ShaderObject* CompileHLSL(const Args& args); 
 };

@@ -37,8 +37,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Renderer", "Engine\Source\R
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DX12", "Engine\Source\Runtime\DX12\DX12.vcxproj", "{1D2949B5-8613-4E3A-847B-A4EAAD56C7E6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C76477F1-171D-40EA-918C-CFD99848896B} = {C76477F1-171D-40EA-918C-CFD99848896B}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderCompiler", "Engine\Source\Runtime\ShaderCompiler\ShaderCompiler.vcxproj", "{1E229220-0249-45EB-B4F7-B11EBB284ED9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C76477F1-171D-40EA-918C-CFD99848896B} = {C76477F1-171D-40EA-918C-CFD99848896B}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -105,6 +105,15 @@ enum class PixelFormat : u32
     MAX
 };
 
+struct PixelFormatInfo
+{
+    u8         ComponentNum;
+    u8         ComponentSize;
+    u8         ByteSize;
+    bool       CompressFormat;
+    std::any   PlatformFormat;
+};
+
 enum class DescriptorType
 {
     CBV_SRV_UAV = 0,

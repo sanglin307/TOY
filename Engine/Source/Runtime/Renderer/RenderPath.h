@@ -11,7 +11,6 @@ public:
 	virtual void Destroy();
 
 protected:
-	RenderDevice* _Device = nullptr;
 	SwapChain* _SwapChain = nullptr;
 	u32 _FrameIndex = 0;
 

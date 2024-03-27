@@ -8,31 +8,30 @@ public:
 
 };
 
-class InputLayout
+enum class InputSlotClass
 {
-public:
-	enum class SlotClass
-	{
-		PerVertex = 0,
-		PerInstance
-	};
-
-	struct Desc
-	{
-		std::string Name;
-		u32 Index;
-		PixelFormat Format;
-		u32 SlotIndex;
-		u32 AlignedByteOffset;
-		SlotClass SlotType;
-		u32 InstanceStepRate;
-	};
-
-private:
-	std::vector<Desc> _Desc;
-
+	PerVertex = 0,
+	PerInstance
 };
 
+enum class InputSlotMapping
+{
+	Interleaved = 0,
+	Seperated,
+	Custom
+};
+
+struct InputLayoutDesc
+{
+	std::string SemanticName;
+	u32 SemanticIndex;
+	PixelFormat Format;
+	u32 SlotIndex;
+	u32 SlotOffset;
+	InputSlotClass SlotClass;
+	u32 InstanceStepRate = 0;
+};
+ 
 enum class FillMode
 {
 	WireFrame,
@@ -60,10 +59,23 @@ enum class LogicOp
 	Nor,
 	Xor,
 	Equiv,
-	Reverse,
+	AndReverse,
 	AndInverted,
 	OrReverse,
 	OrInverted
+};
+
+enum class ComparisonFunc
+{
+	None,
+	Never,
+	Less,
+	Equal,
+	LessEqual,
+	Greater,
+	NotEqual,
+	GreaterEqual,
+	Always
 };
 
 enum class BlendFactor
@@ -98,19 +110,27 @@ enum class BlendOp
 	MAX
 };
 
+enum class PrimitiveTopology 
+{
+	Point,
+	Line,
+	Triangle,
+	Patch
+};
+
 struct RasterizerDesc
 {
-	FillMode Fill;
-	CullMode Cull;
-	bool FrontCounterClockwise;
-	bool DepthClip;
-	bool Multisample;
-	bool LineAA;
-	bool ConservativeMode;
-	i32 DepthBias;
-	f32 DepthBiasClamp;
-	f32 SlopScaledDepthBias;
-	u32 SampleCount;
+	FillMode Fill = FillMode::Solid;
+	CullMode Cull = CullMode::Back;
+	bool FrontCounterClockwise = false;
+	bool DepthClip = true;
+	bool Multisample = false;
+	bool LineAA = false;
+	bool ConservativeMode = false;
+	i32 DepthBias = 0;
+	f32 DepthBiasClamp =0.f;
+	f32 SlopScaledDepthBias = 0.f;
+	u32 SampleCount = 0;
 };
 
 constexpr static u32 MaxRenderTargetNumber = 8;
@@ -119,37 +139,84 @@ struct BlendDesc
 {
 	struct RenderTarget
 	{
-		bool Enable;
-		bool LogicOpEnable;
-		BlendFactor Src;
-		BlendFactor Dest;
-		BlendOp Op;
-		BlendFactor SrcAlpha;
-		BlendFactor DestAlpha;
-		BlendOp AlphaOp;
-		LogicOp Logic;
-		u8 WriteMask;
+		bool Enable = false;
+		bool LogicOpEnable = false;
+		BlendFactor Src = BlendFactor::One;
+		BlendFactor Dest = BlendFactor::Zero;
+		BlendOp Op = BlendOp::Add;
+		BlendFactor SrcAlpha = BlendFactor::One;
+		BlendFactor DestAlpha = BlendFactor::Zero;
+		BlendOp AlphaOp = BlendOp::Add;
+		LogicOp LogicOp = LogicOp::Noop;
+		u8 WriteMask = 0x0f;
 
 	};
-	bool AlphaToCoverageEnable;
-	bool IndependentBlendEnable;
+	bool AlphaToCoverageEnable = false;
+	bool IndependentBlendEnable = false;
 	RenderTarget RenderTargets[MaxRenderTargetNumber];
 };
+
+enum class DepthWriteMask
+{
+	Zero,
+	All
+};
+
+enum class StencilOp
+{
+	Keep,
+	Zero,
+	Replace,
+	IncrSat,
+	DecrSat,
+	Invert,
+	Incr,
+	Decr
+};
+
+struct DepthStencilDesc
+{
+	bool DepthEnable = true;
+	DepthWriteMask DepthWriteMask = DepthWriteMask::All;
+	ComparisonFunc DepthFunc = ComparisonFunc::Less;
+
+	bool StencilEnable = false;
+	u8 StencilReadMask = 0xff;
+	u8 StencilWriteMask = 0xff;
+
+	StencilOp FrontStencilFail = StencilOp::Keep;
+	StencilOp FrontStencilDepthFail = StencilOp::Keep;
+	StencilOp FrontStencilPass = StencilOp::Keep;
+	ComparisonFunc FrontStencilFunc = ComparisonFunc::Always;
+
+	StencilOp BackStencilFail = StencilOp::Keep;
+	StencilOp BackStencilDepthFail = StencilOp::Keep;
+	StencilOp BackStencilPass = StencilOp::Keep;
+	ComparisonFunc BackStencilFunc = ComparisonFunc::Always;
+};
+
 
 class GraphicPipeline
 {
 public:
+	struct Desc
+	{
+		std::vector<InputLayoutDesc>  InputLayout;
+		RootSignature* RootSignature;
+		ShaderObject* VertexShader;
+		ShaderObject* PixelShader;
+		BlendDesc       BlendState;
+		u32             SampleMask = 0xffffffff;
+		RasterizerDesc  RasterizerState;
+		DepthStencilDesc DepthStencilState;
+		PrimitiveTopology Topology = PrimitiveTopology::Triangle;
+		std::vector<PixelFormat> RVTFormats = { PixelFormat::R8G8B8A8_UNORM };
+		PixelFormat DSVFormat = PixelFormat::D32_FLOAT_S8X24_UINT;
+		u32 SampleCount = 1;
+		u32 SampleQuality = 0;
+	};
 
-private:
-	InputLayout* _InputLayout;
-	RootSignature* _RootSignature;
-	std::vector<u8> _VertexShader;
-	std::vector<u8> _PixelShader;
-	std::vector<u8> _HullShader;
-	std::vector<u8> _DomainShader;
-	std::vector<u8> _GeometryShader;
-	BlendDesc _BlendState;
-	u32 _SampleMask;
-	RasterizerDesc _RasterizerState;
-
+	virtual ~GraphicPipeline() {}
+protected:
+	Desc _Desc;
 };

@@ -5,8 +5,8 @@ void VisibilityBufferRP::Init()
 	RenderPath::Init();
 
 	const RenderConfig& Config = Renderer::Instance().Config();
-	_DirectQueue = _Device->CreateCommandQueue(CommandType::Direct);
-	_CommandAllocator = _Device->CreateCommandAllocator(CommandType::Direct);
+	_DirectQueue = RHI.CreateCommandQueue(CommandType::Direct);
+	_CommandAllocator = RHI.CreateCommandAllocator(CommandType::Direct);
 
 	SwapChain::Config sc = {
 		.Width = Config.FrameWidth,
@@ -17,7 +17,7 @@ void VisibilityBufferRP::Init()
 		.Format = PixelFormat::R8G8B8A8_UNORM,
 	};
 
-	_SwapChain = _Device->CreateSwapChain(sc, _DirectQueue, Renderer::Instance().HWND());
+	_SwapChain = RHI.CreateSwapChain(sc, _DirectQueue, Renderer::Instance().HWND());
 	_FrameIndex = _SwapChain->CurrentFrameIndex();
 }
 void VisibilityBufferRP::Render()

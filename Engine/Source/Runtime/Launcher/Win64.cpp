@@ -4,41 +4,19 @@
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 611; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
 
-static u32 KeyMods(void)
+static i32 sKeyCodeMap[0xff];
+struct WindowsKeyCodeMapInitializer
 {
-    u32 mods = 0;
-
-    if (GetKeyState(VK_SHIFT) & 0x8000)
-        mods |= static_cast<u32>(KeyModifier::Shift);
-    if (GetKeyState(VK_CONTROL) & 0x8000)
-        mods |= static_cast<u32>(KeyModifier::Ctrl);
-    if (GetKeyState(VK_MENU) & 0x8000)
-        mods |= static_cast<u32>(KeyModifier::Alt);
-    if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000)
-        mods |= static_cast<u32>(KeyModifier::Super);
-    if (GetKeyState(VK_CAPITAL) & 1)
-        mods |= static_cast<u32>(KeyModifier::CapsLock);
-    if (GetKeyState(VK_NUMLOCK) & 1)
-        mods |= static_cast<u32>(KeyModifier::NumLock);
-
-    return mods;
-}
-
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    static i32 KeyCodeMap[0xff];
-    static bool Init = false;
-    if (!Init) [[unlikely]]
+    WindowsKeyCodeMapInitializer()
     {
-        Init = true;
-        std::memset(KeyCodeMap, -1, sizeof(u32) * 0xff);
-#define KEYCODE(VK,KEY)  assert(VK < 0xff); KeyCodeMap[VK] = static_cast<i32>(KEY);
+        std::memset(sKeyCodeMap, -1, sizeof(u32) * 0xff);
+#define KEYCODE(VK,KEY)  assert(VK < 0xff); sKeyCodeMap[VK] = static_cast<i32>(KEY);
         KEYCODE(VK_LBUTTON, KeyType::LeftMouseButton);
         KEYCODE(VK_RBUTTON, KeyType::RightMouseButton);
         KEYCODE(VK_MBUTTON, KeyType::MiddleMouseButton);
-        KEYCODE(VK_BACK,    KeyType::BackSpace);
-        KEYCODE(VK_TAB,     KeyType::Tab);
-        KEYCODE(VK_PAUSE,  KeyType::Pause);
+        KEYCODE(VK_BACK, KeyType::BackSpace);
+        KEYCODE(VK_TAB, KeyType::Tab);
+        KEYCODE(VK_PAUSE, KeyType::Pause);
         KEYCODE(VK_CAPITAL, KeyType::CapsLock);
         KEYCODE(VK_ESCAPE, KeyType::Escape);
         KEYCODE(VK_SPACE, KeyType::SpaceBar);
@@ -87,7 +65,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
         KEYCODE(0x58, KeyType::X);
         KEYCODE(0x59, KeyType::Y);
         KEYCODE(0x5A, KeyType::Z);
-        
+
         KEYCODE(VK_NUMPAD0, KeyType::NumPad0);
         KEYCODE(VK_NUMPAD1, KeyType::NumPad1);
         KEYCODE(VK_NUMPAD2, KeyType::NumPad2);
@@ -120,8 +98,32 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 #undef KEYCODE
     }
+};
+WindowsKeyCodeMapInitializer sKeyCodeMapInitializer;
+ 
 
+static u32 KeyMods(void)
+{
+    u32 mods = 0;
 
+    if (GetKeyState(VK_SHIFT) & 0x8000)
+        mods |= static_cast<u32>(KeyModifier::Shift);
+    if (GetKeyState(VK_CONTROL) & 0x8000)
+        mods |= static_cast<u32>(KeyModifier::Ctrl);
+    if (GetKeyState(VK_MENU) & 0x8000)
+        mods |= static_cast<u32>(KeyModifier::Alt);
+    if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000)
+        mods |= static_cast<u32>(KeyModifier::Super);
+    if (GetKeyState(VK_CAPITAL) & 1)
+        mods |= static_cast<u32>(KeyModifier::CapsLock);
+    if (GetKeyState(VK_NUMLOCK) & 1)
+        mods |= static_cast<u32>(KeyModifier::NumLock);
+
+    return mods;
+}
+
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
     switch (message)
     {
     case WM_KEYDOWN:
@@ -131,7 +133,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
         {    
             const u32 key = static_cast<u32>(wParam);
             assert(key < 0xff);
-            i32 keyCode = KeyCodeMap[key];
+            i32 keyCode = sKeyCodeMap[key];
             if (keyCode >= 0)
             {
                 KeyEvent keyEvent = { 

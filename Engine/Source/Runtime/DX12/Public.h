@@ -1,20 +1,8 @@
 #pragma once
 
 #ifdef WINDOWS
-
-#define DX12_API __declspec(dllexport)
-#include <wrl/client.h>
-using namespace Microsoft::WRL;
-
-
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <dxgi1_3.h>
-#ifdef _DEBUG
-#include <dxgidebug.h>
+#define DX12_API __declspec(dllexport) 
 #endif
 
-#endif
-
-#include "Device.h"
+DX12_API RenderDevice* CreateDX12Device();
 

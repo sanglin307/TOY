@@ -143,6 +143,7 @@ copy $(SolutionDir)Engine\Source\Thirdparty\DXC\bin\x64\dxil.dll $(SolutionDir)B
     <ClInclude Include="Private.h" />
     <ClInclude Include="Compiler.h" />
     <ClInclude Include="Public.h" />
+    <ClInclude Include="Reflection.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Compiler.cpp" />

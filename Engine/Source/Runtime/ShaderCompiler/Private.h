@@ -1,6 +1,5 @@
 #pragma once
-
-#pragma once
+ 
 
 #ifdef WINDOWS
 #define SHADER_API __declspec(dllexport)
@@ -18,4 +17,5 @@ using namespace Microsoft::WRL;
 #include "../Core/Public.h"
 
 
+#include "Reflection.h"
 #include "Compiler.h"

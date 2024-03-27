@@ -15,10 +15,11 @@ using namespace Microsoft::WRL;
 
 
 #include "../Core/Public.h"
+#include "../ShaderCompiler/Public.h"
 #include "../Renderer/Public.h"
+
 
 #include "Device.h"
 #include "Resource.h"
 #include "Command.h"
 #include "Pipeline.h"
-#include "Utils.h"
