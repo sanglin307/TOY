@@ -7,10 +7,12 @@ public :
 	DX12_API virtual void Destroy() override;
 	DX12_API virtual CommandQueue* CreateCommandQueue(const CommandType type) override;
 	DX12_API virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
+	DX12_API virtual CommandList* CreateCommandList(CommandAllocator* allocator, const CommandType type) override;
 	DX12_API virtual SwapChain* CreateSwapChain(const SwapChain::Config& config, CommandQueue* queue, const std::any hwnd = nullptr) override;
 	DX12_API virtual RootSignature* CreateRootSignature(const std::vector<ShaderObject*>& shaders) override;
 	DX12_API virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
 	DX12_API virtual void InitPixelFormat_Platform() override;
+	DX12_API virtual BufferResource* CreateBuffer(CommandList* commandList,u64 size, u8* initData, bool needCpuAccess = false, bool needAlignment = true) override;
 
 private:
 	void ReportLiveObjects();

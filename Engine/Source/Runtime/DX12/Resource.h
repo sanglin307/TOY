@@ -40,6 +40,22 @@ private:
 	ComPtr<ID3D12DescriptorHeap> _Handle = nullptr;
 };
 
+class DX12BufferResource : public BufferResource
+{
+	friend class DX12Device;
+public:
+	virtual ~DX12BufferResource() { _Handle.Reset(); }
+
+private:
+	DX12BufferResource(ComPtr<ID3D12Resource> handle)
+	{
+		_Handle = handle;
+	}
+
+private:
+	ComPtr<ID3D12Resource> _Handle;
+};
+
 class DX12Resource : public RenderResource
 {
 	friend class DX12Device;

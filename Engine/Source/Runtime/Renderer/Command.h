@@ -27,3 +27,14 @@ protected:
 	CommandType _Type;
 
 };
+
+class CommandList
+{
+public:
+	virtual ~CommandList() {};
+	virtual std::any Handle() { return nullptr; }
+
+protected:
+	CommandType _Type;
+	CommandAllocator* _Allocator;
+};

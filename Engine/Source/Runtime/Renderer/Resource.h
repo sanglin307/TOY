@@ -150,6 +150,14 @@ public :
     virtual std::any Handle() { return nullptr; }
 };
 
+class BufferResource : public RenderResource
+{
+public:
+    bool NeedAlignment = true;
+    u64  Size;
+    u64  Flags;
+};
+
 enum class ViewDimension
 {
     Buffer = 0,

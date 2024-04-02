@@ -258,6 +258,20 @@ CommandAllocator* DX12Device::CreateCommandAllocator(const CommandType type)
     return nullptr;
 }
 
+CommandList* DX12Device::CreateCommandList(CommandAllocator* allocator, const CommandType type)
+{
+    assert(_Device);
+    ComPtr<ID3D12GraphicsCommandList> commandList;
+    if (SUCCEEDED(_Device->CreateCommandList(0,TranslateCommandType(type), std::any_cast<ID3D12CommandAllocator*>(allocator->Handle()), nullptr, IID_PPV_ARGS(&commandList))))
+    {
+        commandList->Close();
+        return new DX12CommandList(allocator,type, commandList);
+    }
+
+    assert(0);
+    return nullptr;
+}
+
 SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQueue* queue, const std::any hwnd)
 {
     assert(_Factory);

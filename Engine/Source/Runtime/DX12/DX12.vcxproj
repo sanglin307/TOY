@@ -146,7 +146,6 @@
   <ItemGroup>
     <ClCompile Include="Command.cpp" />
     <ClCompile Include="Device.cpp" />
-    <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="Resource.cpp" />
   </ItemGroup>
   <ItemGroup>

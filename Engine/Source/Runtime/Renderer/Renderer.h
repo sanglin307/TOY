@@ -33,6 +33,9 @@ public:
     RENDERER_API const RenderConfig& Config() const { return _Config; }
     const std::any HWND() const { return _HWND; }
     inline RenderDevice& GetDevice() { return *_Device; }
+    inline CommandList* GetDirectCommandList() { return _DirectCommandList; }
+    inline CommandList* GetComputeCommandList() { return _ComputeCommandList; }
+    inline CommandList* GetCopyCommandList() { return _CopyCommandList; }
 
 private:
     Renderer() = default;
@@ -43,6 +46,22 @@ private:
 
 private:
     RenderDevice* _Device;
+
+    CommandQueue* _DirectCommandQueue = nullptr;
+    CommandAllocator* _DirectCommandAllocator = nullptr;
+    CommandList* _DirectCommandList = nullptr;
+
+    CommandQueue* _ComputeCommandQueue = nullptr;
+    CommandAllocator* _ComputeCommandAllocator = nullptr;
+    CommandList* _ComputeCommandList = nullptr;
+
+    CommandQueue* _CopyCommandQueue = nullptr;
+    CommandAllocator* _CopyCommandAllocator = nullptr;
+    CommandList* _CopyCommandList = nullptr;
+
+    SwapChain* _SwapChain = nullptr;
+    u32 _FrameIndex = 0;
+
     RenderConfig _Config;
     RenderScene* _Scene;
     RenderPath* _RenderPath;

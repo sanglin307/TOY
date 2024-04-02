@@ -11,8 +11,7 @@ public:
 	virtual void Destroy();
 
 protected:
-	SwapChain* _SwapChain = nullptr;
-	u32 _FrameIndex = 0;
+
 
 };
 

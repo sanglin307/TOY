@@ -8,6 +8,5 @@ public:
 	virtual void Destroy() override;
 
 private:
-	CommandQueue* _DirectQueue = nullptr;
-	CommandAllocator* _CommandAllocator = nullptr;
+	
 };
