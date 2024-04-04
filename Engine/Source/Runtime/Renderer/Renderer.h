@@ -22,6 +22,14 @@ struct RenderConfig
 
 };
 
+class RHIModule : public ModuleInterface
+{
+public:
+    virtual void Init() override {}
+    virtual void Destroy() override {}
+    virtual RenderDevice* CreateDevice() = 0;
+};
+
 class Renderer
 {
 public:
@@ -33,10 +41,7 @@ public:
     RENDERER_API const RenderConfig& Config() const { return _Config; }
     const std::any HWND() const { return _HWND; }
     inline RenderDevice& GetDevice() { return *_Device; }
-    inline CommandList* GetDirectCommandList() { return _DirectCommandList; }
-    inline CommandList* GetComputeCommandList() { return _ComputeCommandList; }
-    inline CommandList* GetCopyCommandList() { return _CopyCommandList; }
-
+    RENDERER_API inline DescriptorHeap* RVTDescriptorHeap() { return _RVTDescriptorHeap; }
 private:
     Renderer() = default;
     Renderer(const Renderer& rhs) = delete;
@@ -46,18 +51,12 @@ private:
 
 private:
     RenderDevice* _Device;
+    CommandManager* _CommandMgr;
 
-    CommandQueue* _DirectCommandQueue = nullptr;
-    CommandAllocator* _DirectCommandAllocator = nullptr;
-    CommandList* _DirectCommandList = nullptr;
-
-    CommandQueue* _ComputeCommandQueue = nullptr;
-    CommandAllocator* _ComputeCommandAllocator = nullptr;
-    CommandList* _ComputeCommandList = nullptr;
-
-    CommandQueue* _CopyCommandQueue = nullptr;
-    CommandAllocator* _CopyCommandAllocator = nullptr;
-    CommandList* _CopyCommandList = nullptr;
+    DescriptorHeap* _GlobalDescriptorHeap;
+    DescriptorHeap* _SamplerDescriptorHeap;
+    DescriptorHeap* _RVTDescriptorHeap;
+    DescriptorHeap* _DSVDescriptorHeap;
 
     SwapChain* _SwapChain = nullptr;
     u32 _FrameIndex = 0;

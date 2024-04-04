@@ -113,8 +113,9 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Core.lib;DX12.lib;ShaderCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>DX12.dll</DelayLoadDLLs>
+      <AdditionalDependencies>Core.lib;ShaderCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -148,6 +149,7 @@
     <ClInclude Include="VisibilityBufferRP.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Command.cpp" />
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="Renderer.cpp" />

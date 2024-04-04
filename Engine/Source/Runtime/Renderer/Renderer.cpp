@@ -24,22 +24,26 @@ void Renderer::Init(std::any hwnd)
  
 	if (_Config.API == RenderAPI::DX12)
 	{
-		_Device = CreateDX12Device();
+		ModuleInterface* mi = ModuleManager::LoadModule("DX12");
+		assert(mi);
+		RHIModule* rhi = (RHIModule*)mi;
+		_Device = rhi->CreateDevice();
 		_Device->InitPixelFormat();
 		_Device->Init();
 	}
 
-	_DirectCommandQueue = RHI.CreateCommandQueue(CommandType::Direct);
-	_DirectCommandAllocator = RHI.CreateCommandAllocator(CommandType::Direct);
-	_DirectCommandList = RHI.CreateCommandList(_DirectCommandAllocator, CommandType::Direct);
+	_CommandMgr = new CommandManager;
+	_CommandMgr->Init();
 
-	_ComputeCommandQueue = RHI.CreateCommandQueue(CommandType::Compute);
-	_ComputeCommandAllocator = RHI.CreateCommandAllocator(CommandType::Compute);
-	_ComputeCommandList = RHI.CreateCommandList(_ComputeCommandAllocator, CommandType::Compute);
+	constexpr u32 GlobalDescriptorNumber = 2000;
+	constexpr u32 SamplerDescriptorNumber = 500;
+	constexpr u32 RVTDescriptorNumber = 64;
+	constexpr u32 DSVDescriptorNumber = 32;
 
-	_CopyCommandQueue = RHI.CreateCommandQueue(CommandType::Copy);
-	_CopyCommandAllocator = RHI.CreateCommandAllocator(CommandType::Copy);
-	_CopyCommandList = RHI.CreateCommandList(_CopyCommandAllocator, CommandType::Copy);
+	_GlobalDescriptorHeap = RHI.CreateDescriptorHeap(DescriptorType::CBV_SRV_UAV, GlobalDescriptorNumber, true);
+	_SamplerDescriptorHeap = RHI.CreateDescriptorHeap(DescriptorType::Sampler, SamplerDescriptorNumber, true);
+	_RVTDescriptorHeap = RHI.CreateDescriptorHeap(DescriptorType::RVT, RVTDescriptorNumber, false);
+	_DSVDescriptorHeap = RHI.CreateDescriptorHeap(DescriptorType::DSV, DSVDescriptorNumber, false);
 
 	SwapChain::Config sc = {
 		.Width = _Config.FrameWidth,
@@ -50,7 +54,7 @@ void Renderer::Init(std::any hwnd)
 		.Format = PixelFormat::R8G8B8A8_UNORM,
 	};
 
-	_SwapChain = RHI.CreateSwapChain(sc, _DirectCommandQueue, Renderer::Instance().HWND());
+	_SwapChain = RHI.CreateSwapChain(sc, _CommandMgr->DirectQueue(), Renderer::Instance().HWND());
 	_FrameIndex = _SwapChain->CurrentFrameIndex();
 
 	_Scene = new RenderScene;
@@ -78,70 +82,32 @@ void Renderer::Destroy()
 	delete _RenderPath;
 	_RenderPath = nullptr;
 
+	delete _GlobalDescriptorHeap;
+	_GlobalDescriptorHeap = nullptr;
+
+	delete _SamplerDescriptorHeap; 
+	_SamplerDescriptorHeap = nullptr;
+
+	delete _RVTDescriptorHeap;
+	_RVTDescriptorHeap = nullptr;
+
+	delete _DSVDescriptorHeap;
+	_DSVDescriptorHeap = nullptr;
+
 	if (_SwapChain)
 	{
 		delete _SwapChain;
 		_SwapChain = nullptr;
 	}
 
+	_CommandMgr->Destroy();
+	delete _CommandMgr;
+	_CommandMgr = nullptr;
+
 	RootSignatureManager::Destroy();
 	PipelineManager::Destroy();
 	ShaderManager::Destroy();
-
-	if (_CopyCommandList)
-	{
-		delete _CopyCommandList;
-		_CopyCommandList = nullptr;
-	}
-
-	if (_CopyCommandQueue)
-	{
-		delete _CopyCommandQueue;
-		_CopyCommandQueue = nullptr;
-	}
-
-	if (_CopyCommandAllocator)
-	{
-		delete _CopyCommandAllocator;
-		_CopyCommandAllocator = nullptr;
-	}
-
-	if (_ComputeCommandList)
-	{
-		delete _ComputeCommandList;
-		_ComputeCommandList = nullptr;
-	}
-
-	if (_ComputeCommandQueue)
-	{
-		delete _ComputeCommandQueue;
-		_ComputeCommandQueue = nullptr;
-	}
-
-	if (_DirectCommandAllocator)
-	{
-		delete _DirectCommandAllocator;
-		_DirectCommandAllocator = nullptr;
-	}
-
-	if (_DirectCommandList)
-	{
-		delete _DirectCommandList;
-		_DirectCommandList = nullptr;
-	}
-
-	if (_DirectCommandQueue)
-	{
-		delete _DirectCommandQueue;
-		_DirectCommandQueue = nullptr;
-	}
-
-	if (_DirectCommandAllocator)
-	{
-		delete _DirectCommandAllocator;
-		_DirectCommandAllocator = nullptr;
-	}
-
+ 
 	_Device->Destroy();
 	delete _Device;
 	_Device = nullptr;

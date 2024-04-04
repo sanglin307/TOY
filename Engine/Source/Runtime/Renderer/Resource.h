@@ -130,15 +130,19 @@ public:
     {
         DescriptorType Type;
         u32 Number;
-        u32 Size;
+        u32 Stride;
         bool GPUVisible;
     };
 
     virtual ~DescriptorHeap() {};
     virtual std::any Handle() { return nullptr; }
-
+    virtual std::any GetCPUDescriptorHandle(u32 reserve = 0) { return nullptr; }
+    virtual std::any GetGPUDescriptorHandle(u32 reserve = 0) { return nullptr; }
+    u32 GetStride() { return _Config.Stride; }
+  
 protected:
     Config _Config;
+    u32 _Offset = 0;
 };
 
  
@@ -155,6 +159,7 @@ class BufferResource : public RenderResource
 public:
     bool NeedAlignment = true;
     u64  Size;
+    u32  Stride;
     u64  Flags;
 };
 
@@ -168,60 +173,6 @@ enum class ViewDimension
     Texture2DMS,
     Texture2DMSArray,
     Texture3D
-};
-
-class ResourceView
-{
-public:
-    virtual ~ResourceView() {};
-};
-
-class RenderTargetView : public ResourceView
-{
-public:
-    struct Config
-    {
-        PixelFormat Format;
-        ViewDimension Dimension;
-        u64 FirstElement = 0;
-        u32 NumElements = 0;
-        u32 MipSlice = 0;
-        u32 PlaneSlice = 0;
-        u32 FirstArraySlice = 0;
-        u32 ArraySize = 0;
-        u32 FirstDepthSlice = 0;
-        i32 DepthSize = -1;
-    };
-
-    ~RenderTargetView() {};
-
-protected:
-    RenderResource* _Resource = nullptr;
-    Config _Config;
-};
-
-class UnorderedAccessView : public ResourceView
-{
-private:
-    RenderResource* _Resource = nullptr;
-    RenderResource* _CounterResource = nullptr;
-};
-
-class ShaderResourceView : public ResourceView
-{
-private:
-    RenderResource* _Resource = nullptr;
-};
-
-class ConstantBufferView : public ResourceView
-{
-private:
-};
-
-class DepthStencilView : public ResourceView
-{
-private:
-    RenderResource* _Resource = nullptr;
 };
 
 class SwapChain
@@ -243,7 +194,5 @@ public:
 
 protected:
     Config _Config;
-    DescriptorHeap* _DescriptorHeap = nullptr;
     std::vector<RenderResource*> _RenderTargets;
-    std::vector<RenderTargetView*> _RenderTargetViews;
 };

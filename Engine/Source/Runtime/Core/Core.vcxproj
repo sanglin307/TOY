@@ -132,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Module.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="Path.h" />
@@ -141,6 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Log.cpp" />
+    <ClCompile Include="Module.cpp" />
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="Platform.cpp" />
   </ItemGroup>

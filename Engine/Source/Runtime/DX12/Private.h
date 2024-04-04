@@ -18,7 +18,7 @@ using namespace Microsoft::WRL;
 #include "../ShaderCompiler/Public.h"
 #include "../Renderer/Public.h"
 
-
+#include "Module.h"
 #include "Device.h"
 #include "Resource.h"
 #include "Command.h"

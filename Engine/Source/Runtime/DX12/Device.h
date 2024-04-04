@@ -8,6 +8,7 @@ public :
 	DX12_API virtual CommandQueue* CreateCommandQueue(const CommandType type) override;
 	DX12_API virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
 	DX12_API virtual CommandList* CreateCommandList(CommandAllocator* allocator, const CommandType type) override;
+	DX12_API virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) override;
 	DX12_API virtual SwapChain* CreateSwapChain(const SwapChain::Config& config, CommandQueue* queue, const std::any hwnd = nullptr) override;
 	DX12_API virtual RootSignature* CreateRootSignature(const std::vector<ShaderObject*>& shaders) override;
 	DX12_API virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
@@ -36,4 +37,4 @@ private:
 	ComPtr<ID3D12Device5> _Device;
 };
 
-DX12_API RenderDevice* CreateDX12Device();
+

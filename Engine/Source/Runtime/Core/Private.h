@@ -19,6 +19,7 @@
 #include <fstream>
 #include <mutex>
 #include <vector>
+#include <map>
 #include <string>
 #include <ctime>
 #include <cassert>
@@ -29,3 +30,4 @@
 #include "Log.h"
 #include "Path.h"
 #include "Platform.h"
+#include "Module.h"

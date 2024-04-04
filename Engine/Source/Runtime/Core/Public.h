@@ -21,3 +21,4 @@
 #include "Log.h"
 #include "Path.h"
 #include "Platform.h"
+#include "Module.h"

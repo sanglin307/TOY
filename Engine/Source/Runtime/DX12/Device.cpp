@@ -300,47 +300,23 @@ SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQu
         ComPtr<IDXGISwapChain3> swapChain3;
         assert(SUCCEEDED(swapChain.As<IDXGISwapChain3>(&swapChain3)));
 
-        //RVT descriptor heap
-        ComPtr<ID3D12DescriptorHeap> rvtHeap;
-        D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {
-            .Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-            .NumDescriptors = config.BufferCount,
-            .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE
-        };
-        assert(SUCCEEDED(_Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rvtHeap))));
-
-        DescriptorHeap::Config hc = {
-            .Type = DescriptorType::RVT,
-            .Number = config.BufferCount,
-            .Size = _Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV),
-            .GPUVisible = false,
-        };
-
-        DX12DescriptorHeap* descriptorHeap = new DX12DescriptorHeap(hc, rvtHeap);
-
         std::vector<RenderResource*> rtResources;
-        std::vector<RenderTargetView*> rvts;
+        std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rvts;
         rtResources.resize(config.BufferCount);
         rvts.resize(config.BufferCount);
-        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = rvtHeap->GetCPUDescriptorHandleForHeapStart();
+        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(Renderer::Instance().RVTDescriptorHeap()->GetCPUDescriptorHandle(config.BufferCount));
         for (u32 n = 0; n < config.BufferCount; n++)
         {
             ComPtr<ID3D12Resource> res;
             assert(SUCCEEDED(swapChain3->GetBuffer(n, IID_PPV_ARGS(&res))));
             _Device->CreateRenderTargetView(res.Get(), nullptr, rvtHandle);
 
-       
             rtResources[n] = new DX12Resource(res);
-            
-            RenderTargetView::Config rc = {
-                .Format = config.Format,
-                .Dimension = ViewDimension::Texture2D,
-            };
-            rvts[n] = new DX12RenderTargetView(rtResources[n], rc, descriptorHeap, rvtHandle);
-            rvtHandle.ptr += hc.Size;
+            rvts[n] = rvtHandle;
+            rvtHandle.ptr += Renderer::Instance().RVTDescriptorHeap()->GetStride();
         }
 
-        return new DX12SwapChain(config,descriptorHeap,rtResources, rvts, swapChain3);
+        return new DX12SwapChain(config,rtResources, rvts, swapChain3);
     }
 
 
@@ -813,9 +789,4 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
     assert(SUCCEEDED(_Device->CreateGraphicsPipelineState(&dxDesc, IID_PPV_ARGS(&pso))));
 
     return new DX12GraphicPipeline(pso);
-}
- 
-RenderDevice* CreateDX12Device()
-{
-    return new DX12Device;
 }

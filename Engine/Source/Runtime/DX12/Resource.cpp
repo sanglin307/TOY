@@ -1,5 +1,28 @@
 #include "Private.h"
 
+std::any DX12DescriptorHeap::Handle()
+{
+    return _Handle.Get();
+}
+
+std::any DX12DescriptorHeap::GetCPUDescriptorHandle(u32 reserve)
+{
+    assert(_Offset + reserve < _Config.Number);
+    D3D12_CPU_DESCRIPTOR_HANDLE base = _Handle->GetCPUDescriptorHandleForHeapStart();
+    base.ptr += _Offset * _Config.Stride;
+    _Offset += reserve;
+    return base;
+}
+
+std::any DX12DescriptorHeap::GetGPUDescriptorHandle(u32 reserve)
+{
+    assert(_Offset + reserve < _Config.Number);
+    D3D12_GPU_DESCRIPTOR_HANDLE base = _Handle->GetGPUDescriptorHandleForHeapStart();
+    base.ptr += _Offset * _Config.Stride;
+    _Offset += reserve;
+    return base;
+}
+
 u32 DX12SwapChain::CurrentFrameIndex()
 {
     assert(_Handle);
@@ -8,24 +31,60 @@ u32 DX12SwapChain::CurrentFrameIndex()
 
 DX12SwapChain::~DX12SwapChain()
 {
-    if (_DescriptorHeap)
-    {
-        delete _DescriptorHeap;
-        _DescriptorHeap = nullptr;
-    }
-
     for (RenderResource* res : _RenderTargets)
     {
         delete res;
     }
     _RenderTargets.clear();
-
-    for (RenderTargetView* view : _RenderTargetViews)
-    {
-        delete view;
-    }
-    _RenderTargetViews.clear();
     _Handle.Reset();
+}
+
+D3D12_DESCRIPTOR_HEAP_TYPE TranslateDescriptorType(DescriptorType type)
+{
+    switch (type)
+    {
+    case DescriptorType::CBV_SRV_UAV:
+        return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    case DescriptorType::Sampler:
+        return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+    case DescriptorType::RVT:
+        return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    case DescriptorType::DSV:
+        return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    default:
+        break;
+    }
+
+    assert(0);
+    return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
+}
+
+DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible)
+{
+    assert(_Device);
+
+    D3D12_DESCRIPTOR_HEAP_TYPE heapType = TranslateDescriptorType(type);
+    if (heapType == D3D12_DESCRIPTOR_HEAP_TYPE_RTV || heapType == D3D12_DESCRIPTOR_HEAP_TYPE_DSV)
+    {
+        gpuVisible = false;
+    }
+
+    ComPtr<ID3D12DescriptorHeap> heap;
+    D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {
+        .Type = heapType,
+        .NumDescriptors = num,
+        .Flags = gpuVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE
+    };
+    assert(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
+
+    DescriptorHeap::Config hc = {
+        .Type = type,
+        .Number = num,
+        .Stride = _Device->GetDescriptorHandleIncrementSize(heapType),
+        .GPUVisible = gpuVisible,
+    };
+
+    return new DX12DescriptorHeap(hc, heap);
 }
 
 BufferResource* DX12Device::CreateBuffer(CommandList* commandList, u64 size, u8* initData, bool needCpuAccess, bool needAlignment)

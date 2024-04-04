@@ -18,5 +18,3 @@
 #include "RenderScene.h"
 #include "Renderer.h"
 #include "Device.h"
-
-#include "../DX12/Public.h"  // dx12 implementation need renderer's base class, so include it here.

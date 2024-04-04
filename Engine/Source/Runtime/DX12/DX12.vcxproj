@@ -115,7 +115,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
-      <AdditionalDependencies>Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Core.lib;Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -137,6 +137,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Command.h" />
+    <ClInclude Include="Module.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="Pipeline.h" />
@@ -146,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="Command.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Module.cpp" />
     <ClCompile Include="Resource.cpp" />
   </ItemGroup>
   <ItemGroup>
