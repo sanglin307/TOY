@@ -1,5 +1,7 @@
 #include "Private.h"
 
+IMPLEMENT_MODULE(DX12RHIModule)
+
 void DX12RHIModule::Init()
 {
 
@@ -15,7 +17,4 @@ RenderDevice* DX12RHIModule::CreateDevice()
 	return new DX12Device;
 }
 
-extern "C"  DX12_API ModuleInterface* CreateModule()
-{
-	return new DX12RHIModule;
-}
+

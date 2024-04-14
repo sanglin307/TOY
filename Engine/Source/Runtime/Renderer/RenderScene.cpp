@@ -30,17 +30,32 @@ void RenderScene::Init()
 	}
 
 	GraphicPipeline::Desc desc {
-		.RootSignature = RHI.CreateRootSignature(shaders),
+		.RootSignature = RD.CreateRootSignature(shaders),
 	    .VertexShader = vs,
 	    .PixelShader = ps
 	};
 
 	RootSignatureManager::Add(desc.RootSignature);
 
-	RHI.CreateInputLayout(shaders, InputSlotMapping::Interleaved, desc.InputLayout);
-	GraphicPipeline* pso = RHI.CreateGraphicPipeline(desc);
+	RD.CreateInputLayout(shaders, InputSlotMapping::Interleaved, desc.InputLayout);
+	GraphicPipeline* pso = RD.CreateGraphicPipeline(desc);
 	PipelineManager::Add(pso);
+ 
 
+	f32 aspectRatio = RendererModule::Instance().Config().FrameWidth * 1.f / RendererModule::Instance().Config().FrameHeight;
+
+	Vertex triangleVertices[] =
+	{
+		{ { 0.0f, 0.25f * aspectRatio, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+		{ { 0.25f, -0.25f * aspectRatio, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+		{ { -0.25f, -0.25f * aspectRatio, 0.0f }, { 0.0f, 0.0f, 1.0f } }
+	};
+
+	BufferResource* VB = RD.CreateBuffer(sizeof(triangleVertices), (u32)ResourceUsage::VertexBuffer, (u8*)triangleVertices,0, true);
+
+	SceneConstantBuffer scene{};
+	BufferResource* CB = RD.CreateBuffer(sizeof(SceneConstantBuffer), (u32)ResourceUsage::ConstBuffer,(u8*)&scene, 0, true);
+	
 }
 
 void RenderScene::Destroy()

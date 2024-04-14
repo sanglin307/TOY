@@ -1,5 +1,7 @@
 #include "Private.h"
 
+typedef ModuleInterface* (*fnCreateModule)();
+
 std::map<std::string, ModuleInterface*> ModuleManager::_ModuleMap;
 
 ModuleInterface* ModuleManager::LoadModule(const std::string& name)

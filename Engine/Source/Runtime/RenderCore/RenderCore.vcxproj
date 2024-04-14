@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{1e229220-0249-45eb-b4f7-b11ebb284ed9}</ProjectGuid>
-    <RootNamespace>ShaderCompiler</RootNamespace>
+    <ProjectGuid>{d9af6e29-2a88-41a5-b89e-40124086b409}</ProjectGuid>
+    <RootNamespace>RenderCore</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -109,19 +109,13 @@
       <PreprocessorDefinitions>_DEBUG;WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\Source\Thirdparty\DXC\inc\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <DelayLoadDLLs>dxcompiler.dll</DelayLoadDLLs>
-      <AdditionalDependencies>Core.lib;dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\;$(SolutionDir)Engine\Source\Thirdparty\DXC\lib\x64\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
     </Link>
-    <PostBuildEvent>
-      <Command>copy $(SolutionDir)Engine\Source\Thirdparty\DXC\bin\x64\dxcompiler.dll $(SolutionDir)Bin\Win64\
-copy $(SolutionDir)Engine\Source\Thirdparty\DXC\bin\x64\dxil.dll $(SolutionDir)Bin\Win64\</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -140,12 +134,22 @@ copy $(SolutionDir)Engine\Source\Thirdparty\DXC\bin\x64\dxil.dll $(SolutionDir)B
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Command.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="Device.h" />
+    <ClInclude Include="Module.h" />
+    <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Private.h" />
-    <ClInclude Include="Compiler.h" />
     <ClInclude Include="Public.h" />
+    <ClInclude Include="Reflection.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="RHI.h" />
+    <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Compiler.cpp" />
+    <ClCompile Include="Command.cpp" />
+    <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Module.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

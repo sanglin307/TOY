@@ -12,4 +12,5 @@
 
 
 #include "../Core/Public.h"
+#include "../RenderCore/Public.h"
 #include "../Engine/Public.h"

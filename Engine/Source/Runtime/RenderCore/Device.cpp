@@ -1,5 +1,12 @@
 #include "Private.h"
 
+RenderDevice* GRenderDevice = nullptr;
+RenderDevice& RenderDevice::Instance()
+{
+	check(GRenderDevice);
+	return *GRenderDevice;
+}
+
 u8 RenderDevice::GetPixelComponentSize(PixelFormat format)
 {
 	return _Formats[(u32)format].ComponentSize;
@@ -18,6 +25,12 @@ u8 RenderDevice::GetPixelSize(PixelFormat format)
 bool RenderDevice::IsCompressedPixelFormat(PixelFormat format)
 {
 	return _Formats[(u32)format].CompressFormat;
+}
+
+void RenderDevice::Init()
+{
+	GRenderDevice = this;
+	InitPixelFormat();
 }
 
 void RenderDevice::InitPixelFormat()
@@ -239,7 +252,7 @@ PixelFormat GetInputLayoutPixelFormat(ShaderComponentType componentType, u8 comp
         else if (componentMask == 0b0001)
             return PixelFormat::R32_FLOAT;
         else
-            assert(0);
+			check(0);
     }
     else if (componentType == ShaderComponentType::UINT32)
     {
@@ -252,7 +265,7 @@ PixelFormat GetInputLayoutPixelFormat(ShaderComponentType componentType, u8 comp
         else if (componentMask == 0b0001)
             return PixelFormat::R32_UINT;
         else
-            assert(0);
+			check(0);
     }
     else if (componentType == ShaderComponentType::SINT32)
     {
@@ -265,10 +278,10 @@ PixelFormat GetInputLayoutPixelFormat(ShaderComponentType componentType, u8 comp
         else if (componentMask == 0b0001)
             return PixelFormat::R32_SINT;
         else
-            assert(0);
+			check(0);
     }
     else
-        assert(0);
+		check(0);
 
     return PixelFormat::UNKNOWN;
 }
@@ -286,14 +299,14 @@ void RenderDevice::CreateInputLayout(const std::vector<ShaderObject*>& shaders, 
     auto iter = std::find_if(shaders.begin(), shaders.end(), [](ShaderObject* s) -> bool { return s->Profile == ShaderProfile::Vertex; });
     if (iter == shaders.end())
     {
-        TOY_Warning(RenderDevice, "No vertex shader found to fill inputLayout!");
+        LOG_ERROR(RenderDevice, "No vertex shader found to fill inputLayout!");
         return;
     }
 
     ShaderReflection* reflection = (*iter)->Reflection;
     if (!reflection || reflection->InputParameter.size() == 0)
     {
-        TOY_Warning(RenderDevice, std::format("vertex shader don't contain correct reflection information ({})", (*iter)->DebugName));
+        LOG_ERROR(RenderDevice, std::format("vertex shader don't contain correct reflection information ({})", (*iter)->DebugName));
         return;
     }
 
@@ -332,10 +345,10 @@ void RenderDevice::CreateInputLayout(const std::vector<ShaderObject*>& shaders, 
 		}
 		else if (slotMapping == InputSlotMapping::Custom)
 		{
-			assert(0); // todo.
+			check(0); // todo.
 		}
 		else
-			assert(0); // todo.
+			check(0); // todo.
     }
 
 }

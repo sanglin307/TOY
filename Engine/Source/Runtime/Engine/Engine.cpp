@@ -6,18 +6,28 @@ GameEngine& GameEngine::Instance()
 	return Inst;
 }
 
+IRendererModule& GetRendererModule()
+{
+	static IRendererModule* module = nullptr;
+	if (module == nullptr)
+	{
+		module = static_cast<IRendererModule*>(ModuleManager::LoadModule("Renderer"));
+	}
+
+	return *module;
+}
+
 void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 {
 	if (cmds.size() > 0)
 	{
 		for (auto cmd : cmds)
 		{
-			TOY_Log(Engine, std::format("launch argument:{}", cmd));
+			LOG_INFO(Engine, std::format("launch argument:{}", cmd));
 		}
 	}
 
 	_Params = cmds;
-	Renderer::Instance().ParseCmds(cmds);
 }
 
 void GameEngine::Init(std::any hwnd)
@@ -25,12 +35,19 @@ void GameEngine::Init(std::any hwnd)
 	LogUtil::Init();
 	_FrameRate.Init();
 
-	Renderer::Instance().Init(hwnd);	
+	_RenderConfig = RenderConfig{
+		.API = RenderAPI::DX12,
+		.FrameCount = 3,
+		.FrameWidth = 1280,
+		.FrameHeight = 800
+	};
+
+	GetRendererModule().CreateRenderer(hwnd, _RenderConfig);
 }
 
 void GameEngine::Destroy()
 {
-	Renderer::Instance().Destroy();
+	GetRendererModule().Destroy();
 	_FrameRate.Destroy();
 	LogUtil::Destroy();
 }
@@ -42,12 +59,11 @@ void GameEngine::Update()
 
 	//Update world
 
-	Renderer::Instance().Render();
+	GetRendererModule().Render();
 }
 
 void GameEngine::FrameSize(u32& Width, u32& Height)
 {
-	const RenderConfig& Config = Renderer::Instance().Config();
-	Width = Config.FrameWidth;
-	Height = Config.FrameHeight;
+	Width = _RenderConfig.FrameWidth;
+	Height = _RenderConfig.FrameHeight;
 }

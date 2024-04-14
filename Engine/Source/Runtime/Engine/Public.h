@@ -7,3 +7,5 @@
 #include "Input.h"
 #include "FrameRate.h"
 #include "Engine.h"
+#include "StaticMesh.h"
+#include "World.h"

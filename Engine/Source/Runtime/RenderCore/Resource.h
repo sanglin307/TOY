@@ -114,6 +114,24 @@ struct PixelFormatInfo
     std::any   PlatformFormat;
 };
 
+struct Viewport
+{
+    u32 X = 0;
+    u32 Y = 0;
+    u32 Width = 1280;
+    u32 Height = 800;
+    f32 MinDepth = 0.f;
+    f32 MaxDepth = 1.f;
+};
+
+class RootSignature
+{
+public:
+    virtual ~RootSignature() {}
+    virtual std::any Handle() { return nullptr; }
+
+};
+
 enum class DescriptorType
 {
     CBV_SRV_UAV = 0,
@@ -145,22 +163,43 @@ protected:
     u32 _Offset = 0;
 };
 
- 
+enum class ResourceUsage : u32
+{
+    VertexBuffer = 0x1,
+    IndexBuffer = 0x2,
+    ConstBuffer = 0x4,
+    RenderTarget = 0x8,
+    DepthStencil = 0x10,
+
+};
+
 class RenderResource
 {
 public :
 
     virtual ~RenderResource() {};
     virtual std::any Handle() { return nullptr; }
+
+    u32 Usage = 0;
 };
 
 class BufferResource : public RenderResource
 {
 public:
     bool NeedAlignment = true;
+    bool NeedCpuAccess = false;
     u64  Size;
     u32  Stride;
-    u64  Flags;
+};
+
+class Texture2DResource : public RenderResource
+{
+public:
+    u32 Width;
+    u32 Height;
+    u16 SampleCount = 1;
+    u16 SampleQuality = 0;
+    PixelFormat Format;
 };
 
 enum class ViewDimension
@@ -192,7 +231,11 @@ public:
     virtual ~SwapChain() {};
     virtual std::any Handle() { return nullptr; }
 
+    virtual void Present(bool vSync) = 0;
+
+    Texture2DResource* RenderTarget(u32 frameIndex) { return _RenderTargets[frameIndex]; }
+
 protected:
     Config _Config;
-    std::vector<RenderResource*> _RenderTargets;
+    std::vector<Texture2DResource*> _RenderTargets;
 };

@@ -5,7 +5,7 @@ struct ShaderVariableTypeMapInitializer
 {
     ShaderVariableTypeMapInitializer()
     {
-        assert(sVariableTypeMap.size() == 0);
+        check(sVariableTypeMap.size() == 0);
         if (sVariableTypeMap.size() == 0)
         {
 #define VARTYPE(T)  sVariableTypeMap.insert(std::pair<D3D_SHADER_VARIABLE_TYPE,ShaderVariableType>(D3D_SVT_##T,ShaderVariableType::T));
@@ -85,7 +85,7 @@ std::wstring GetTargetProfile(ShaderProfile profile)
         return std::format(L"lib_6_{}", ver);
     }
 
-    assert(0);
+    check(0);
     return L"";
 }
 
@@ -102,7 +102,7 @@ ShaderVariableClass TranslateVariableClass(D3D_SHADER_VARIABLE_CLASS c)
     case D3D_SVC_MATRIX_COLUMNS:
         return ShaderVariableClass::MATRIX_COLUMNS;
     default:
-        assert(0);  // todo.
+        check(0);  // todo.
         break;
     }
 
@@ -120,7 +120,7 @@ ShaderComponentType TranslateComponentType(D3D_REGISTER_COMPONENT_TYPE c)
     case D3D_REGISTER_COMPONENT_FLOAT32:
         return ShaderComponentType::FLOAT32;
     default:
-        assert(0);  // todo.
+        check(0);  // todo.
         break;
     }
 
@@ -160,7 +160,7 @@ ShaderInputType TranslateShaderInputType(D3D_SHADER_INPUT_TYPE t)
     case D3D_SIT_UAV_FEEDBACKTEXTURE:
         return ShaderInputType::UAV_FEEDBACKTEXTURE;
     default:
-        assert(0);  // todo.
+        check(0);  // todo.
         break;
     }
 
@@ -174,7 +174,7 @@ ShaderVariableType TranslateVariableType(D3D_SHADER_VARIABLE_TYPE t)
         return iter->second;
     else
     {
-        assert(0); // not implemented. todo.
+        check(0); // not implemented. todo.
     }
 
     return ShaderVariableType::MAX;
@@ -284,8 +284,8 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
     ComPtr<IDxcCompiler3> _DXCCompiler;
     ComPtr<IDxcIncludeHandler> _DXCIncludeHandler;
 
-    assert(SUCCEEDED(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&_DXCUtils))));
-    assert(SUCCEEDED(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&_DXCCompiler))));
+    check(SUCCEEDED(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&_DXCUtils))));
+    check(SUCCEEDED(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&_DXCCompiler))));
 
     _DXCUtils->CreateDefaultIncludeHandler(&_DXCIncludeHandler);
 
@@ -299,7 +299,7 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
 
     auto fillArgs = [&argsBuffer, &ArgsBufferLength, &argsOffset, &argsParam](const std::wstring& arg) 
         {
-            assert(argsOffset + arg.size() < ArgsBufferLength);
+            check(argsOffset + arg.size() < ArgsBufferLength);
             argsParam.push_back(&argsBuffer[argsOffset]);
             arg.copy(&argsBuffer[argsOffset], arg.size());
             argsOffset += (u32)arg.size();
@@ -358,7 +358,7 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
     dxcResults->GetStatus(&hrStatus);
     if (FAILED(hrStatus))
     {
-        TOY_Error(ShaderCompiler, std::format("Shader {} {} compile error: {}", args.FileName, args.EntryName, errors));
+        LOG_ERROR(ShaderCompiler, std::format("Shader {} {} compile error: {}", args.FileName, args.EntryName, errors));
         return nullptr;
     }
 

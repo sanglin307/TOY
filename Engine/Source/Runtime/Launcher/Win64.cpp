@@ -10,7 +10,7 @@ struct WindowsKeyCodeMapInitializer
     WindowsKeyCodeMapInitializer()
     {
         std::memset(sKeyCodeMap, -1, sizeof(u32) * 0xff);
-#define KEYCODE(VK,KEY)  assert(VK < 0xff); sKeyCodeMap[VK] = static_cast<i32>(KEY);
+#define KEYCODE(VK,KEY)  check(VK < 0xff); sKeyCodeMap[VK] = static_cast<i32>(KEY);
         KEYCODE(VK_LBUTTON, KeyType::LeftMouseButton);
         KEYCODE(VK_RBUTTON, KeyType::RightMouseButton);
         KEYCODE(VK_MBUTTON, KeyType::MiddleMouseButton);
@@ -132,7 +132,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
     case WM_SYSKEYUP:
         {    
             const u32 key = static_cast<u32>(wParam);
-            assert(key < 0xff);
+            check(key < 0xff);
             i32 keyCode = sKeyCodeMap[key];
             if (keyCode >= 0)
             {

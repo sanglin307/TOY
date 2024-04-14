@@ -1,13 +1,5 @@
 #pragma once
 
-class RootSignature
-{
-public:
-	virtual ~RootSignature() {}
-	virtual std::any Handle() { return nullptr; }
-
-};
-
 enum class InputSlotClass
 {
 	PerVertex = 0,

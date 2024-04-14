@@ -20,7 +20,7 @@ D3D12_COMMAND_LIST_TYPE TranslateCommandType(const CommandType t)
         return D3D12_COMMAND_LIST_TYPE_COPY;
     else
     {
-        assert(0);
+        check(0);
         return D3D12_COMMAND_LIST_TYPE_NONE;
     }
 }
@@ -33,7 +33,7 @@ DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
 
 void DX12Device::InitPixelFormat_Platform()
 {
-    assert(_Formats.size() > 0);
+    check(_Formats.size() > 0);
     using enum PixelFormat;
     u32 index = 0;
 #define DXGIFORMAT(F)  _Formats[index].PlatformFormat = DXGI_FORMAT_##F; ++index; 
@@ -142,6 +142,8 @@ void DX12Device::InitPixelFormat_Platform()
 
 void DX12Device::Init()
 {
+    RenderDevice::Init();
+
     u32 dxgiFactoryFlags = 0;
 
 #ifdef _DEBUG
@@ -198,12 +200,12 @@ void DX12Device::Init()
     }
     else
     {
-        assert(0);
+        check(0);
     }
 
-    assert(_Factory);
-    assert(_Adapter);
-    assert(_Device);
+    check(_Factory);
+    check(_Adapter);
+    check(_Device);
 
 }
 
@@ -220,6 +222,8 @@ void DX12Device::ReportLiveObjects()
 
 void DX12Device::Destroy()
 {
+    RenderDevice::Destroy();
+
     _Device.Reset();
     _Adapter.Reset();
     _Factory.Reset();
@@ -227,9 +231,28 @@ void DX12Device::Destroy()
     ReportLiveObjects();
 }
 
+Fence* DX12Device::CreateFence(u32 frameCount)
+{
+    check(_Device);
+    u64* frameValue = new u64[frameCount];
+    for (u32 index = 0; index < frameCount; index++)
+    {
+        frameValue[index] = 1;
+    }
+
+    ComPtr<ID3D12Fence> fence;
+    check(SUCCEEDED(_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))));
+
+    HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    check(fenceEvent);
+
+    return new DX12Fence(frameValue, fenceEvent, fence);
+
+}
+
 CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
 {
-    assert(_Device);
+    check(_Device);
     D3D12_COMMAND_QUEUE_DESC queueDesc = {
         .Type = TranslateCommandType(type),
         .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE
@@ -241,40 +264,40 @@ CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
         return new DX12CommandQueue(type,commandQueue);
     }
      
-    assert(0);
+    check(0);
     return nullptr;
 }
 
 CommandAllocator* DX12Device::CreateCommandAllocator(const CommandType type)
 {
-    assert(_Device);
+    check(_Device);
     ComPtr<ID3D12CommandAllocator> commandAlloc;
     if (SUCCEEDED(_Device->CreateCommandAllocator(TranslateCommandType(type), IID_PPV_ARGS(&commandAlloc))))
     {
         return new DX12CommandAllocator(type,commandAlloc);
     }
 
-    assert(0);
+    check(0);
     return nullptr;
 }
 
 CommandList* DX12Device::CreateCommandList(CommandAllocator* allocator, const CommandType type)
 {
-    assert(_Device);
+    check(_Device);
     ComPtr<ID3D12GraphicsCommandList> commandList;
     if (SUCCEEDED(_Device->CreateCommandList(0,TranslateCommandType(type), std::any_cast<ID3D12CommandAllocator*>(allocator->Handle()), nullptr, IID_PPV_ARGS(&commandList))))
     {
         commandList->Close();
-        return new DX12CommandList(allocator,type, commandList);
+        return new DX12CommandList(type, commandList);
     }
 
-    assert(0);
+    check(0);
     return nullptr;
 }
 
-SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQueue* queue, const std::any hwnd)
+SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQueue* queue, DescriptorHeap* descriptorHeap, const std::any hwnd)
 {
-    assert(_Factory);
+    check(_Factory);
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {
         .Width = config.Width,
         .Height = config.Height,
@@ -286,7 +309,7 @@ SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQu
     };
 
     ComPtr<IDXGISwapChain1> swapChain;
-    assert(hwnd.has_value());
+    check(hwnd.has_value());
     const HWND Handle = std::any_cast<HWND>(hwnd);
     if (SUCCEEDED(_Factory->CreateSwapChainForHwnd(std::any_cast<ID3D12CommandQueue*>(queue->Handle()),
         Handle,
@@ -298,29 +321,33 @@ SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQu
     {
         _Factory->MakeWindowAssociation(Handle, DXGI_MWA_NO_ALT_ENTER);
         ComPtr<IDXGISwapChain3> swapChain3;
-        assert(SUCCEEDED(swapChain.As<IDXGISwapChain3>(&swapChain3)));
+        check(SUCCEEDED(swapChain.As<IDXGISwapChain3>(&swapChain3)));
 
-        std::vector<RenderResource*> rtResources;
-        std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rvts;
+        std::vector<Texture2DResource*> rtResources;
         rtResources.resize(config.BufferCount);
-        rvts.resize(config.BufferCount);
-        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(Renderer::Instance().RVTDescriptorHeap()->GetCPUDescriptorHandle(config.BufferCount));
+        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(descriptorHeap->GetCPUDescriptorHandle(config.BufferCount));
         for (u32 n = 0; n < config.BufferCount; n++)
         {
             ComPtr<ID3D12Resource> res;
-            assert(SUCCEEDED(swapChain3->GetBuffer(n, IID_PPV_ARGS(&res))));
+            check(SUCCEEDED(swapChain3->GetBuffer(n, IID_PPV_ARGS(&res))));
             _Device->CreateRenderTargetView(res.Get(), nullptr, rvtHandle);
 
-            rtResources[n] = new DX12Resource(res);
-            rvts[n] = rvtHandle;
-            rvtHandle.ptr += Renderer::Instance().RVTDescriptorHeap()->GetStride();
+            DX12Texture2DResource* dx12Resource = new DX12Texture2DResource(res);
+            dx12Resource->SetRenderTargetView(rvtHandle);
+            dx12Resource->Width = config.Width;
+            dx12Resource->Height = config.Height;
+            dx12Resource->Format = config.Format;
+            dx12Resource->SetState(D3D12_RESOURCE_STATE_PRESENT);
+
+            rtResources[n] = dx12Resource;
+            rvtHandle.ptr += descriptorHeap->GetStride();
         }
 
-        return new DX12SwapChain(config,rtResources, rvts, swapChain3);
+        return new DX12SwapChain(config, rtResources, swapChain3);
     }
 
 
-    assert(0);
+    check(0);
     return nullptr;
 }
 
@@ -444,7 +471,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderO
     if (FAILED(D3D12SerializeVersionedRootSignature(&rsDesc, signature.GetAddressOf(), error.GetAddressOf())))
     {
         std::string se((const char*)error->GetBufferPointer(), error->GetBufferSize());
-        TOY_Warning(RootSignature, std::format("D3D12SerializeVersionedRootSignature Failed:{}", se));
+        LOG_ERROR(RootSignature, std::format("D3D12SerializeVersionedRootSignature Failed:{}", se));
         return nullptr;
     }
 
@@ -453,12 +480,12 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderO
 
 RootSignature* DX12Device::CreateRootSignature(const std::vector<ShaderObject*>& shaders)
 {
-    assert(_Device);
+    check(_Device);
  
     ComPtr<ID3DBlob> signature = GenerateRootSignatureBlob(shaders);
 
     ComPtr<ID3D12RootSignature> rs;
-    assert(SUCCEEDED(_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rs))));
+    check(SUCCEEDED(_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rs))));
     
     return new DX12RootSignature(rs);
 }
@@ -520,7 +547,7 @@ D3D12_BLEND DX12Device::TranslateBlendFactor(const BlendFactor factor)
     case BlendFactor::InvAlphaFactor:
         return D3D12_BLEND_INV_ALPHA_FACTOR;
     default:
-        assert(0);
+        check(0);
     }
 
     return D3D12_BLEND_ZERO;
@@ -541,7 +568,7 @@ D3D12_BLEND_OP DX12Device::TranslateBlendOp(const BlendOp op)
     case BlendOp::MAX:
         return D3D12_BLEND_OP_MAX;
     default:
-        assert(0);
+        check(0);
     }
 
     return D3D12_BLEND_OP_ADD;
@@ -584,7 +611,7 @@ D3D12_LOGIC_OP DX12Device::TranslateLogicOp(const LogicOp op)
     case LogicOp::OrInverted:
         return D3D12_LOGIC_OP_OR_INVERTED;
     default:
-        assert(0);
+        check(0);
     }
 
     return D3D12_LOGIC_OP_NOOP;
@@ -599,7 +626,7 @@ D3D12_CULL_MODE DX12Device::TranslateCullMode(const CullMode mode)
     else if (mode == CullMode::Back)
         return D3D12_CULL_MODE_BACK;
     else
-        assert(0);
+        check(0);
 
     return D3D12_CULL_MODE_NONE;
 }
@@ -627,7 +654,7 @@ D3D12_COMPARISON_FUNC DX12Device::TranslateComparisonFunc(const ComparisonFunc f
     case ComparisonFunc::Always:
         return D3D12_COMPARISON_FUNC_ALWAYS;
     default:
-        assert(0);
+        check(0);
     }
     
     return D3D12_COMPARISON_FUNC_NONE;
@@ -654,7 +681,7 @@ D3D12_STENCIL_OP DX12Device::TranslateStencilOp(const StencilOp op)
     case StencilOp::Decr:
         return D3D12_STENCIL_OP_DECR;
     default:
-        assert(0);
+        check(0);
     }
 
     return D3D12_STENCIL_OP_KEEP;
@@ -774,7 +801,7 @@ void DX12Device::TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, D3D1
 
 GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& desc)
 {
-    assert(_Device);
+    check(_Device);
 
     ComPtr<ID3D12PipelineState> pso;
     D3D12_GRAPHICS_PIPELINE_STATE_DESC dxDesc = {};
@@ -786,7 +813,7 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
             .pInputElementDescs = inputLayouts.data(),
             .NumElements = (UINT)inputLayouts.size()
     };
-    assert(SUCCEEDED(_Device->CreateGraphicsPipelineState(&dxDesc, IID_PPV_ARGS(&pso))));
+    check(SUCCEEDED(_Device->CreateGraphicsPipelineState(&dxDesc, IID_PPV_ARGS(&pso))));
 
     return new DX12GraphicPipeline(pso);
 }

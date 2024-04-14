@@ -113,9 +113,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Core.lib;ShaderCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>
-      </DelayLoadDLLs>
+      <AdditionalDependencies>Core.lib;RenderCore.lib;ShaderCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>Core.dll;RenderCore.dll;ShaderCompiler.dll</DelayLoadDLLs>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -136,27 +135,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Command.h" />
     <ClInclude Include="Private.h" />
-    <ClInclude Include="Device.h" />
-    <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Public.h" />
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="RenderPath.h" />
     <ClInclude Include="RenderScene.h" />
-    <ClInclude Include="Resource.h" />
     <ClInclude Include="PipelineCache.h" />
-    <ClInclude Include="VisibilityBufferRP.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Command.cpp" />
-    <ClCompile Include="Device.cpp" />
-    <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="RenderPath.cpp" />
     <ClCompile Include="RenderScene.cpp" />
     <ClCompile Include="PipelineCache.cpp" />
-    <ClCompile Include="VisibilityBufferRP.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

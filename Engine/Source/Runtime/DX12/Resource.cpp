@@ -7,7 +7,7 @@ std::any DX12DescriptorHeap::Handle()
 
 std::any DX12DescriptorHeap::GetCPUDescriptorHandle(u32 reserve)
 {
-    assert(_Offset + reserve < _Config.Number);
+    check(_Offset + reserve < _Config.Number);
     D3D12_CPU_DESCRIPTOR_HANDLE base = _Handle->GetCPUDescriptorHandleForHeapStart();
     base.ptr += _Offset * _Config.Stride;
     _Offset += reserve;
@@ -16,7 +16,7 @@ std::any DX12DescriptorHeap::GetCPUDescriptorHandle(u32 reserve)
 
 std::any DX12DescriptorHeap::GetGPUDescriptorHandle(u32 reserve)
 {
-    assert(_Offset + reserve < _Config.Number);
+    check(_Offset + reserve < _Config.Number);
     D3D12_GPU_DESCRIPTOR_HANDLE base = _Handle->GetGPUDescriptorHandleForHeapStart();
     base.ptr += _Offset * _Config.Stride;
     _Offset += reserve;
@@ -25,7 +25,7 @@ std::any DX12DescriptorHeap::GetGPUDescriptorHandle(u32 reserve)
 
 u32 DX12SwapChain::CurrentFrameIndex()
 {
-    assert(_Handle);
+    check(_Handle);
     return _Handle->GetCurrentBackBufferIndex();
 }
 
@@ -55,13 +55,13 @@ D3D12_DESCRIPTOR_HEAP_TYPE TranslateDescriptorType(DescriptorType type)
         break;
     }
 
-    assert(0);
+    check(0);
     return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
 }
 
 DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible)
 {
-    assert(_Device);
+    check(_Device);
 
     D3D12_DESCRIPTOR_HEAP_TYPE heapType = TranslateDescriptorType(type);
     if (heapType == D3D12_DESCRIPTOR_HEAP_TYPE_RTV || heapType == D3D12_DESCRIPTOR_HEAP_TYPE_DSV)
@@ -75,7 +75,7 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, b
         .NumDescriptors = num,
         .Flags = gpuVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE
     };
-    assert(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
+    check(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
 
     DescriptorHeap::Config hc = {
         .Type = type,
@@ -87,9 +87,14 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, b
     return new DX12DescriptorHeap(hc, heap);
 }
 
-BufferResource* DX12Device::CreateBuffer(CommandList* commandList, u64 size, u8* initData, bool needCpuAccess, bool needAlignment)
+void DX12SwapChain::Present(bool vSync)
 {
-    assert(_Device);
+    check(SUCCEEDED(_Handle->Present(vSync ? 1 : 0, 0)));
+}
+
+BufferResource* DX12Device::CreateBuffer(u64 size, u32 usage, u8* initData, u32 stride, bool needCpuAccess, bool needAlignment)
+{
+    check(_Device);
 
     ComPtr<ID3D12Resource> resource;
     D3D12_RESOURCE_DESC desc = {
@@ -113,13 +118,13 @@ BufferResource* DX12Device::CreateBuffer(CommandList* commandList, u64 size, u8*
             .Type = D3D12_HEAP_TYPE_UPLOAD
         };
 
-        assert(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource))));
+        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource))));
 
         if (initData != nullptr)
         {
             u8* pData = nullptr;
             D3D12_RANGE range = {};
-            assert(SUCCEEDED(resource->Map(0, &range, (void**)&pData)));
+            check(SUCCEEDED(resource->Map(0, &range, (void**)&pData)));
             std::memcpy(pData, initData, size);
             resource->Unmap(0, nullptr);
         }
@@ -129,7 +134,7 @@ BufferResource* DX12Device::CreateBuffer(CommandList* commandList, u64 size, u8*
         D3D12_HEAP_PROPERTIES heap = {
                 .Type = D3D12_HEAP_TYPE_DEFAULT
         };
-        assert(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, initData == nullptr ? D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER : D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
+        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, initData == nullptr ? D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER : D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
 
         if (initData != nullptr)
         {
@@ -137,14 +142,15 @@ BufferResource* DX12Device::CreateBuffer(CommandList* commandList, u64 size, u8*
                 .Type = D3D12_HEAP_TYPE_UPLOAD
             };
             ComPtr<ID3D12Resource> tempRes;
-            assert(SUCCEEDED(_Device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&tempRes))));
+            check(SUCCEEDED(_Device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&tempRes))));
 
             u8* pData = nullptr;
             D3D12_RANGE range = {};
-            assert(SUCCEEDED(tempRes->Map(0, &range, (void**)&pData)));
+            check(SUCCEEDED(tempRes->Map(0, &range, (void**)&pData)));
             std::memcpy(pData, initData, size);
             tempRes->Unmap(0, nullptr);
             
+            CommandList* commandList = CommandManager::Instance().GetCopyCommandList();
             ID3D12GraphicsCommandList* dxCommandList = std::any_cast<ID3D12GraphicsCommandList*>(commandList->Handle());
             dxCommandList->CopyResource(resource.Get(), tempRes.Get());
             D3D12_RESOURCE_BARRIER barrier = {
@@ -161,7 +167,7 @@ BufferResource* DX12Device::CreateBuffer(CommandList* commandList, u64 size, u8*
         }
     }
 
-    BufferResource* buffer = new DX12BufferResource(resource);
+    BufferResource* buffer = new DX12BufferResource(size,usage,stride,needCpuAccess,needAlignment,resource);
     return buffer;
  
 }

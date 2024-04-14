@@ -1,49 +1,47 @@
 #include "Private.h"
 
-Renderer& Renderer::Instance()
+IMPLEMENT_MODULE(RendererModule)
+RendererModule* GRendererModule = nullptr;
+
+void RendererModule::Init()
 {
-	static Renderer Inst;
-	return Inst;
 }
 
-void Renderer::ParseCmds(const std::set<std::string>& cmds)
+RendererModule& RendererModule::Instance()
 {
-	_Config = {
-		.API = RenderAPI::DX12,
-		.RenderPath = RenderPathType::VisibilityBuffer,
-		.FrameCount = 3,
-		.FrameWidth = 1280,
-		.FrameHeight = 800,
-	};
+	check(GRendererModule);
+	return *GRendererModule;
 }
- 
 
-void Renderer::Init(std::any hwnd)
+void RendererModule::CreateRenderer(std::any hwnd, const RenderConfig& config)
 {
+	GRendererModule = this;
 	_HWND = hwnd;
- 
+	_Config = config;
+
+	ModuleInterface* mi = nullptr;
 	if (_Config.API == RenderAPI::DX12)
 	{
-		ModuleInterface* mi = ModuleManager::LoadModule("DX12");
-		assert(mi);
-		RHIModule* rhi = (RHIModule*)mi;
-		_Device = rhi->CreateDevice();
-		_Device->InitPixelFormat();
-		_Device->Init();
+		mi = ModuleManager::LoadModule("DX12");
 	}
 
+	check(mi);
+	RHIModule* rhi = static_cast<RHIModule*>(mi);
+	_Device = rhi->CreateDevice();
+	_Device->Init();
+
 	_CommandMgr = new CommandManager;
-	_CommandMgr->Init();
+	_CommandMgr->Init(_Config.FrameCount);
 
 	constexpr u32 GlobalDescriptorNumber = 2000;
 	constexpr u32 SamplerDescriptorNumber = 500;
 	constexpr u32 RVTDescriptorNumber = 64;
 	constexpr u32 DSVDescriptorNumber = 32;
 
-	_GlobalDescriptorHeap = RHI.CreateDescriptorHeap(DescriptorType::CBV_SRV_UAV, GlobalDescriptorNumber, true);
-	_SamplerDescriptorHeap = RHI.CreateDescriptorHeap(DescriptorType::Sampler, SamplerDescriptorNumber, true);
-	_RVTDescriptorHeap = RHI.CreateDescriptorHeap(DescriptorType::RVT, RVTDescriptorNumber, false);
-	_DSVDescriptorHeap = RHI.CreateDescriptorHeap(DescriptorType::DSV, DSVDescriptorNumber, false);
+	_GlobalDescriptorHeap = RD.CreateDescriptorHeap(DescriptorType::CBV_SRV_UAV, GlobalDescriptorNumber, true);
+	_SamplerDescriptorHeap = RD.CreateDescriptorHeap(DescriptorType::Sampler, SamplerDescriptorNumber, true);
+	_RVTDescriptorHeap = RD.CreateDescriptorHeap(DescriptorType::RVT, RVTDescriptorNumber, false);
+	_DSVDescriptorHeap = RD.CreateDescriptorHeap(DescriptorType::DSV, DSVDescriptorNumber, false);
 
 	SwapChain::Config sc = {
 		.Width = _Config.FrameWidth,
@@ -54,33 +52,60 @@ void Renderer::Init(std::any hwnd)
 		.Format = PixelFormat::R8G8B8A8_UNORM,
 	};
 
-	_SwapChain = RHI.CreateSwapChain(sc, _CommandMgr->DirectQueue(), Renderer::Instance().HWND());
+	_SwapChain = RD.CreateSwapChain(sc, _CommandMgr->DirectCommandQueue(), _RVTDescriptorHeap,_HWND);
 	_FrameIndex = _SwapChain->CurrentFrameIndex();
 
 	_Scene = new RenderScene;
 	_Scene->Init();
 
-	if (_Config.RenderPath == RenderPathType::VisibilityBuffer)
-	{
-		_RenderPath = new VisibilityBufferRP;
-		_RenderPath->Init();
-	}
+	_Fence = RD.CreateFence(_Config.FrameCount);
+	_Fence->Wait(_FrameIndex, _CommandMgr->DirectCommandQueue());
+
 }
 
-void Renderer::Render()
+void RendererModule::PreRender()
 {
-	_RenderPath->Render();
+	RC.Prepare(_FrameIndex);
 }
 
-void Renderer::Destroy()
+void RendererModule::PostRender()
+{
+	RC.End(_SwapChain->RenderTarget(_FrameIndex));
+
+	_SwapChain->Present(true);
+
+	u32 nextFrameIndex = _SwapChain->CurrentFrameIndex();
+	_Fence->Advance(_FrameIndex, nextFrameIndex, _CommandMgr->DirectCommandQueue());
+	_FrameIndex = nextFrameIndex;
+}
+
+void RendererModule::Render()
+{
+	PreRender();
+
+	RC.SetViewport(Viewport{
+		.Width = _Config.FrameWidth,
+		.Height = _Config.FrameHeight
+		});
+
+	RC.SetScissorRect(0, 0, _Config.FrameWidth, _Config.FrameHeight);
+
+	std::vector<Texture2DResource*> renderTargets;
+	renderTargets.push_back(_SwapChain->RenderTarget(_FrameIndex));
+	RC.SetRenderTargets(renderTargets, nullptr);
+
+	std::array<float, 4> colors = { 0.0f, 1.f, 0.4f, 1.0f };
+	RC.ClearRenderTarget(_SwapChain->RenderTarget(_FrameIndex), colors);
+
+
+	PostRender();
+}
+
+void RendererModule::Destroy()
 {
 	_Scene->Destroy();
 	delete _Scene;
 	_Scene = nullptr;
-
-	_RenderPath->Destroy();
-	delete _RenderPath;
-	_RenderPath = nullptr;
 
 	delete _GlobalDescriptorHeap;
 	_GlobalDescriptorHeap = nullptr;
@@ -93,6 +118,9 @@ void Renderer::Destroy()
 
 	delete _DSVDescriptorHeap;
 	_DSVDescriptorHeap = nullptr;
+
+	delete _Fence;
+	_Fence = nullptr;
 
 	if (_SwapChain)
 	{

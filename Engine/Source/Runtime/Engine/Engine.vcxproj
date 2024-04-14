@@ -115,8 +115,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Core.lib;Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>Core.dll;Renderer.dll</DelayLoadDLLs>
+      <AdditionalDependencies>Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -138,14 +138,18 @@
   <ItemGroup>
     <ClInclude Include="Engine.h" />
     <ClInclude Include="FrameRate.h" />
+    <ClInclude Include="World.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Public.h" />
+    <ClInclude Include="StaticMesh.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="FrameRate.cpp" />
+    <ClCompile Include="World.cpp" />
     <ClCompile Include="Input.cpp" />
+    <ClCompile Include="StaticMesh.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

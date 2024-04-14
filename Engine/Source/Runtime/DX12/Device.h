@@ -9,11 +9,12 @@ public :
 	DX12_API virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
 	DX12_API virtual CommandList* CreateCommandList(CommandAllocator* allocator, const CommandType type) override;
 	DX12_API virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) override;
-	DX12_API virtual SwapChain* CreateSwapChain(const SwapChain::Config& config, CommandQueue* queue, const std::any hwnd = nullptr) override;
+	DX12_API virtual SwapChain* CreateSwapChain(const SwapChain::Config& config, CommandQueue* queue, DescriptorHeap* descriptorHeap, const std::any hwnd = nullptr) override;
 	DX12_API virtual RootSignature* CreateRootSignature(const std::vector<ShaderObject*>& shaders) override;
 	DX12_API virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
 	DX12_API virtual void InitPixelFormat_Platform() override;
-	DX12_API virtual BufferResource* CreateBuffer(CommandList* commandList,u64 size, u8* initData, bool needCpuAccess = false, bool needAlignment = true) override;
+	DX12_API virtual BufferResource* CreateBuffer(u64 size, u32 Usage, u8* initData = nullptr, u32 stride = 0, bool needCpuAccess = false, bool needAlignment = true) override;
+	DX12_API virtual Fence* CreateFence(u32 frameCount) override;
 
 private:
 	void ReportLiveObjects();

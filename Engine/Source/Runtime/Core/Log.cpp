@@ -68,15 +68,21 @@ void LogUtil::Flush()
 	_LogCache.clear();
 }
 
-void LogUtil::Log(const std::string& category, LogType type, const std::string& log)
+void LogUtil::Log(const std::string& category, LogType type, const char* file, u32 line, const std::string& log)
 {
 	const char* tt = "Log";
-	if (type == LogType::Warning)
-		tt = "Warning";
+	if (type == LogType::Fatal)
+		tt = "Fatal";
 	else if (type == LogType::Error)
 		tt = "Error";
 
-	std::string logString = std::format("[{}] [{}] {} : {}\n", category, tt, PlatformUtils::TimeNowString(), log);
+	std::string logString = std::format("[{}] [{}] {} : file: {}, line:{}, {}\n", category, tt, PlatformUtils::TimeNowString(), file,line,log);
 	std::lock_guard<std::mutex> guard(_LogMutex);
 	_LogCache.push_back(std::move(logString));
+
+	if (type == LogType::Fatal)
+	{
+		Flush();
+		abort();
+	}
 }

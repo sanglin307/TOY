@@ -8,10 +8,11 @@
 
 // module dependency.
 #include "../Core/Public.h"
-#include "../ShaderCompiler/Public.h"
-#include "../Renderer/Public.h"
+#include "../RenderCore/Public.h"
 
 // inner dependency.
 #include "FrameRate.h"
 #include "Engine.h"
 #include "Input.h"
+#include "StaticMesh.h"
+#include "World.h"

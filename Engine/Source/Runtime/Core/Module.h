@@ -17,4 +17,11 @@ private:
 	static std::map<std::string, ModuleInterface*> _ModuleMap;
 };
 
-typedef ModuleInterface* (*fnCreateModule)();
+#ifdef WINDOWS
+
+#define IMPLEMENT_MODULE(M) extern "C"  __declspec(dllexport) ModuleInterface* CreateModule() \
+{ \
+	return new M; \
+}
+
+#endif

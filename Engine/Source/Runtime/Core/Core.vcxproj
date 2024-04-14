@@ -132,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Math.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Log.h" />

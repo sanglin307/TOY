@@ -3,8 +3,8 @@
 enum class LogType
 {
 	Info = 0,
-	Warning,
-	Error
+	Error,
+	Fatal
 };
 
 class LogUtil
@@ -14,7 +14,7 @@ public:
 	CORE_API static void Destroy();
 
 	CORE_API static void Update(double delta);
-	CORE_API static void Log(const std::string& category, LogType type,const std::string& log);
+	CORE_API static void Log(const std::string& category, LogType type, const char* file, u32 line, const std::string& log);
 
 private:
 	static void Flush();
@@ -26,6 +26,9 @@ private:
 	static std::vector<std::string> _LogCache;
 };
 
-#define TOY_Log(Category,Str)  LogUtil::Log(#Category,LogType::Info,Str)
-#define TOY_Warning(Category,Str) LogUtil::Log(#Category,LogType::Warning,Str)
-#define TOY_Error(Category,Str)  LogUtil::Log(#Category,LogType::Error,Str)
+#define LOG_INFO(Category,Str)  LogUtil::Log(#Category,LogType::Info, __FILE__,__LINE__, Str)
+#define LOG_ERROR(Category,Str)  LogUtil::Log(#Category,LogType::Error,__FILE__,__LINE__,Str)
+#define LOG_FATAL(Category,Str) LogUtil::Log(#Category,LogType::Fatal,__FILE__,__LINE__,Str)
+
+
+#define check(x) (!(x) && (LOG_FATAL(ASSERT,#x),true))

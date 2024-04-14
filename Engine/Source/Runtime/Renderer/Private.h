@@ -6,15 +6,10 @@
 
 
 #include "../Core/Public.h"
+#include "../RenderCore/Public.h"
 #include "../Engine/Public.h"
 #include "../ShaderCompiler/Public.h"
 
-#include "Command.h"
-#include "Resource.h"
-#include "Pipeline.h"
 #include "PipelineCache.h"
-#include "RenderPath.h"
-#include "VisibilityBufferRP.h"
 #include "RenderScene.h"
 #include "Renderer.h"
-#include "Device.h"
