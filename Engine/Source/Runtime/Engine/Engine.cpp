@@ -19,6 +19,13 @@ IRendererModule& GetRendererModule()
 
 void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 {
+	_RenderConfig = RenderConfig{
+		.API = RenderAPI::DX12,
+		.FrameCount = 3,
+		.FrameWidth = 1280,
+		.FrameHeight = 800
+	};
+
 	if (cmds.size() > 0)
 	{
 		for (auto cmd : cmds)
@@ -34,14 +41,7 @@ void GameEngine::Init(std::any hwnd)
 {
 	LogUtil::Init();
 	_FrameRate.Init();
-
-	_RenderConfig = RenderConfig{
-		.API = RenderAPI::DX12,
-		.FrameCount = 3,
-		.FrameWidth = 1280,
-		.FrameHeight = 800
-	};
-
+ 
 	GetRendererModule().CreateRenderer(hwnd, _RenderConfig);
 }
 

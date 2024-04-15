@@ -214,6 +214,8 @@ enum class ViewDimension
     Texture3D
 };
 
+class CommandList;
+
 class SwapChain
 {
 public:

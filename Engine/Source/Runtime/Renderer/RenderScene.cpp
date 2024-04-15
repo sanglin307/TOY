@@ -52,9 +52,11 @@ void RenderScene::Init()
 	};
 
 	BufferResource* VB = RD.CreateBuffer(sizeof(triangleVertices), (u32)ResourceUsage::VertexBuffer, (u8*)triangleVertices,0, true);
+	delete VB;
 
 	SceneConstantBuffer scene{};
 	BufferResource* CB = RD.CreateBuffer(sizeof(SceneConstantBuffer), (u32)ResourceUsage::ConstBuffer,(u8*)&scene, 0, true);
+	delete CB;
 	
 }
 

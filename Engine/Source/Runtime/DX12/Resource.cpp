@@ -87,6 +87,7 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, b
     return new DX12DescriptorHeap(hc, heap);
 }
 
+
 void DX12SwapChain::Present(bool vSync)
 {
     check(SUCCEEDED(_Handle->Present(vSync ? 1 : 0, 0)));

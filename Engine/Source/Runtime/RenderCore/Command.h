@@ -82,6 +82,7 @@ public:
 
 	CommandQueue* DirectCommandQueue() { return _DirectCommandQueue; }
 	CommandList* GetCopyCommandList() { return _DirectCommandList; }
+	CommandList* GetDirectCommandList() { return _DirectCommandList; }
 private:
 	CommandQueue* _DirectCommandQueue = nullptr;
 	CommandAllocator** _DirectCommandAllocator = nullptr;

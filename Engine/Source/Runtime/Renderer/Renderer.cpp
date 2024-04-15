@@ -103,6 +103,8 @@ void RendererModule::Render()
 
 void RendererModule::Destroy()
 {
+	_Fence->Wait(_FrameIndex, _CommandMgr->DirectCommandQueue());
+
 	_Scene->Destroy();
 	delete _Scene;
 	_Scene = nullptr;
@@ -122,11 +124,9 @@ void RendererModule::Destroy()
 	delete _Fence;
 	_Fence = nullptr;
 
-	if (_SwapChain)
-	{
-		delete _SwapChain;
-		_SwapChain = nullptr;
-	}
+	delete _SwapChain;
+	_SwapChain = nullptr;
+	
 
 	_CommandMgr->Destroy();
 	delete _CommandMgr;
