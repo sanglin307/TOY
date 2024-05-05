@@ -8,7 +8,7 @@
 #include "../Core/Public.h"
 #include "../RenderCore/Public.h"
 #include "../Engine/Public.h"
-#include "../ShaderCompiler/Public.h"
+#include "../RHI/Public.h"
 
 #include "PipelineCache.h"
 #include "RenderScene.h"

@@ -4,8 +4,8 @@ class RenderDevice
 {
 public:
 	static RenderDevice& Instance();
-	RENDERCORE_API virtual void Init();
-	virtual void Destroy() {};
+	RenderDevice();
+	virtual ~RenderDevice();
 	virtual std::any Handle() { return nullptr; };
 	virtual CommandQueue* CreateCommandQueue(const CommandType type) = 0;
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) = 0;
@@ -18,7 +18,7 @@ public:
 	virtual BufferResource* CreateBuffer(u64 size, u32 Usage, u8* initData = nullptr, u32 stride = 0, bool needCpuAccess = false, bool needAlignment = true) = 0;
 	virtual Fence* CreateFence(u32 frameCount) = 0;
 
-	RENDERCORE_API void CreateInputLayout(const std::vector<ShaderObject*>& shaders, InputSlotMapping slotMapping, std::vector<InputLayoutDesc>& inputLayout);
+	void CreateInputLayout(const std::vector<ShaderObject*>& shaders, InputSlotMapping slotMapping, std::vector<InputLayoutDesc>& inputLayout);
 
 protected:
 	void InitPixelFormat();

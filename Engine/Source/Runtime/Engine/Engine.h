@@ -25,4 +25,5 @@ private:
 	std::set<std::string> _Params;
 	FrameRate _FrameRate;
 	RenderConfig _RenderConfig;
+	Viewport* _GameViewport;
 };

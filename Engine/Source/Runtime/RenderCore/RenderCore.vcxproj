@@ -136,19 +136,16 @@
   <ItemGroup>
     <ClInclude Include="Command.h" />
     <ClInclude Include="Config.h" />
-    <ClInclude Include="Device.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Public.h" />
     <ClInclude Include="Reflection.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="RHI.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="VertexFormat.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Command.cpp" />
-    <ClCompile Include="Device.cpp" />
     <ClCompile Include="Module.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

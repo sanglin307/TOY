@@ -16,10 +16,11 @@ using namespace Microsoft::WRL;
 
 #include "../Core/Public.h"
 #include "../RenderCore/Public.h"
-#include "../Renderer/Public.h"
+#include "../RHI/Public.h"
 
 #include "Module.h"
 #include "Device.h"
 #include "Resource.h"
 #include "Command.h"
+#include "Context.h"
 #include "Pipeline.h"

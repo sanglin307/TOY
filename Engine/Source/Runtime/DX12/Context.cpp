@@ -1,15 +1,7 @@
 #include "Private.h"
 
-CommandManager* GCommandManager = nullptr;
-CommandManager& CommandManager::Instance()
+DX12RenderContext::DX12RenderContext(u32 frameCount)
 {
-	check(GCommandManager);
-	return *GCommandManager;
-}
-
-void CommandManager::Init(u32 frameCount)
-{
-	GCommandManager = this;
 	_FrameCount = frameCount;
 	_DirectCommandAllocator = new CommandAllocator * [frameCount];
 	_ComputeCommandAllocator = new CommandAllocator * [frameCount];
@@ -19,7 +11,7 @@ void CommandManager::Init(u32 frameCount)
 
 	for (u32 index = 0; index < frameCount; index++)
 	{
-		_DirectCommandAllocator[index]= device.CreateCommandAllocator(CommandType::Direct);
+		_DirectCommandAllocator[index] = device.CreateCommandAllocator(CommandType::Direct);
 		_ComputeCommandAllocator[index] = device.CreateCommandAllocator(CommandType::Compute);
 		_CopyCommandAllocator[index] = device.CreateCommandAllocator(CommandType::Copy);
 	}
@@ -34,7 +26,7 @@ void CommandManager::Init(u32 frameCount)
 	_CopyCommandList = device.CreateCommandList(_CopyCommandAllocator[0], CommandType::Copy);
 }
 
-void CommandManager::Destroy()
+DX12RenderContext::~DX12RenderContext()
 {
 	if (_CopyCommandList)
 	{
@@ -82,44 +74,4 @@ void CommandManager::Destroy()
 	delete[] _CopyCommandAllocator;
 	delete[] _ComputeCommandAllocator;
 	delete[] _DirectCommandAllocator;
-}
-
-void CommandManager::Prepare(u32 frameIndex)
-{
-	_DirectCommandList->Prepare(_DirectCommandAllocator[frameIndex]);
-}
-
-void CommandManager::End(Texture2DResource* presentResource)
-{
-	_DirectCommandList->End(presentResource);
-
-	std::vector<CommandList*> commandList;
-	commandList.push_back(_DirectCommandList);
-	_DirectCommandQueue->Excute(commandList);
-}
-
-void CommandManager::SetViewport(const Viewport& viewport)
-{
-	_DirectCommandList->SetViewport(viewport);
-}
-void CommandManager::SetScissorRect(u32 left, u32 top, u32 right, u32 bottom)
-{
-	_DirectCommandList->SetScissorRect(left, top, right, bottom);
-}
-void CommandManager::SetRenderTargets(std::vector<Texture2DResource*>& rts, Texture2DResource* depthStencil)
-{
-	_DirectCommandList->SetRenderTargets(rts, depthStencil);
-}
-void CommandManager::ClearRenderTarget(Texture2DResource* renderTarget, std::array<float, 4>& colors)
-{
-	_DirectCommandList->ClearRenderTarget(renderTarget, colors);
-}
-void CommandManager::SetGraphicsRootSignature(RootSignature* signature)
-{
-	_DirectCommandList->SetGraphicsRootSignature(signature);
-}
-
-void CommandManager::CopyResource(RenderResource* dstRes, RenderResource* srcRes)
-{
-	_DirectCommandList->CopyResource(dstRes, srcRes);
 }

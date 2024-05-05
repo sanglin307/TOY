@@ -39,14 +39,20 @@ void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 
 void GameEngine::Init(std::any hwnd)
 {
+	GameWorld::Instance().Init();
 	LogUtil::Init();
 	_FrameRate.Init();
+
+	_GameViewport = new Viewport(hwnd, _RenderConfig);
  
-	GetRendererModule().CreateRenderer(hwnd, _RenderConfig);
+	GetRendererModule().Init(_RenderConfig.API);
 }
 
 void GameEngine::Destroy()
 {
+	delete _GameViewport;
+	_GameViewport = nullptr;
+
 	GetRendererModule().Destroy();
 	_FrameRate.Destroy();
 	LogUtil::Destroy();
@@ -57,7 +63,7 @@ void GameEngine::Update()
 	double delta = _FrameRate.Update();
 	LogUtil::Update(delta);
 
-	//Update world
+	GameWorld::Instance().Update(delta);
 
 	GetRendererModule().Render();
 }

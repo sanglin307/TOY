@@ -27,7 +27,7 @@ bool RenderDevice::IsCompressedPixelFormat(PixelFormat format)
 	return _Formats[(u32)format].CompressFormat;
 }
 
-void RenderDevice::Init()
+RenderDevice::RenderDevice()
 {
 	GRenderDevice = this;
 	InitPixelFormat();

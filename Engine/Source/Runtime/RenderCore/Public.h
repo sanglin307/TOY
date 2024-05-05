@@ -9,7 +9,7 @@
 #include "Reflection.h"
 #include "Shader.h"
 #include "Resource.h"
+#include "VertexFormat.h"
 #include "Pipeline.h"
 #include "Command.h"
 #include "Device.h"
-#include "RHI.h"

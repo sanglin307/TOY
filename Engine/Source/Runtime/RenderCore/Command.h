@@ -63,38 +63,3 @@ protected:
 	u64* _FenceValues;
 };
 
-class RENDERCORE_API CommandManager
-{
-public:
-	static CommandManager& Instance();
-	void Init(u32 frameCount);
-	void Destroy();
-
-	void Prepare(u32 frameIndex);
-	void End(Texture2DResource* presentResource);
-
-	void SetViewport(const Viewport& viewport);
-	void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom);
-	void SetRenderTargets(std::vector<Texture2DResource*>& rts, Texture2DResource* depthStencil);
-	void ClearRenderTarget(Texture2DResource* renderTarget, std::array<float, 4>& colors);
-	void SetGraphicsRootSignature(RootSignature* signature);
-	void CopyResource(RenderResource* dstRes, RenderResource* srcRes);
-
-	CommandQueue* DirectCommandQueue() { return _DirectCommandQueue; }
-	CommandList* GetCopyCommandList() { return _DirectCommandList; }
-	CommandList* GetDirectCommandList() { return _DirectCommandList; }
-private:
-	CommandQueue* _DirectCommandQueue = nullptr;
-	CommandAllocator** _DirectCommandAllocator = nullptr;
-	CommandList* _DirectCommandList = nullptr;
-
-	CommandQueue* _ComputeCommandQueue = nullptr;
-	CommandAllocator** _ComputeCommandAllocator = nullptr;
-	CommandList* _ComputeCommandList = nullptr;
-
-	CommandQueue* _CopyCommandQueue = nullptr;
-	CommandAllocator** _CopyCommandAllocator = nullptr;
-	CommandList* _CopyCommandList = nullptr;
-
-	u32 _FrameCount;
-};

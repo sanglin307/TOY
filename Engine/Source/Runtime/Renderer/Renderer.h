@@ -4,25 +4,17 @@
 class RendererModule : public IRendererModule
 {
 public:
-    virtual void Init() override;
+    virtual void Init(RenderAPI api) override;
     virtual void Destroy() override;
-    virtual void CreateRenderer(std::any hwnd, const RenderConfig& config) override;
-    virtual void Render() override;
+    virtual void Render(RHIViewport* viewport) override;
+
     static RendererModule& Instance();
 
-    inline RenderConfig& Config() { return _Config; }
-    inline RenderDevice& GetDevice() { return *_Device; }
-    inline CommandManager& GetCommandManager() { return *_CommandMgr; }
-    inline DescriptorHeap* RVTDescriptorHeap() { return _RVTDescriptorHeap; }
-
 private:
+    RenderScene* _Scene;
 
-    void PreRender();
-    void PostRender();
-
-private:
     RenderDevice* _Device;
-    CommandManager* _CommandMgr;
+    RenderContext* _Context;
 
     DescriptorHeap* _GlobalDescriptorHeap;
     DescriptorHeap* _SamplerDescriptorHeap;
@@ -34,12 +26,6 @@ private:
 
     Fence* _Fence;
 
-    RenderScene* _Scene;
-    std::any _HWND;
-
-    RenderConfig _Config;
+    static constexpr u32 SwapChainFrameCount = 3;
  
 };
-
-#define RD RendererModule::Instance().GetDevice()
-#define RC RendererModule::Instance().GetCommandManager()

@@ -17,4 +17,9 @@ RenderDevice* DX12RHIModule::CreateDevice()
 	return new DX12Device;
 }
 
+RenderContext* DX12RHIModule::CreateContext(u32 frameCount)
+{
+	return new DX12RenderContext(frameCount);
+}
+
 

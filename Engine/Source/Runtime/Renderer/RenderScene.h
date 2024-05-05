@@ -7,11 +7,6 @@ public:
 	void Init();
 	void Destroy();
 
-	struct Vertex
-	{
-		Vector3f position;
-		Vector3f color;
-	};
 
 	struct SceneConstantBuffer
 	{

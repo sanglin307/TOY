@@ -216,6 +216,22 @@ enum class ViewDimension
 
 class CommandList;
 
+class RHIViewport
+{
+public:
+    RHIViewport(u32 frameWidth, u32 frameHeight, std::any hwnd = nullptr)
+        :_Width(frameWidth),_Height(frameHeight),_HWND(hwnd)
+    {
+    }
+    virtual ~RHIViewport() {};
+    virtual void Init() {};
+
+protected:
+    u32 _Width;
+    u32 _Height;
+    std::any _HWND;
+};
+
 class SwapChain
 {
 public:
