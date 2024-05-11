@@ -13,4 +13,5 @@ Material* Material::Create(const std::array<ShaderObject*, (size_t)ShaderProfile
 {
 	Material* mat = new Material;
 	mat->_Shaders = shaders;
+	return mat;
 }

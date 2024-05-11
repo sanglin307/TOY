@@ -115,7 +115,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Core.lib;ShaderCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>

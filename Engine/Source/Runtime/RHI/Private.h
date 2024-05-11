@@ -5,8 +5,12 @@
 #endif
 
 #include "../Core/Public.h"
-#include "../RenderCore/Public.h"
 
-#include "Device.h"
+#include "Reflection.h"
+#include "Shader.h"
+#include "Resource.h"
+#include "Pipeline.h"
 #include "Context.h"
+#include "Descriptor.h"
+#include "Device.h"
 #include "RHI.h"

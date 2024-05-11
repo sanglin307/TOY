@@ -13,6 +13,11 @@ public:
 	ENGINE_API void Update();
 
 	ENGINE_API void FrameSize(u32& Width, u32& Height);
+	ENGINE_API RenderConfig& GetRenderConfig() { return _RenderConfig; }
+
+	IRHIModule& GetRHI();
+	IRendererModule& GetRenderer();
+	
 
 private:
 	GameEngine() = default;
@@ -25,5 +30,5 @@ private:
 	std::set<std::string> _Params;
 	FrameRate _FrameRate;
 	RenderConfig _RenderConfig;
-	Viewport* _GameViewport;
+	GameViewport* _GameViewport;
 };

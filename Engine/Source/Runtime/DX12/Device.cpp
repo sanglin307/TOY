@@ -24,126 +24,9 @@ D3D12_COMMAND_LIST_TYPE TranslateCommandType(const CommandType t)
         return D3D12_COMMAND_LIST_TYPE_NONE;
     }
 }
-
-DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
+ 
+DX12Device::DX12Device()
 {
-    return std::any_cast<DXGI_FORMAT>(_Formats[static_cast<u32>(format)].PlatformFormat);
-}
-
-
-void DX12Device::InitPixelFormat_Platform()
-{
-    check(_Formats.size() > 0);
-    using enum PixelFormat;
-    u32 index = 0;
-#define DXGIFORMAT(F)  _Formats[index].PlatformFormat = DXGI_FORMAT_##F; ++index; 
-    DXGIFORMAT(UNKNOWN)
-        DXGIFORMAT(R32G32B32A32_TYPELESS)
-        DXGIFORMAT(R32G32B32A32_FLOAT)
-        DXGIFORMAT(R32G32B32A32_UINT)
-        DXGIFORMAT(R32G32B32A32_SINT)
-        DXGIFORMAT(R32G32B32_TYPELESS)
-        DXGIFORMAT(R32G32B32_FLOAT)
-        DXGIFORMAT(R32G32B32_UINT)
-        DXGIFORMAT(R32G32B32_SINT)
-        DXGIFORMAT(R16G16B16A16_TYPELESS)
-        DXGIFORMAT(R16G16B16A16_FLOAT)
-        DXGIFORMAT(R16G16B16A16_UNORM)
-        DXGIFORMAT(R16G16B16A16_UINT)
-        DXGIFORMAT(R16G16B16A16_SNORM)
-        DXGIFORMAT(R16G16B16A16_SINT)
-        DXGIFORMAT(R32G32_TYPELESS)
-        DXGIFORMAT(R32G32_FLOAT)
-        DXGIFORMAT(R32G32_UINT)
-        DXGIFORMAT(R32G32_SINT)
-        DXGIFORMAT(R32G8X24_TYPELESS)
-        DXGIFORMAT(D32_FLOAT_S8X24_UINT)
-        DXGIFORMAT(R32_FLOAT_X8X24_TYPELESS)
-        DXGIFORMAT(X32_TYPELESS_G8X24_UINT)
-        DXGIFORMAT(R10G10B10A2_TYPELESS)
-        DXGIFORMAT(R10G10B10A2_UNORM)
-        DXGIFORMAT(R10G10B10A2_UINT)
-        DXGIFORMAT(R11G11B10_FLOAT)
-        DXGIFORMAT(R8G8B8A8_TYPELESS)
-        DXGIFORMAT(R8G8B8A8_UNORM)
-        DXGIFORMAT(R8G8B8A8_UNORM_SRGB)
-        DXGIFORMAT(R8G8B8A8_UINT)
-        DXGIFORMAT(R8G8B8A8_SNORM)
-        DXGIFORMAT(R8G8B8A8_SINT)
-        DXGIFORMAT(R16G16_TYPELESS)
-        DXGIFORMAT(R16G16_FLOAT)
-        DXGIFORMAT(R16G16_UNORM)
-        DXGIFORMAT(R16G16_UINT)
-        DXGIFORMAT(R16G16_SNORM)
-        DXGIFORMAT(R16G16_SINT)
-        DXGIFORMAT(R32_TYPELESS)
-        DXGIFORMAT(D32_FLOAT)
-        DXGIFORMAT(R32_FLOAT)
-        DXGIFORMAT(R32_UINT)
-        DXGIFORMAT(R32_SINT)
-        DXGIFORMAT(R24G8_TYPELESS)
-        DXGIFORMAT(D24_UNORM_S8_UINT)
-        DXGIFORMAT(R24_UNORM_X8_TYPELESS)
-        DXGIFORMAT(X24_TYPELESS_G8_UINT)
-        DXGIFORMAT(R8G8_TYPELESS)
-        DXGIFORMAT(R8G8_UNORM)
-        DXGIFORMAT(R8G8_UINT)
-        DXGIFORMAT(R8G8_SNORM)
-        DXGIFORMAT(R8G8_SINT)
-        DXGIFORMAT(R16_TYPELESS)
-        DXGIFORMAT(R16_FLOAT)
-        DXGIFORMAT(D16_UNORM)
-        DXGIFORMAT(R16_UNORM)
-        DXGIFORMAT(R16_UINT)
-        DXGIFORMAT(R16_SNORM)
-        DXGIFORMAT(R16_SINT)
-        DXGIFORMAT(R8_TYPELESS)
-        DXGIFORMAT(R8_UNORM)
-        DXGIFORMAT(R8_UINT)
-        DXGIFORMAT(R8_SNORM)
-        DXGIFORMAT(R8_SINT)
-        DXGIFORMAT(A8_UNORM)
-        DXGIFORMAT(R1_UNORM)
-        DXGIFORMAT(R9G9B9E5_SHAREDEXP)
-        DXGIFORMAT(R8G8_B8G8_UNORM)
-        DXGIFORMAT(G8R8_G8B8_UNORM)
-        DXGIFORMAT(BC1_TYPELESS)
-        DXGIFORMAT(BC1_UNORM)
-        DXGIFORMAT(BC1_UNORM_SRGB)
-        DXGIFORMAT(BC2_TYPELESS)
-        DXGIFORMAT(BC2_UNORM)
-        DXGIFORMAT(BC2_UNORM_SRGB)
-        DXGIFORMAT(BC3_TYPELESS)
-        DXGIFORMAT(BC3_UNORM)
-        DXGIFORMAT(BC3_UNORM_SRGB)
-        DXGIFORMAT(BC4_TYPELESS)
-        DXGIFORMAT(BC4_UNORM)
-        DXGIFORMAT(BC4_SNORM)
-        DXGIFORMAT(BC5_TYPELESS)
-        DXGIFORMAT(BC5_UNORM)
-        DXGIFORMAT(BC5_SNORM)
-        DXGIFORMAT(B5G6R5_UNORM)
-        DXGIFORMAT(B5G5R5A1_UNORM)
-        DXGIFORMAT(B8G8R8A8_UNORM)
-        DXGIFORMAT(B8G8R8X8_UNORM)
-        DXGIFORMAT(R10G10B10_XR_BIAS_A2_UNORM)
-        DXGIFORMAT(B8G8R8A8_TYPELESS)
-        DXGIFORMAT(B8G8R8A8_UNORM_SRGB)
-        DXGIFORMAT(B8G8R8X8_TYPELESS)
-        DXGIFORMAT(B8G8R8X8_UNORM_SRGB)
-        DXGIFORMAT(BC6H_TYPELESS)
-        DXGIFORMAT(BC6H_UF16)
-        DXGIFORMAT(BC6H_SF16)
-        DXGIFORMAT(BC7_TYPELESS)
-        DXGIFORMAT(BC7_UNORM)
-        DXGIFORMAT(BC7_UNORM_SRGB)
-#undef DXGIFORMAT
-}
-
-void DX12Device::Init()
-{
-    RenderDevice::Init();
-
     u32 dxgiFactoryFlags = 0;
 
 #ifdef _DEBUG
@@ -207,6 +90,12 @@ void DX12Device::Init()
     check(_Adapter);
     check(_Device);
 
+    InitPixelFormat_Platform();
+
+    _FrameFence = CreateFence(0);
+    _ContextManager = new ContextManager(this);
+    _DescriptorManager = new DescriptorManager(this);
+
 }
 
 void DX12Device::ReportLiveObjects()
@@ -220,9 +109,18 @@ void DX12Device::ReportLiveObjects()
 #endif
 }
 
-void DX12Device::Destroy()
+void DX12Device::WaitGPUIdle()
 {
-    RenderDevice::Destroy();
+    u64 lastFenceValue = _ContextManager->GetMaxFenceValue();
+    _ContextManager->GetDirectQueue()->Signal(_FrameFence, lastFenceValue);
+    _FrameFence->CpuWait(lastFenceValue);
+}
+
+DX12Device::~DX12Device()
+{
+    delete _FrameFence;
+    delete _DescriptorManager;
+    delete _ContextManager;
 
     _Device.Reset();
     _Adapter.Reset();
@@ -231,23 +129,53 @@ void DX12Device::Destroy()
     ReportLiveObjects();
 }
 
-Fence* DX12Device::CreateFence(u32 frameCount)
+Fence* DX12Device::CreateFence(u64 initValue)
 {
     check(_Device);
-    u64* frameValue = new u64[frameCount];
-    for (u32 index = 0; index < frameCount; index++)
-    {
-        frameValue[index] = 1;
-    }
-
+ 
     ComPtr<ID3D12Fence> fence;
-    check(SUCCEEDED(_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))));
+    check(SUCCEEDED(_Device->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))));
 
     HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     check(fenceEvent);
 
-    return new DX12Fence(frameValue, fenceEvent, fence);
+    return new DX12Fence(fenceEvent, fence);
 
+}
+
+RenderContext* DX12Device::BeginFrame(RHIViewport* viewport)
+{
+    RenderContext* context = _ContextManager->GetDirectContext(viewport->GetCurrentFrameIndex());
+    context->Reset();
+    return context;
+}
+
+void DX12Device::EndFrame(RenderContext* ctx, RHIViewport* viewport)
+{
+    Texture2DResource* rt = viewport->GetCurrentBackBuffer();
+    ctx->Close(rt);
+ 
+    CommandQueue* commandQueue = _ContextManager->GetDirectQueue();
+    RenderContext* ctxs[] = { ctx };
+    commandQueue->Excute(1,ctxs);
+
+    u32 lastframeIndex = viewport->GetCurrentFrameIndex();
+
+    viewport->Present(true);
+
+    u32 nextFrameIndex = viewport->GetCurrentFrameIndex();
+
+    u64& lastFenceValue = _ContextManager->GetFenceValue(lastframeIndex);
+    u64& nextFenceValue = _ContextManager->GetFenceValue(nextFrameIndex);
+
+    commandQueue->Signal(_FrameFence, lastFenceValue);
+
+    if (_FrameFence->GetCompletedValue() < nextFenceValue)
+    {
+        _FrameFence->CpuWait(nextFenceValue);
+    }
+
+    nextFenceValue = lastFenceValue + 1; // next frame fence value.
 }
 
 CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
@@ -281,36 +209,39 @@ CommandAllocator* DX12Device::CreateCommandAllocator(const CommandType type)
     return nullptr;
 }
 
-CommandList* DX12Device::CreateCommandList(CommandAllocator* allocator, const CommandType type)
+RenderContext* DX12Device::CreateCommandContext(CommandAllocator* allocator, const CommandType type)
 {
     check(_Device);
     ComPtr<ID3D12GraphicsCommandList> commandList;
     if (SUCCEEDED(_Device->CreateCommandList(0,TranslateCommandType(type), std::any_cast<ID3D12CommandAllocator*>(allocator->Handle()), nullptr, IID_PPV_ARGS(&commandList))))
     {
         commandList->Close();
-        return new DX12CommandList(type, commandList);
+        return new DX12CommandList(allocator, type, commandList);
     }
 
     check(0);
     return nullptr;
 }
 
-SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQueue* queue, DescriptorHeap* descriptorHeap, const std::any hwnd)
+RHIViewport* DX12Device::CreateViewport(const RHIViewport::CreateInfo& info)
 {
     check(_Factory);
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {
-        .Width = config.Width,
-        .Height = config.Height,
-        .Format = TranslatePixelFormat(config.Format),
-        .SampleDesc = {.Count = config.SampleCount, .Quality = config.SampleQuality},
+        .Width = info.Width,
+        .Height = info.Height,
+        .Format = TranslatePixelFormat(info.Format),
+        .SampleDesc = {.Count = info.SampleCount, .Quality = info.SampleQuality},
         .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-        .BufferCount = config.BufferCount,
+        .BufferCount = info.FrameCount,
         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
     };
 
+    DescriptorHeap* rvtHeap = _DescriptorManager->GetRVTHeap();
+    CommandQueue* queue = _ContextManager->GetDirectQueue();
+
     ComPtr<IDXGISwapChain1> swapChain;
-    check(hwnd.has_value());
-    const HWND Handle = std::any_cast<HWND>(hwnd);
+    check(info.HWND.has_value());
+    const HWND Handle = std::any_cast<HWND>(info.HWND);
     if (SUCCEEDED(_Factory->CreateSwapChainForHwnd(std::any_cast<ID3D12CommandQueue*>(queue->Handle()),
         Handle,
         &swapChainDesc,
@@ -324,9 +255,9 @@ SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQu
         check(SUCCEEDED(swapChain.As<IDXGISwapChain3>(&swapChain3)));
 
         std::vector<Texture2DResource*> rtResources;
-        rtResources.resize(config.BufferCount);
-        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(descriptorHeap->GetCPUDescriptorHandle(config.BufferCount));
-        for (u32 n = 0; n < config.BufferCount; n++)
+        rtResources.resize(info.FrameCount);
+        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(rvtHeap->GetCPUDescriptorHandle(info.FrameCount));
+        for (u32 n = 0; n < info.FrameCount; n++)
         {
             ComPtr<ID3D12Resource> res;
             check(SUCCEEDED(swapChain3->GetBuffer(n, IID_PPV_ARGS(&res))));
@@ -334,16 +265,16 @@ SwapChain* DX12Device::CreateSwapChain(const SwapChain::Config& config,CommandQu
 
             DX12Texture2DResource* dx12Resource = new DX12Texture2DResource(res);
             dx12Resource->SetRenderTargetView(rvtHandle);
-            dx12Resource->Width = config.Width;
-            dx12Resource->Height = config.Height;
-            dx12Resource->Format = config.Format;
+            dx12Resource->Width = info.Width;
+            dx12Resource->Height = info.Height;
+            dx12Resource->Format = info.Format;
             dx12Resource->SetState(D3D12_RESOURCE_STATE_PRESENT);
 
             rtResources[n] = dx12Resource;
-            rvtHandle.ptr += descriptorHeap->GetStride();
+            rvtHandle.ptr += rvtHeap->GetStride();
         }
 
-        return new DX12SwapChain(config, rtResources, swapChain3);
+        return new DX12Viewport(info, rtResources, swapChain3);
     }
 
 
@@ -816,4 +747,119 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
     check(SUCCEEDED(_Device->CreateGraphicsPipelineState(&dxDesc, IID_PPV_ARGS(&pso))));
 
     return new DX12GraphicPipeline(pso);
+}
+
+DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
+{
+    return std::any_cast<DXGI_FORMAT>(_Formats[static_cast<u32>(format)].PlatformFormat);
+}
+
+
+void DX12Device::InitPixelFormat_Platform()
+{
+    check(_Formats.size() > 0);
+    using enum PixelFormat;
+    u32 index = 0;
+#define DXGIFORMAT(F)  _Formats[index].PlatformFormat = DXGI_FORMAT_##F; ++index; 
+    DXGIFORMAT(UNKNOWN)
+        DXGIFORMAT(R32G32B32A32_TYPELESS)
+        DXGIFORMAT(R32G32B32A32_FLOAT)
+        DXGIFORMAT(R32G32B32A32_UINT)
+        DXGIFORMAT(R32G32B32A32_SINT)
+        DXGIFORMAT(R32G32B32_TYPELESS)
+        DXGIFORMAT(R32G32B32_FLOAT)
+        DXGIFORMAT(R32G32B32_UINT)
+        DXGIFORMAT(R32G32B32_SINT)
+        DXGIFORMAT(R16G16B16A16_TYPELESS)
+        DXGIFORMAT(R16G16B16A16_FLOAT)
+        DXGIFORMAT(R16G16B16A16_UNORM)
+        DXGIFORMAT(R16G16B16A16_UINT)
+        DXGIFORMAT(R16G16B16A16_SNORM)
+        DXGIFORMAT(R16G16B16A16_SINT)
+        DXGIFORMAT(R32G32_TYPELESS)
+        DXGIFORMAT(R32G32_FLOAT)
+        DXGIFORMAT(R32G32_UINT)
+        DXGIFORMAT(R32G32_SINT)
+        DXGIFORMAT(R32G8X24_TYPELESS)
+        DXGIFORMAT(D32_FLOAT_S8X24_UINT)
+        DXGIFORMAT(R32_FLOAT_X8X24_TYPELESS)
+        DXGIFORMAT(X32_TYPELESS_G8X24_UINT)
+        DXGIFORMAT(R10G10B10A2_TYPELESS)
+        DXGIFORMAT(R10G10B10A2_UNORM)
+        DXGIFORMAT(R10G10B10A2_UINT)
+        DXGIFORMAT(R11G11B10_FLOAT)
+        DXGIFORMAT(R8G8B8A8_TYPELESS)
+        DXGIFORMAT(R8G8B8A8_UNORM)
+        DXGIFORMAT(R8G8B8A8_UNORM_SRGB)
+        DXGIFORMAT(R8G8B8A8_UINT)
+        DXGIFORMAT(R8G8B8A8_SNORM)
+        DXGIFORMAT(R8G8B8A8_SINT)
+        DXGIFORMAT(R16G16_TYPELESS)
+        DXGIFORMAT(R16G16_FLOAT)
+        DXGIFORMAT(R16G16_UNORM)
+        DXGIFORMAT(R16G16_UINT)
+        DXGIFORMAT(R16G16_SNORM)
+        DXGIFORMAT(R16G16_SINT)
+        DXGIFORMAT(R32_TYPELESS)
+        DXGIFORMAT(D32_FLOAT)
+        DXGIFORMAT(R32_FLOAT)
+        DXGIFORMAT(R32_UINT)
+        DXGIFORMAT(R32_SINT)
+        DXGIFORMAT(R24G8_TYPELESS)
+        DXGIFORMAT(D24_UNORM_S8_UINT)
+        DXGIFORMAT(R24_UNORM_X8_TYPELESS)
+        DXGIFORMAT(X24_TYPELESS_G8_UINT)
+        DXGIFORMAT(R8G8_TYPELESS)
+        DXGIFORMAT(R8G8_UNORM)
+        DXGIFORMAT(R8G8_UINT)
+        DXGIFORMAT(R8G8_SNORM)
+        DXGIFORMAT(R8G8_SINT)
+        DXGIFORMAT(R16_TYPELESS)
+        DXGIFORMAT(R16_FLOAT)
+        DXGIFORMAT(D16_UNORM)
+        DXGIFORMAT(R16_UNORM)
+        DXGIFORMAT(R16_UINT)
+        DXGIFORMAT(R16_SNORM)
+        DXGIFORMAT(R16_SINT)
+        DXGIFORMAT(R8_TYPELESS)
+        DXGIFORMAT(R8_UNORM)
+        DXGIFORMAT(R8_UINT)
+        DXGIFORMAT(R8_SNORM)
+        DXGIFORMAT(R8_SINT)
+        DXGIFORMAT(A8_UNORM)
+        DXGIFORMAT(R1_UNORM)
+        DXGIFORMAT(R9G9B9E5_SHAREDEXP)
+        DXGIFORMAT(R8G8_B8G8_UNORM)
+        DXGIFORMAT(G8R8_G8B8_UNORM)
+        DXGIFORMAT(BC1_TYPELESS)
+        DXGIFORMAT(BC1_UNORM)
+        DXGIFORMAT(BC1_UNORM_SRGB)
+        DXGIFORMAT(BC2_TYPELESS)
+        DXGIFORMAT(BC2_UNORM)
+        DXGIFORMAT(BC2_UNORM_SRGB)
+        DXGIFORMAT(BC3_TYPELESS)
+        DXGIFORMAT(BC3_UNORM)
+        DXGIFORMAT(BC3_UNORM_SRGB)
+        DXGIFORMAT(BC4_TYPELESS)
+        DXGIFORMAT(BC4_UNORM)
+        DXGIFORMAT(BC4_SNORM)
+        DXGIFORMAT(BC5_TYPELESS)
+        DXGIFORMAT(BC5_UNORM)
+        DXGIFORMAT(BC5_SNORM)
+        DXGIFORMAT(B5G6R5_UNORM)
+        DXGIFORMAT(B5G5R5A1_UNORM)
+        DXGIFORMAT(B8G8R8A8_UNORM)
+        DXGIFORMAT(B8G8R8X8_UNORM)
+        DXGIFORMAT(R10G10B10_XR_BIAS_A2_UNORM)
+        DXGIFORMAT(B8G8R8A8_TYPELESS)
+        DXGIFORMAT(B8G8R8A8_UNORM_SRGB)
+        DXGIFORMAT(B8G8R8X8_TYPELESS)
+        DXGIFORMAT(B8G8R8X8_UNORM_SRGB)
+        DXGIFORMAT(BC6H_TYPELESS)
+        DXGIFORMAT(BC6H_UF16)
+        DXGIFORMAT(BC6H_SF16)
+        DXGIFORMAT(BC7_TYPELESS)
+        DXGIFORMAT(BC7_UNORM)
+        DXGIFORMAT(BC7_UNORM_SRGB)
+#undef DXGIFORMAT
 }

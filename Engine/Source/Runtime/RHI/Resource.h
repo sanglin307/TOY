@@ -113,16 +113,7 @@ struct PixelFormatInfo
     bool       CompressFormat;
     std::any   PlatformFormat;
 };
-
-struct Viewport
-{
-    u32 X = 0;
-    u32 Y = 0;
-    u32 Width = 1280;
-    u32 Height = 800;
-    f32 MinDepth = 0.f;
-    f32 MaxDepth = 1.f;
-};
+ 
 
 class RootSignature
 {
@@ -219,17 +210,28 @@ class CommandList;
 class RHIViewport
 {
 public:
-    RHIViewport(u32 frameWidth, u32 frameHeight, std::any hwnd = nullptr)
-        :_Width(frameWidth),_Height(frameHeight),_HWND(hwnd)
+    struct CreateInfo
     {
-    }
+        u32 Width;
+        u32 Height;
+        PixelFormat Format;
+        std::any HWND;
+        u32 FrameCount = 3;
+        u16 SampleCount = 1;
+        u16 SampleQuality = 0;
+    };
+    RHIViewport(const CreateInfo& info)
+        :_Info(info)
+    {}
+
     virtual ~RHIViewport() {};
-    virtual void Init() {};
+
+    virtual u32 GetCurrentFrameIndex() = 0;
+    virtual Texture2DResource* GetCurrentBackBuffer() = 0;
+    virtual void Present(bool vSync) = 0;
 
 protected:
-    u32 _Width;
-    u32 _Height;
-    std::any _HWND;
+    CreateInfo _Info;
 };
 
 class SwapChain

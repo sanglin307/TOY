@@ -6,7 +6,9 @@ class DX12CommandQueue : public CommandQueue
 public:
 	virtual std::any Handle() { return _Handle.Get(); };
 	virtual ~DX12CommandQueue() { _Handle.Reset(); }
-	virtual void Excute(std::vector<CommandList*> commands) override;
+
+	virtual void Excute(u32 ctxNum, RenderContext** ctx) override;
+	virtual void Signal(Fence* fence, u64 value) override;
 private:
 	DX12CommandQueue(CommandType type, ComPtr<ID3D12CommandQueue> handle)
 		:_Handle(handle)
@@ -34,7 +36,7 @@ private:
 	
 };
 
-class DX12CommandList : public CommandList
+class DX12CommandList : public RenderContext
 {
 	friend class DX12Device;
 
@@ -42,21 +44,21 @@ public:
 	virtual ~DX12CommandList() { _Handle.Reset(); }
 	virtual std::any Handle() { return _Handle.Get(); }
 
-	virtual void Prepare(CommandAllocator* allocator) override;
-	virtual void End(Texture2DResource* presentResource) override;
-	virtual void SetViewport(const Viewport& viewport) override;
+	virtual void Reset() override;
+	virtual void Close(Texture2DResource* presentResource) override;
+	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth = 0.f, f32 maxDepth = 1.f) override;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) override;
-	virtual void SetRenderTargets(std::vector<Texture2DResource*>& rts, Texture2DResource* depthStencil) override;
-	virtual void ClearRenderTarget(Texture2DResource* renderTarget, std::array<float, 4>& colors) override;
+	virtual void SetRenderTargets(u32 rtNum, Texture2DResource** rts, Texture2DResource* depthStencil) override;
+	virtual void ClearRenderTarget(Texture2DResource* renderTarget, const f32* colors) override;
 	virtual void SetGraphicsRootSignature(RootSignature* signature) override;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
 
 
 private:
-	DX12CommandList(CommandType type, ComPtr<ID3D12GraphicsCommandList> handle)
-		:_Handle(handle)
+	DX12CommandList(CommandAllocator* allocator, CommandType type, ComPtr<ID3D12GraphicsCommandList> handle)
+		:RenderContext(type,allocator)
 	{
-		_Type = type;
+		_Handle = handle;
 	}
 	
 	ComPtr<ID3D12GraphicsCommandList> _Handle;
@@ -68,18 +70,17 @@ class DX12Fence : public Fence
 public:
 	virtual ~DX12Fence()
 	{
-		delete[] _FenceValues;
 		_Handle.Reset();
 	}
 
-	virtual void Wait(u32 frameIndex, CommandQueue* commandQueue) override;
-	virtual void Advance(u32 frameIndex, u32 nextFrameIndex, CommandQueue* commandQueue) override;
+	virtual std::any Handle() override { return _Handle.Get(); }
+	virtual void CpuWait(u64 fenceValue) override;
+	virtual u64 GetCompletedValue() { return _Handle->GetCompletedValue(); }
 
 private:
-	DX12Fence(u64* frameValue, HANDLE fenceEvent,ComPtr<ID3D12Fence> handle)
+	DX12Fence(HANDLE fenceEvent,ComPtr<ID3D12Fence> handle)
 		:_FenceEvent(fenceEvent), _Handle(handle)
 	{
-		_FenceValues = frameValue;
 	}
 
 	HANDLE _FenceEvent;

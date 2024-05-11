@@ -1,11 +1,17 @@
 #include "Private.h"
 
-Viewport::Viewport(std::any hwnd, const RenderConfig& config)
+GameViewport::GameViewport(std::any hwnd, const RenderConfig& config)
 {
-	_ViewportRHI = new RHIViewport(config.FrameCount, config.FrameWidth, config.FrameHeight, hwnd);
+	RenderDevice* device = GameEngine::Instance().GetRHI().GetDevice();
+	_ViewportRHI = device->CreateViewport(RHIViewport::CreateInfo{
+		.Width = config.FrameWidth,
+		.Height = config.FrameHeight,
+		.Format = PixelFormat::R8G8B8A8_UNORM,
+		.HWND = hwnd,
+		});
 }
 
-Viewport::~Viewport()
+GameViewport::~GameViewport()
 {
 	delete _ViewportRHI;
 }

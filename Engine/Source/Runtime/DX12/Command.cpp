@@ -1,43 +1,20 @@
 #include "Private.h"
 
-void DX12Fence::Wait(u32 frameIndex, CommandQueue* commandQueue)
+void DX12Fence::CpuWait(u64 fenceValue)
 {
-    ID3D12CommandQueue* queue = std::any_cast<ID3D12CommandQueue*>(commandQueue->Handle());
-    check(SUCCEEDED(queue->Signal(_Handle.Get(), _FenceValues[frameIndex])));
-
     // Wait until the fence has been processed.
-    check(SUCCEEDED(_Handle->SetEventOnCompletion(_FenceValues[frameIndex], _FenceEvent)));
+    check(SUCCEEDED(_Handle->SetEventOnCompletion(fenceValue, _FenceEvent)));
     WaitForSingleObjectEx(_FenceEvent, INFINITE, FALSE);
-
-    _FenceValues[frameIndex]++;
 }
 
-void DX12Fence::Advance(u32 frameIndex, u32 nextFrameIndex, CommandQueue* commandQueue)
+void DX12CommandList::Reset()
 {
-    u64 currentFenceValue = _FenceValues[frameIndex];
-    ID3D12CommandQueue* queue = std::any_cast<ID3D12CommandQueue*>(commandQueue->Handle());
-    check(SUCCEEDED(queue->Signal(_Handle.Get(), currentFenceValue)));
- 
-    // If the next frame is not ready to be rendered yet, wait until it is ready.
-    if (_Handle->GetCompletedValue() < _FenceValues[nextFrameIndex])
-    {
-        check(SUCCEEDED(_Handle->SetEventOnCompletion(_FenceValues[nextFrameIndex], _FenceEvent)));
-        WaitForSingleObjectEx(_FenceEvent, INFINITE, FALSE);
-    }
-
-    _FenceValues[nextFrameIndex] = currentFenceValue + 1;
-}
-
-
-void DX12CommandList::Prepare(CommandAllocator* allocator)
-{
-    ID3D12CommandAllocator* alloc = std::any_cast<ID3D12CommandAllocator*>(allocator->Handle());
+    ID3D12CommandAllocator* alloc = std::any_cast<ID3D12CommandAllocator*>(_Allocator->Handle());
     check(SUCCEEDED(alloc->Reset()));
-
     check(SUCCEEDED(_Handle->Reset(alloc, nullptr)));
 }
 
-void DX12CommandList::End(Texture2DResource* presentResource)
+void DX12CommandList::Close(Texture2DResource* presentResource)
 {
     DX12Texture2DResource* dx12Res = dynamic_cast<DX12Texture2DResource*>(presentResource);
     if (dx12Res->GetState() != D3D12_RESOURCE_STATE_PRESENT)
@@ -59,15 +36,15 @@ void DX12CommandList::End(Texture2DResource* presentResource)
     check(SUCCEEDED(_Handle->Close()));
 }
 
-void DX12CommandList::SetViewport(const Viewport& viewport)
+void DX12CommandList::SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth, f32 maxDepth)
 {
     D3D12_VIEWPORT vp = {
-       .TopLeftX = (f32)viewport.X,
-       .TopLeftY = (f32)viewport.Y,
-       .Width = (f32)viewport.Width,
-       .Height = (f32)viewport.Height,
-       .MinDepth = viewport.MinDepth,
-       .MaxDepth = viewport.MaxDepth
+       .TopLeftX = (f32)x,
+       .TopLeftY = (f32)y,
+       .Width = (f32)width,
+       .Height = (f32)height,
+       .MinDepth = minDepth,
+       .MaxDepth = maxDepth
     };
 
     _Handle->RSSetViewports(1, &vp);
@@ -85,30 +62,33 @@ void DX12CommandList::SetScissorRect(u32 left, u32 top, u32 right, u32 bottom)
     _Handle->RSSetScissorRects(1, &rect);
 }
 
-void DX12CommandList::SetRenderTargets(std::vector<Texture2DResource*>& rts, Texture2DResource* depthStencil)
+void DX12CommandList::SetRenderTargets(u32 rtNum, Texture2DResource** rts, Texture2DResource* depthStencil)
 {
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtViews;
     D3D12_CPU_DESCRIPTOR_HANDLE dsView{};
     D3D12_CPU_DESCRIPTOR_HANDLE* pDepth = nullptr;
     std::vector<D3D12_RESOURCE_BARRIER> rtBarrier;
 
-    for (auto res : rts)
+    if (rtNum > 0 && rts)
     {
-        DX12Texture2DResource* dx12Res = dynamic_cast<DX12Texture2DResource*>(res);
-        rtViews.push_back(dx12Res->GetRenderTargetView());
-        if (dx12Res->GetState() != D3D12_RESOURCE_STATE_RENDER_TARGET)
+        for (u32 i=0; i<rtNum; i++)
         {
-            rtBarrier.push_back(D3D12_RESOURCE_BARRIER{
-                .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
-                .Transition = {
-                     .pResource = std::any_cast<ID3D12Resource*>(dx12Res->Handle()),
-                     .Subresource = 0,
-                     .StateBefore = dx12Res->GetState(),
-                     .StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET
-                } 
-             });
-            dx12Res->SetState(D3D12_RESOURCE_STATE_RENDER_TARGET);
+            DX12Texture2DResource* dx12Res = dynamic_cast<DX12Texture2DResource*>(rts[i]);
+            rtViews.push_back(dx12Res->GetRenderTargetView());
+            if (dx12Res->GetState() != D3D12_RESOURCE_STATE_RENDER_TARGET)
+            {
+                rtBarrier.push_back(D3D12_RESOURCE_BARRIER{
+                    .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                    .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+                    .Transition = {
+                         .pResource = std::any_cast<ID3D12Resource*>(dx12Res->Handle()),
+                         .Subresource = 0,
+                         .StateBefore = dx12Res->GetState(),
+                         .StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET
+                    }
+                    });
+                dx12Res->SetState(D3D12_RESOURCE_STATE_RENDER_TARGET);
+            }
         }
     }
 
@@ -124,14 +104,21 @@ void DX12CommandList::SetRenderTargets(std::vector<Texture2DResource*>& rts, Tex
         _Handle->ResourceBarrier((UINT)rtBarrier.size(), rtBarrier.data());
     }
 
-    _Handle->OMSetRenderTargets((UINT)rtViews.size(), rtViews.data(), false, pDepth);
+    if (rtViews.size() > 0)
+    {
+        _Handle->OMSetRenderTargets((UINT)rtViews.size(), rtViews.data(), false, pDepth);
+    }
+    else
+    {
+        _Handle->OMSetRenderTargets(0, nullptr, false, pDepth);
+    }
 
 }
 
-void DX12CommandList::ClearRenderTarget(Texture2DResource* renderTarget, std::array<float, 4>& colors)
+void DX12CommandList::ClearRenderTarget(Texture2DResource* renderTarget, const f32* colors)
 {
     DX12Texture2DResource* dx12Res = dynamic_cast<DX12Texture2DResource*>(renderTarget);
-    _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetView(), colors.data(), 0, nullptr);
+    _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetView(), colors, 0, nullptr);
 }
 
 void DX12CommandList::SetGraphicsRootSignature(RootSignature* signature)
@@ -139,14 +126,20 @@ void DX12CommandList::SetGraphicsRootSignature(RootSignature* signature)
     _Handle->SetGraphicsRootSignature(std::any_cast<ID3D12RootSignature*>(signature->Handle()));
 }
 
-void DX12CommandQueue::Excute(std::vector<CommandList*> commands)
+void DX12CommandQueue::Excute(u32 ctxNum, RenderContext** ctx)
 {
     std::vector<ID3D12CommandList*> commandLists;
-    for (CommandList* l : commands)
+    for (u32 i=0; i< ctxNum; i++)
     {
-        commandLists.push_back(std::any_cast<ID3D12GraphicsCommandList*>(l->Handle()));
+        commandLists.push_back(std::any_cast<ID3D12GraphicsCommandList*>(ctx[i]->Handle()));
     }
     _Handle->ExecuteCommandLists((UINT)commandLists.size(), commandLists.data());
+}
+
+void DX12CommandQueue::Signal(Fence* fence, u64 value)
+{
+    ID3D12Fence* fenceObj = std::any_cast<ID3D12Fence*>(fence->Handle());
+    check(SUCCEEDED(_Handle->Signal(fenceObj, value)));
 }
 
 void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRes)

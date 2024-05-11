@@ -5,21 +5,29 @@ struct DX12FormatInfo
 	DXGI_FORMAT   DXFormat;
 };
 
-class DX12SwapChain : public SwapChain
+
+class DX12Viewport : public RHIViewport
 {
 	friend class DX12Device;
 public:
-	virtual ~DX12SwapChain();
-	virtual u32 CurrentFrameIndex() override;
-	virtual void Present(bool vSync) override;
-private:
-	DX12SwapChain(const SwapChain::Config& config,std::vector<Texture2DResource*>& renderTargets, ComPtr<IDXGISwapChain3> handle)
+	DX12Viewport(const RHIViewport::CreateInfo& info, std::vector<Texture2DResource*>& renderTargets, ComPtr<IDXGISwapChain3> handle)
+		:RHIViewport(info)
 	{
-		_Config = config;
 		_RenderTargets = renderTargets;
 		_Handle = handle;
 	}
+	virtual ~DX12Viewport();
 
+	virtual u32 GetCurrentFrameIndex() override { return _Handle->GetCurrentBackBufferIndex(); }
+	virtual Texture2DResource* GetCurrentBackBuffer() override 
+	{
+		return _RenderTargets[GetCurrentFrameIndex()];
+	}
+
+	virtual void Present(bool vSync) override;
+
+private:
+	std::vector<Texture2DResource*> _RenderTargets;
 	ComPtr<IDXGISwapChain3> _Handle;
 };
 

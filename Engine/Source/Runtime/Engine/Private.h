@@ -8,7 +8,7 @@
 
 // module dependency.
 #include "../Core/Public.h"
-#include "../RenderCore/Public.h"
+#include "../RHI/Public.h"
 #include "../ShaderCompiler/Public.h"
 
 // inner dependency.

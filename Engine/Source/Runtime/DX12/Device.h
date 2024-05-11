@@ -1,25 +1,32 @@
 #pragma once
 
-class DX12Device : public RenderDevice
+class DX12Device final : public RenderDevice
 {
 public :
-
+	DX12Device();
+	virtual ~DX12Device();
+	virtual void WaitGPUIdle() override;
     virtual CommandQueue* CreateCommandQueue(const CommandType type) override;
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
-	virtual CommandList* CreateCommandList(CommandAllocator* allocator, const CommandType type) override;
+	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) override;
 	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) override;
-	virtual SwapChain* CreateSwapChain(const SwapChain::Config& config, CommandQueue* queue, DescriptorHeap* descriptorHeap, const std::any hwnd = nullptr) override;
+	virtual RHIViewport* CreateViewport(const RHIViewport::CreateInfo& info) override;
 	virtual RootSignature* CreateRootSignature(const std::vector<ShaderObject*>& shaders) override;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
-	virtual void InitPixelFormat_Platform() override;
-	virtual BufferResource* CreateBuffer(u64 size, u32 Usage, u8* initData = nullptr, u32 stride = 0, bool needCpuAccess = false, bool needAlignment = true) override;
-	virtual Fence* CreateFence(u32 frameCount) override;
+	virtual BufferResource* CreateBuffer(RenderContext* ctx, u64 size, u32 Usage, u8* initData = nullptr, u32 stride = 0, bool needCpuAccess = false, bool needAlignment = true) override;
+	virtual Fence* CreateFence(u64 initValue) override;
+
+	virtual RenderContext* BeginFrame(RHIViewport* viewport) override;
+	virtual void EndFrame(RenderContext* ctx, RHIViewport* viewport) override;
+
+	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
 
 private:
 	void ReportLiveObjects();
 	ComPtr<ID3DBlob> GenerateRootSignatureBlob(const std::vector<ShaderObject*>& shaders);
 
-	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
+    void InitPixelFormat_Platform();
+	
 	void TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, D3D12_GRAPHICS_PIPELINE_STATE_DESC& dxPso);
 	void TranslateBlendState(const BlendDesc& blend, D3D12_BLEND_DESC& dxBlend);
 	void TranslateRasterizerState(const RasterizerDesc& rasterizer, D3D12_RASTERIZER_DESC& dxRasterizer);
@@ -35,6 +42,7 @@ private:
 	ComPtr<IDXGIFactory4> _Factory;
 	ComPtr<IDXGIAdapter1> _Adapter;
 	ComPtr<ID3D12Device5> _Device;
+ 
 };
 
 

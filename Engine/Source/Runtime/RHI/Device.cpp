@@ -1,39 +1,58 @@
 #include "Private.h"
+ 
 
-RenderDevice* GRenderDevice = nullptr;
-RenderDevice& RenderDevice::Instance()
+PixelFormat GetInputLayoutPixelFormat(ShaderComponentType componentType, u8 componentMask)
 {
-	check(GRenderDevice);
-	return *GRenderDevice;
+    if (componentType == ShaderComponentType::FLOAT32)
+    {
+        if (componentMask == 0b1111)
+            return PixelFormat::R32G32B32A32_FLOAT;
+        else if (componentMask == 0b0111)
+            return PixelFormat::R32G32B32_FLOAT;
+        else if (componentMask == 0b0011)
+            return PixelFormat::R32G32_FLOAT;
+        else if (componentMask == 0b0001)
+            return PixelFormat::R32_FLOAT;
+        else
+			check(0);
+    }
+    else if (componentType == ShaderComponentType::UINT32)
+    {
+        if (componentMask == 0b1111)
+            return PixelFormat::R32G32B32A32_UINT;
+        else if (componentMask == 0b0111)
+            return PixelFormat::R32G32B32_UINT;
+        else if (componentMask == 0b0011)
+            return PixelFormat::R32G32_UINT;
+        else if (componentMask == 0b0001)
+            return PixelFormat::R32_UINT;
+        else
+			check(0);
+    }
+    else if (componentType == ShaderComponentType::SINT32)
+    {
+        if (componentMask == 0b1111)
+            return PixelFormat::R32G32B32A32_SINT;
+        else if (componentMask == 0b0111)
+            return PixelFormat::R32G32B32_SINT;
+        else if (componentMask == 0b0011)
+            return PixelFormat::R32G32_SINT;
+        else if (componentMask == 0b0001)
+            return PixelFormat::R32_SINT;
+        else
+			check(0);
+    }
+    else
+		check(0);
+
+    return PixelFormat::UNKNOWN;
 }
 
-u8 RenderDevice::GetPixelComponentSize(PixelFormat format)
+RenderDevice::~RenderDevice()
 {
-	return _Formats[(u32)format].ComponentSize;
-}
-
-u8 RenderDevice::GetPixelComponentNum(PixelFormat format)
-{
-	return _Formats[(u32)format].ComponentNum;
-}
-
-u8 RenderDevice::GetPixelSize(PixelFormat format)
-{
-	return _Formats[(u32)format].ByteSize;
-}
-
-bool RenderDevice::IsCompressedPixelFormat(PixelFormat format)
-{
-	return _Formats[(u32)format].CompressFormat;
 }
 
 RenderDevice::RenderDevice()
-{
-	GRenderDevice = this;
-	InitPixelFormat();
-}
-
-void RenderDevice::InitPixelFormat()
 {
 	_Formats.resize((u32)PixelFormat::MAX);
 
@@ -235,55 +254,26 @@ void RenderDevice::InitPixelFormat()
 			 .CompressFormat = true
 		};
 	}
-
-	InitPixelFormat_Platform();
 }
 
-PixelFormat GetInputLayoutPixelFormat(ShaderComponentType componentType, u8 componentMask)
+u8 RenderDevice::GetPixelComponentSize(PixelFormat format)
 {
-    if (componentType == ShaderComponentType::FLOAT32)
-    {
-        if (componentMask == 0b1111)
-            return PixelFormat::R32G32B32A32_FLOAT;
-        else if (componentMask == 0b0111)
-            return PixelFormat::R32G32B32_FLOAT;
-        else if (componentMask == 0b0011)
-            return PixelFormat::R32G32_FLOAT;
-        else if (componentMask == 0b0001)
-            return PixelFormat::R32_FLOAT;
-        else
-			check(0);
-    }
-    else if (componentType == ShaderComponentType::UINT32)
-    {
-        if (componentMask == 0b1111)
-            return PixelFormat::R32G32B32A32_UINT;
-        else if (componentMask == 0b0111)
-            return PixelFormat::R32G32B32_UINT;
-        else if (componentMask == 0b0011)
-            return PixelFormat::R32G32_UINT;
-        else if (componentMask == 0b0001)
-            return PixelFormat::R32_UINT;
-        else
-			check(0);
-    }
-    else if (componentType == ShaderComponentType::SINT32)
-    {
-        if (componentMask == 0b1111)
-            return PixelFormat::R32G32B32A32_SINT;
-        else if (componentMask == 0b0111)
-            return PixelFormat::R32G32B32_SINT;
-        else if (componentMask == 0b0011)
-            return PixelFormat::R32G32_SINT;
-        else if (componentMask == 0b0001)
-            return PixelFormat::R32_SINT;
-        else
-			check(0);
-    }
-    else
-		check(0);
+    return _Formats[(u32)format].ComponentSize;
+}
 
-    return PixelFormat::UNKNOWN;
+u8 RenderDevice::GetPixelComponentNum(PixelFormat format)
+{
+    return _Formats[(u32)format].ComponentNum;
+}
+
+u8 RenderDevice::GetPixelSize(PixelFormat format)
+{
+    return _Formats[(u32)format].ByteSize;
+}
+
+bool RenderDevice::IsCompressedPixelFormat(PixelFormat format)
+{
+    return _Formats[(u32)format].CompressFormat;
 }
 
 InputSlotClass GetSlotClass(const std::string& semanticName,u32 semanticIndex)

@@ -1,53 +1,59 @@
 #include "Private.h"
 
-RenderContext* GRenderContext = nullptr;
-RenderContext& RenderContext::Instance()
+RenderContext::RenderContext(CommandType type, CommandAllocator* allocator)
+	:_Type(type),
+	_Allocator(allocator)
 {
-	check(GRenderContext);
-	return *GRenderContext;
+}
+ 
+ContextManager::ContextManager(RenderDevice* device)
+{
+	_Device = device;
+	for (u32 index = 0; index < CommandAllocatorNumber; index++)
+	{
+		_DirectCommandAllocators.push_back(device->CreateCommandAllocator(CommandType::Direct));
+		_DirectContexts.push_back(device->CreateCommandContext(_DirectCommandAllocators[index], CommandType::Direct));
+		_FenceValues[index] = 0;
+	}
+	_DirectCommandQueue = device->CreateCommandQueue(CommandType::Direct);
+
+
+	_ComputeCommandAllocator = device->CreateCommandAllocator(CommandType::Compute);
+	_ComputeCommandQueue = device->CreateCommandQueue(CommandType::Compute);
+	_ComputeContext = device->CreateCommandContext(_ComputeCommandAllocator, CommandType::Compute);
+
+	_CopyCommandAllocator = device->CreateCommandAllocator(CommandType::Copy);
+	_CopyCommandQueue = device->CreateCommandQueue(CommandType::Copy);
+	_CopyContext = device->CreateCommandContext(_CopyCommandAllocator, CommandType::Copy);
 }
 
-RenderContext::RenderContext()
+ContextManager::~ContextManager()
 {
-	GRenderContext = this;
-}
+	delete _CopyContext;
+	_CopyContext = nullptr;
 
-void RenderContext::Prepare(u32 frameIndex)
-{
-	_DirectCommandList->Prepare(_DirectCommandAllocator[frameIndex]);
-}
+	delete _CopyCommandQueue;
+	_CopyCommandQueue = nullptr;
 
-void RenderContext::End(Texture2DResource* presentResource)
-{
-	_DirectCommandList->End(presentResource);
+	delete _CopyCommandAllocator;
+	_CopyCommandAllocator = nullptr;
 
-	std::vector<CommandList*> commandList;
-	commandList.push_back(_DirectCommandList);
-	_DirectCommandQueue->Excute(commandList);
-}
+	delete _ComputeContext;
+	_ComputeContext = nullptr;
 
-void RenderContext::SetViewport(const Viewport& viewport)
-{
-	_DirectCommandList->SetViewport(viewport);
-}
-void RenderContext::SetScissorRect(u32 left, u32 top, u32 right, u32 bottom)
-{
-	_DirectCommandList->SetScissorRect(left, top, right, bottom);
-}
-void RenderContext::SetRenderTargets(std::vector<Texture2DResource*>& rts, Texture2DResource* depthStencil)
-{
-	_DirectCommandList->SetRenderTargets(rts, depthStencil);
-}
-void RenderContext::ClearRenderTarget(Texture2DResource* renderTarget, std::array<float, 4>& colors)
-{
-	_DirectCommandList->ClearRenderTarget(renderTarget, colors);
-}
-void RenderContext::SetGraphicsRootSignature(RootSignature* signature)
-{
-	_DirectCommandList->SetGraphicsRootSignature(signature);
-}
+	delete _ComputeCommandQueue;
+	_ComputeCommandQueue = nullptr;
 
-void RenderContext::CopyResource(RenderResource* dstRes, RenderResource* srcRes)
-{
-	_DirectCommandList->CopyResource(dstRes, srcRes);
+	delete _ComputeCommandAllocator;
+	_ComputeCommandAllocator = nullptr;
+
+	delete _DirectCommandQueue;
+	_DirectCommandQueue = nullptr;
+
+	for (u32 index = 0; index < CommandAllocatorNumber; index++)
+	{
+		delete _DirectContexts[index];
+		delete _DirectCommandAllocators[index];
+	}
+
 }

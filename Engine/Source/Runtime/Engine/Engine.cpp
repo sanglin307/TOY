@@ -6,13 +6,26 @@ GameEngine& GameEngine::Instance()
 	return Inst;
 }
 
-IRendererModule& GetRendererModule()
+IRendererModule& GameEngine::GetRenderer()
 {
 	static IRendererModule* module = nullptr;
 	if (module == nullptr)
 	{
 		module = static_cast<IRendererModule*>(ModuleManager::LoadModule("Renderer"));
 	}
+
+	return *module;
+}
+
+IRHIModule& GameEngine::GetRHI()
+{
+	IRHIModule* module = nullptr;
+	if (_RenderConfig.API == RenderAPI::DX12)
+	{
+		module = static_cast<IRHIModule*>(ModuleManager::LoadModule("DX12"));
+	}
+
+	check(module);
 
 	return *module;
 }
@@ -37,23 +50,33 @@ void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 	_Params = cmds;
 }
 
+
+
 void GameEngine::Init(std::any hwnd)
 {
-	GameWorld::Instance().Init();
 	LogUtil::Init();
+
 	_FrameRate.Init();
 
-	_GameViewport = new Viewport(hwnd, _RenderConfig);
+	GetRHI().Init();
+
+	_GameViewport = new GameViewport(hwnd, _RenderConfig);
  
-	GetRendererModule().Init(_RenderConfig.API);
+	GetRenderer().Init();
+	GameWorld::Instance().Init();
 }
 
 void GameEngine::Destroy()
 {
+	GetRHI().GetDevice()->WaitGPUIdle();
+
+	GetRenderer().Destroy();
+
 	delete _GameViewport;
 	_GameViewport = nullptr;
 
-	GetRendererModule().Destroy();
+	GetRHI().Destroy();
+
 	_FrameRate.Destroy();
 	LogUtil::Destroy();
 }
@@ -65,7 +88,7 @@ void GameEngine::Update()
 
 	GameWorld::Instance().Update(delta);
 
-	GetRendererModule().Render();
+	GetRenderer().Render(_GameViewport->GetRHI());
 }
 
 void GameEngine::FrameSize(u32& Width, u32& Height)

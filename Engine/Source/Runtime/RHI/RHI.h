@@ -1,14 +1,31 @@
 #pragma once
 
+enum class RenderAPI
+{
+    DX12,
+    Vulkan,
+    Metal,
+};
+
+
+struct RenderConfig
+{
+    RenderAPI API;
+    u32 FrameCount;
+    u32 FrameWidth;
+    u32 FrameHeight;
+
+};
+
+class IRendererModule : public ModuleInterface
+{
+public:
+    virtual void Render(RHIViewport* viewport) = 0;
+};
 
 class IRHIModule : public ModuleInterface
 {
 public:
-    virtual void Init() override {};
-    virtual void Destroy() override {};
-    virtual RenderDevice* CreateDevice() = 0;
-    virtual RenderContext* CreateContext(u32 frameCount) = 0;
+    virtual RenderDevice* GetDevice() = 0;
 };
-
-
-
+ 

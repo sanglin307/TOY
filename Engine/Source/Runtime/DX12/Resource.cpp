@@ -23,13 +23,9 @@ std::any DX12DescriptorHeap::GetGPUDescriptorHandle(u32 reserve)
     return base;
 }
 
-u32 DX12SwapChain::CurrentFrameIndex()
-{
-    check(_Handle);
-    return _Handle->GetCurrentBackBufferIndex();
-}
+ 
 
-DX12SwapChain::~DX12SwapChain()
+DX12Viewport::~DX12Viewport()
 {
     for (RenderResource* res : _RenderTargets)
     {
@@ -87,13 +83,12 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, b
     return new DX12DescriptorHeap(hc, heap);
 }
 
-
-void DX12SwapChain::Present(bool vSync)
+void DX12Viewport::Present(bool vSync)
 {
     check(SUCCEEDED(_Handle->Present(vSync ? 1 : 0, 0)));
 }
 
-BufferResource* DX12Device::CreateBuffer(u64 size, u32 usage, u8* initData, u32 stride, bool needCpuAccess, bool needAlignment)
+BufferResource* DX12Device::CreateBuffer(RenderContext* ctx, u64 size, u32 usage, u8* initData, u32 stride, bool needCpuAccess, bool needAlignment)
 {
     check(_Device);
 
@@ -151,8 +146,7 @@ BufferResource* DX12Device::CreateBuffer(u64 size, u32 usage, u8* initData, u32 
             std::memcpy(pData, initData, size);
             tempRes->Unmap(0, nullptr);
             
-            CommandList* commandList = CommandManager::Instance().GetCopyCommandList();
-            ID3D12GraphicsCommandList* dxCommandList = std::any_cast<ID3D12GraphicsCommandList*>(commandList->Handle());
+            ID3D12GraphicsCommandList* dxCommandList = std::any_cast<ID3D12GraphicsCommandList*>(ctx->Handle());
             dxCommandList->CopyResource(resource.Get(), tempRes.Get());
             D3D12_RESOURCE_BARRIER barrier = {
                 .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,

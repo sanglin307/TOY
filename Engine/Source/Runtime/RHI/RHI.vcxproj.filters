@@ -30,15 +30,30 @@
     <ClInclude Include="Context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Descriptor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Pipeline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexFormat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="RHI.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Device.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Context.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Descriptor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

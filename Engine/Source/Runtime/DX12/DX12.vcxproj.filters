@@ -30,10 +30,7 @@
     <ClInclude Include="Pipeline.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Module.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Context.h">
+    <ClInclude Include="RHI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,10 +44,7 @@
     <ClCompile Include="Resource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Module.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Context.cpp">
+    <ClCompile Include="RHI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

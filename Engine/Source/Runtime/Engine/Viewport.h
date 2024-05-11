@@ -1,11 +1,12 @@
 #pragma once
 
-class Viewport
+class GameViewport
 {
 public:
-	Viewport(std::any hwnd, const RenderConfig& config);
-	virtual ~Viewport();
+	GameViewport(std::any hwnd, const RenderConfig& config);
+	virtual ~GameViewport();
 
+	RHIViewport* GetRHI() { return _ViewportRHI; }
 private:
 	RHIViewport* _ViewportRHI;
 };

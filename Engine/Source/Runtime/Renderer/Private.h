@@ -6,9 +6,8 @@
 
 
 #include "../Core/Public.h"
-#include "../RenderCore/Public.h"
-#include "../Engine/Public.h"
 #include "../RHI/Public.h"
+#include "../Engine/Public.h"
 
 #include "PipelineCache.h"
 #include "RenderScene.h"

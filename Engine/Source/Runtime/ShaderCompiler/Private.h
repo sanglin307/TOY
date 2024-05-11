@@ -15,6 +15,6 @@ using namespace Microsoft::WRL;
 
 
 #include "../Core/Public.h"
-#include "../RenderCore/Public.h"
+#include "../RHI/Public.h"
 
 #include "Compiler.h"
