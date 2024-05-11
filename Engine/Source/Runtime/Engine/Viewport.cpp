@@ -3,7 +3,7 @@
 GameViewport::GameViewport(std::any hwnd, const RenderConfig& config)
 {
 	RenderDevice* device = GameEngine::Instance().GetRHI().GetDevice();
-	_ViewportRHI = device->CreateViewport(RHIViewport::CreateInfo{
+	_SwapchainRHI = device->CreateSwapchain(Swapchain::CreateInfo{
 		.Width = config.FrameWidth,
 		.Height = config.FrameHeight,
 		.Format = PixelFormat::R8G8B8A8_UNORM,
@@ -13,5 +13,5 @@ GameViewport::GameViewport(std::any hwnd, const RenderConfig& config)
 
 GameViewport::~GameViewport()
 {
-	delete _ViewportRHI;
+	delete _SwapchainRHI;
 }

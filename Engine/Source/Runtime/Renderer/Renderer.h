@@ -6,7 +6,7 @@ class RendererModule : public IRendererModule
 public:
     virtual void Init() override;
     virtual void Destroy() override;
-    virtual void Render(RHIViewport* viewport) override;
+    virtual void Render(Swapchain* viewport) override;
 
 private:
     RenderScene* _Scene;

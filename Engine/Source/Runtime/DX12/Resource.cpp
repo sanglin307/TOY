@@ -23,9 +23,12 @@ std::any DX12DescriptorHeap::GetGPUDescriptorHandle(u32 reserve)
     return base;
 }
 
- 
+void DX12Swapchain::Present(bool vSync)
+{
+    check(SUCCEEDED(_Handle->Present(vSync ? 1 : 0, 0)));
+}
 
-DX12Viewport::~DX12Viewport()
+DX12Swapchain::~DX12Swapchain()
 {
     for (RenderResource* res : _RenderTargets)
     {
@@ -83,10 +86,7 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, b
     return new DX12DescriptorHeap(hc, heap);
 }
 
-void DX12Viewport::Present(bool vSync)
-{
-    check(SUCCEEDED(_Handle->Present(vSync ? 1 : 0, 0)));
-}
+
 
 BufferResource* DX12Device::CreateBuffer(RenderContext* ctx, u64 size, u32 usage, u8* initData, u32 stride, bool needCpuAccess, bool needAlignment)
 {

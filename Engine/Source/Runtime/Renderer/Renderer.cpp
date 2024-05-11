@@ -25,20 +25,20 @@ void RendererModule::Init()
 	_Device = GetRHI(_RenderConfig.API).GetDevice();
 }
  
-void RendererModule::Render(RHIViewport* viewport)
+void RendererModule::Render(Swapchain* sc)
 {
-	RenderContext* ctx = _Device->BeginFrame(viewport);
+	RenderContext* ctx = _Device->BeginFrame(sc);
 
 	ctx->SetViewport(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 	ctx->SetScissorRect(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 
-	Texture2DResource* rts[] = { viewport->GetCurrentBackBuffer() };
+	Texture2DResource* rts[] = { sc->GetCurrentBackBuffer() };
 	ctx->SetRenderTargets(1, rts, nullptr);
 
 	const f32 colors[] = {0.0f, 1.f, 0.4f, 1.0f};
 	ctx->ClearRenderTarget(rts[0], colors);
 
-	_Device->EndFrame(ctx,viewport);
+	_Device->EndFrame(ctx,sc);
 }
 
 void RendererModule::Destroy()

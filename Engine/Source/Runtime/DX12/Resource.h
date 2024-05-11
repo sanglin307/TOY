@@ -6,17 +6,17 @@ struct DX12FormatInfo
 };
 
 
-class DX12Viewport : public RHIViewport
+class DX12Swapchain : public Swapchain
 {
 	friend class DX12Device;
 public:
-	DX12Viewport(const RHIViewport::CreateInfo& info, std::vector<Texture2DResource*>& renderTargets, ComPtr<IDXGISwapChain3> handle)
-		:RHIViewport(info)
+	DX12Swapchain(const Swapchain::CreateInfo& info, std::vector<Texture2DResource*>& renderTargets, ComPtr<IDXGISwapChain3> handle)
+		:Swapchain(info)
 	{
 		_RenderTargets = renderTargets;
 		_Handle = handle;
 	}
-	virtual ~DX12Viewport();
+	virtual ~DX12Swapchain();
 
 	virtual u32 GetCurrentFrameIndex() override { return _Handle->GetCurrentBackBufferIndex(); }
 	virtual Texture2DResource* GetCurrentBackBuffer() override 

@@ -207,7 +207,7 @@ enum class ViewDimension
 
 class CommandList;
 
-class RHIViewport
+class Swapchain
 {
 public:
     struct CreateInfo
@@ -220,11 +220,11 @@ public:
         u16 SampleCount = 1;
         u16 SampleQuality = 0;
     };
-    RHIViewport(const CreateInfo& info)
+    Swapchain(const CreateInfo& info)
         :_Info(info)
     {}
 
-    virtual ~RHIViewport() {};
+    virtual ~Swapchain() {};
 
     virtual u32 GetCurrentFrameIndex() = 0;
     virtual Texture2DResource* GetCurrentBackBuffer() = 0;

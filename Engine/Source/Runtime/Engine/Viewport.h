@@ -6,7 +6,7 @@ public:
 	GameViewport(std::any hwnd, const RenderConfig& config);
 	virtual ~GameViewport();
 
-	RHIViewport* GetRHI() { return _ViewportRHI; }
+	Swapchain* GetRHI() { return _SwapchainRHI; }
 private:
-	RHIViewport* _ViewportRHI;
+	Swapchain* _SwapchainRHI;
 };

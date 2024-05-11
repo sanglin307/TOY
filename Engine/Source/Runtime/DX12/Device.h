@@ -10,14 +10,14 @@ public :
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) override;
 	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) override;
-	virtual RHIViewport* CreateViewport(const RHIViewport::CreateInfo& info) override;
+	virtual Swapchain* CreateSwapchain(const Swapchain::CreateInfo& info) override;
 	virtual RootSignature* CreateRootSignature(const std::vector<ShaderObject*>& shaders) override;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
 	virtual BufferResource* CreateBuffer(RenderContext* ctx, u64 size, u32 Usage, u8* initData = nullptr, u32 stride = 0, bool needCpuAccess = false, bool needAlignment = true) override;
 	virtual Fence* CreateFence(u64 initValue) override;
 
-	virtual RenderContext* BeginFrame(RHIViewport* viewport) override;
-	virtual void EndFrame(RenderContext* ctx, RHIViewport* viewport) override;
+	virtual RenderContext* BeginFrame(Swapchain* viewport) override;
+	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) override;
 
 	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
 

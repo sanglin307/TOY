@@ -10,10 +10,10 @@ public:
 
 	virtual std::any Handle() { return nullptr; };
 
-	virtual RenderContext* BeginFrame(RHIViewport* viewport) = 0;
-	virtual void EndFrame(RenderContext* ctx, RHIViewport* viewport) = 0;
+	virtual RenderContext* BeginFrame(Swapchain* viewport) = 0;
+	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) = 0;
 
-	virtual RHIViewport* CreateViewport(const RHIViewport::CreateInfo& info) = 0;
+	virtual Swapchain* CreateSwapchain(const Swapchain::CreateInfo& info) = 0;
 	virtual CommandQueue* CreateCommandQueue(const CommandType type) = 0;
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) = 0;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) = 0;

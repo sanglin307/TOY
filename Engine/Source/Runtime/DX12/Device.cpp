@@ -143,27 +143,27 @@ Fence* DX12Device::CreateFence(u64 initValue)
 
 }
 
-RenderContext* DX12Device::BeginFrame(RHIViewport* viewport)
+RenderContext* DX12Device::BeginFrame(Swapchain* sc)
 {
-    RenderContext* context = _ContextManager->GetDirectContext(viewport->GetCurrentFrameIndex());
+    RenderContext* context = _ContextManager->GetDirectContext(sc->GetCurrentFrameIndex());
     context->Reset();
     return context;
 }
 
-void DX12Device::EndFrame(RenderContext* ctx, RHIViewport* viewport)
+void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
 {
-    Texture2DResource* rt = viewport->GetCurrentBackBuffer();
+    Texture2DResource* rt = sc->GetCurrentBackBuffer();
     ctx->Close(rt);
  
     CommandQueue* commandQueue = _ContextManager->GetDirectQueue();
     RenderContext* ctxs[] = { ctx };
     commandQueue->Excute(1,ctxs);
 
-    u32 lastframeIndex = viewport->GetCurrentFrameIndex();
+    u32 lastframeIndex = sc->GetCurrentFrameIndex();
 
-    viewport->Present(true);
+    sc->Present(true);
 
-    u32 nextFrameIndex = viewport->GetCurrentFrameIndex();
+    u32 nextFrameIndex = sc->GetCurrentFrameIndex();
 
     u64& lastFenceValue = _ContextManager->GetFenceValue(lastframeIndex);
     u64& nextFenceValue = _ContextManager->GetFenceValue(nextFrameIndex);
@@ -223,7 +223,7 @@ RenderContext* DX12Device::CreateCommandContext(CommandAllocator* allocator, con
     return nullptr;
 }
 
-RHIViewport* DX12Device::CreateViewport(const RHIViewport::CreateInfo& info)
+Swapchain* DX12Device::CreateSwapchain(const Swapchain::CreateInfo& info)
 {
     check(_Factory);
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {
@@ -274,7 +274,7 @@ RHIViewport* DX12Device::CreateViewport(const RHIViewport::CreateInfo& info)
             rvtHandle.ptr += rvtHeap->GetStride();
         }
 
-        return new DX12Viewport(info, rtResources, swapChain3);
+        return new DX12Swapchain(info, rtResources, swapChain3);
     }
 
 
