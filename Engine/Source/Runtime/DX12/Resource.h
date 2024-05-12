@@ -10,7 +10,7 @@ class DX12Swapchain : public Swapchain
 {
 	friend class DX12Device;
 public:
-	DX12Swapchain(const Swapchain::CreateInfo& info, std::vector<Texture2DResource*>& renderTargets, ComPtr<IDXGISwapChain3> handle)
+	DX12Swapchain(const Swapchain::CreateInfo& info, std::vector<RenderTexture2D*>& renderTargets, ComPtr<IDXGISwapChain3> handle)
 		:Swapchain(info)
 	{
 		_RenderTargets = renderTargets;
@@ -19,7 +19,7 @@ public:
 	virtual ~DX12Swapchain();
 
 	virtual u32 GetCurrentFrameIndex() override { return _Handle->GetCurrentBackBufferIndex(); }
-	virtual Texture2DResource* GetCurrentBackBuffer() override 
+	virtual RenderTexture2D* GetCurrentBackBuffer() override
 	{
 		return _RenderTargets[GetCurrentFrameIndex()];
 	}
@@ -27,7 +27,7 @@ public:
 	virtual void Present(bool vSync) override;
 
 private:
-	std::vector<Texture2DResource*> _RenderTargets;
+	std::vector<RenderTexture2D*> _RenderTargets;
 	ComPtr<IDXGISwapChain3> _Handle;
 };
 
@@ -48,20 +48,16 @@ private:
 	ComPtr<ID3D12DescriptorHeap> _Handle = nullptr;
 };
 
-class DX12BufferResource : public BufferResource
+class DX12RenderBuffer : public RenderBuffer
 {
 	friend class DX12Device;
 public:
-	virtual ~DX12BufferResource() { _Handle.Reset(); }
+	virtual ~DX12RenderBuffer() { _Handle.Reset(); }
 
 private:
-	DX12BufferResource(u64 size, u32 usage, u32 stride, bool needCpuAccess, bool needAlignment,ComPtr<ID3D12Resource> handle)
+	DX12RenderBuffer(const RenderBuffer::CreateInfo& info,ComPtr<ID3D12Resource> handle)
 	{
-		Size = size;
-		Usage = usage;
-		Stride = stride;
-		NeedCpuAccess = needCpuAccess;
-		NeedAlignment = needAlignment;
+		_Info = info;
 		_Handle = handle;
 	}
 
@@ -69,33 +65,33 @@ private:
 	ComPtr<ID3D12Resource> _Handle;
 };
 
-class DX12Texture2DResource : public Texture2DResource
+class DX12RenderTexture2D : public RenderTexture2D
 {
 	friend class DX12Device;
 public:
-	virtual ~DX12Texture2DResource() { _Handle.Reset(); }
+	virtual ~DX12RenderTexture2D() { _Handle.Reset(); }
 	virtual std::any Handle() override { return _Handle.Get(); } 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() 
 	{
-		check(Usage & (u32)ResourceUsage::RenderTarget);
+		check(_Info.Usage & (u32)ResourceUsage::RenderTarget);
 		return _RenderTargetView;
 	}
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView()
 	{
-		check(Usage & (u32)ResourceUsage::DepthStencil);
+		check(_Info.Usage & (u32)ResourceUsage::DepthStencil);
 		return _DepthStencilView;
 	}
 
 	void SetRenderTargetView(D3D12_CPU_DESCRIPTOR_HANDLE handle)
 	{
-		Usage |= (u32)ResourceUsage::RenderTarget;
+		_Info.Usage |= (u32)ResourceUsage::RenderTarget;
 		_RenderTargetView = handle;
 	}
 
 	void SetDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE handle)
 	{
-		Usage |= (u32)ResourceUsage::DepthStencil;
+		_Info.Usage |= (u32)ResourceUsage::DepthStencil;
 		_DepthStencilView = handle;
 	}
 
@@ -104,8 +100,9 @@ public:
 
 private:
 
-	DX12Texture2DResource(ComPtr<ID3D12Resource> handle)
+	DX12RenderTexture2D(const CreateInfo& info, ComPtr<ID3D12Resource> handle)
 	{
+		_Info = info;
 		_Handle = handle;
 	}
 

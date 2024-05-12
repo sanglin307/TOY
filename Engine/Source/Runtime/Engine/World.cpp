@@ -9,18 +9,20 @@ GameWorld& GameWorld::Instance()
 
 void GameWorld::Init()
 {
-	std::array<ShaderObject*, (size_t)ShaderProfile::MAX> shaders;
-	ShaderObject* vs = ShaderCompiler::CompileHLSL(ShaderCompiler::Args{
+	_RenderScene = GameEngine::Instance().GetRenderer().AllocateScene(this);
+
+	std::array<ShaderResource*, (size_t)ShaderProfile::MAX> shaders;
+	ShaderResource* vs = ShaderCompiler::CompileHLSL(ShaderCompiler::Args{
 		.Profile = ShaderProfile::Vertex,
-		.FileName = "shader.hlsl",
-		.EntryName = "VSMain",
+		.Path = "shader.hlsl",
+		.EntryPoint = "VSMain",
 		.Debug = true
 		});
 
-	ShaderObject* ps = ShaderCompiler::CompileHLSL(ShaderCompiler::Args{
+	ShaderResource* ps = ShaderCompiler::CompileHLSL(ShaderCompiler::Args{
 		.Profile = ShaderProfile::Pixel,
-		.FileName = "shader.hlsl",
-		.EntryName = "PSMain",
+		.Path = "shader.hlsl",
+		.EntryPoint = "PSMain",
 		.Debug = true
 		});
 
@@ -54,21 +56,30 @@ void GameWorld::Init()
 		{ 0.0f, 0.0f, 1.0f } 
 	};
 
-	PostionVertexData* pos = PostionVertexData::Create(positionVertices, 3);
-	ColorVertexData* color = ColorVertexData::Create(colorVertices, 3);
-	VertexFormat* format = new StaticMeshVF;
-	StaticMesh* mesh = StaticMesh::Create(format, pos, color, mat);
+	Mesh* mesh = Mesh::Create(PrimitiveTopology::Triangle);
+	mesh->InsertAttribute(VertexAttribute::Position, VertexData{
+		.Format = VertexFormat::Float32x3,
+		.Data = (u8*)positionVertices,
+		.Size = 3 * sizeof(Vector3f)
+		});
+	mesh->InsertAttribute(VertexAttribute::Color, VertexData{
+		.Format = VertexFormat::Float32x3,
+		.Data = (u8*)colorVertices,
+		.Size = 3 * sizeof(Vector3f)
+		});
 	
 	_Meshes.push_back(mesh);
 }
 
 void GameWorld::Destroy()
 {
-	for (StaticMesh* mesh : _Meshes)
+	for (Mesh* mesh : _Meshes)
 	{
 		delete mesh;
 	}
 	_Meshes.clear();
+	
+	GameEngine::Instance().GetRenderer().RemoveScene(_RenderScene);
 }
 
 void GameWorld::Update(double delta)

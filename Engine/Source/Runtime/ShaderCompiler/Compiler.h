@@ -8,11 +8,11 @@ public:
 	struct Args
 	{
 		ShaderProfile Profile;
-		std::string FileName;
-		std::string EntryName;
+		std::string Path;
+		std::string EntryPoint;
 		std::vector<std::string> Defines;
 		bool Debug;
 	};
 
-	static SHADER_API ShaderObject* CompileHLSL(const Args& args); 
+	static SHADER_API ShaderResource* CompileHLSL(const Args& args);
 };

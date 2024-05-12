@@ -70,6 +70,8 @@ void GameEngine::Destroy()
 {
 	GetRHI().GetDevice()->WaitGPUIdle();
 
+	GameWorld::Instance().Destroy();
+
 	GetRenderer().Destroy();
 
 	delete _GameViewport;

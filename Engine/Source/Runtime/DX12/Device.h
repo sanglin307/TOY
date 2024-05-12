@@ -11,9 +11,9 @@ public :
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) override;
 	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) override;
 	virtual Swapchain* CreateSwapchain(const Swapchain::CreateInfo& info) override;
-	virtual RootSignature* CreateRootSignature(const std::vector<ShaderObject*>& shaders) override;
+	virtual RootSignature* CreateRootSignature(const std::vector<ShaderResource*>& shaders) override;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
-	virtual BufferResource* CreateBuffer(RenderContext* ctx, u64 size, u32 Usage, u8* initData = nullptr, u32 stride = 0, bool needCpuAccess = false, bool needAlignment = true) override;
+	virtual RenderBuffer* CreateBuffer(RenderContext* ctx, const RenderBuffer::CreateInfo& info) override;
 	virtual Fence* CreateFence(u64 initValue) override;
 
 	virtual RenderContext* BeginFrame(Swapchain* viewport) override;
@@ -23,7 +23,7 @@ public :
 
 private:
 	void ReportLiveObjects();
-	ComPtr<ID3DBlob> GenerateRootSignatureBlob(const std::vector<ShaderObject*>& shaders);
+	ComPtr<ID3DBlob> GenerateRootSignatureBlob(const std::vector<ShaderResource*>& shaders);
 
     void InitPixelFormat_Platform();
 	

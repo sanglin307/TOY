@@ -14,21 +14,47 @@ enum class ShaderProfile
 	MAX
 };
 
-struct ShaderObject
+struct ShaderBlobData
 {
-	~ShaderObject()
-	{
-		if (BlobData)
-			delete BlobData;
+	u8* Data;
+	u64 Size;
+};
 
-		if (Reflection)
-			delete Reflection;
+class ShaderResource
+{
+public:
+	struct Desc
+	{
+		ShaderProfile Profile;
+		std::map<std::string, std::string> Macro;
+		std::string Hash;
+		std::string DebugName;
+		std::string Path;
+		std::string EntryPoint;
+		ShaderBlobData Blob;
+		ShaderReflection* Reflection;
+	};
+
+	ShaderResource(const Desc& desc)
+		:_Desc(desc)
+	{
 	}
 
-	ShaderProfile Profile;
-	std::string Hash;
-	std::string DebugName;
-	u8* BlobData = nullptr;
-	u64 BlobSize;
-	ShaderReflection* Reflection = nullptr;
+	ShaderProfile GetProfile() { return _Desc.Profile; }
+	ShaderReflection* GetReflection() { return _Desc.Reflection; }
+	const std::string& GetDebugName() const { return _Desc.DebugName; }
+	ShaderBlobData GetBlobData() { return _Desc.Blob; }
+	const std::string& GetHash() const { return _Desc.Hash; }
+
+	~ShaderResource()
+	{
+		if (_Desc.Blob.Data)
+			delete _Desc.Blob.Data;
+
+		if (_Desc.Reflection)
+			delete _Desc.Reflection;
+	}
+
+private:
+	Desc _Desc;
 };

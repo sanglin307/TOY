@@ -19,5 +19,6 @@ private:
 	GameWorld& operator=(GameWorld&& rhs) = delete;
 
 private:
-	std::vector<StaticMesh*> _Meshes;
+	std::vector<Mesh*> _Meshes;
+	IRenderScene*  _RenderScene;
 };

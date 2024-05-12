@@ -152,7 +152,7 @@ RenderContext* DX12Device::BeginFrame(Swapchain* sc)
 
 void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
 {
-    Texture2DResource* rt = sc->GetCurrentBackBuffer();
+    RenderTexture2D* rt = sc->GetCurrentBackBuffer();
     ctx->Close(rt);
  
     CommandQueue* commandQueue = _ContextManager->GetDirectQueue();
@@ -254,7 +254,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::CreateInfo& info)
         ComPtr<IDXGISwapChain3> swapChain3;
         check(SUCCEEDED(swapChain.As<IDXGISwapChain3>(&swapChain3)));
 
-        std::vector<Texture2DResource*> rtResources;
+        std::vector<RenderTexture2D*> rtResources;
         rtResources.resize(info.FrameCount);
         D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(rvtHeap->GetCPUDescriptorHandle(info.FrameCount));
         for (u32 n = 0; n < info.FrameCount; n++)
@@ -263,11 +263,14 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::CreateInfo& info)
             check(SUCCEEDED(swapChain3->GetBuffer(n, IID_PPV_ARGS(&res))));
             _Device->CreateRenderTargetView(res.Get(), nullptr, rvtHandle);
 
-            DX12Texture2DResource* dx12Resource = new DX12Texture2DResource(res);
+            RenderTexture2D::CreateInfo creatInfo = {
+                 .Width = info.Width,
+                 .Height = info.Height,
+                 .Format = info.Format
+            };
+
+            DX12RenderTexture2D* dx12Resource = new DX12RenderTexture2D(creatInfo,res);
             dx12Resource->SetRenderTargetView(rvtHandle);
-            dx12Resource->Width = info.Width;
-            dx12Resource->Height = info.Height;
-            dx12Resource->Format = info.Format;
             dx12Resource->SetState(D3D12_RESOURCE_STATE_PRESENT);
 
             rtResources[n] = dx12Resource;
@@ -282,7 +285,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::CreateInfo& info)
     return nullptr;
 }
 
-ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderObject*>& shaders)
+ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderResource*>& shaders)
 {
     std::vector<D3D12_ROOT_PARAMETER1> param;
     std::vector<SRBoundResource*> CBV;
@@ -297,9 +300,10 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderO
 
     for (auto s : shaders)
     {
-        if (s->Reflection && s->Reflection->BoundResources.size() > 0)
+        ShaderReflection* reflection = s->GetReflection();
+        if (reflection && reflection->BoundResources.size() > 0)
         {
-            for (SRBoundResource& r : s->Reflection->BoundResources)
+            for (SRBoundResource& r : reflection->BoundResources)
             {
                 if(r.Type == ShaderInputType::CBUFFER && NonExist(CBV,&r))
                 {
@@ -409,7 +413,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderO
     return signature;
 }
 
-RootSignature* DX12Device::CreateRootSignature(const std::vector<ShaderObject*>& shaders)
+RootSignature* DX12Device::CreateRootSignature(const std::vector<ShaderResource*>& shaders)
 {
     check(_Device);
  
@@ -701,12 +705,12 @@ void DX12Device::TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, D3D1
     dxPso = {
        .pRootSignature = std::any_cast<ID3D12RootSignature*>(pso.RootSignature->Handle()),
        .VS = {
-            .pShaderBytecode = pso.VertexShader->BlobData,
-            .BytecodeLength = pso.VertexShader->BlobSize
+            .pShaderBytecode = pso.VertexShader->GetBlobData().Data,
+            .BytecodeLength = pso.VertexShader->GetBlobData().Size
        },
        .PS = {
-            .pShaderBytecode = pso.PixelShader ? pso.PixelShader->BlobData : nullptr,
-            .BytecodeLength = pso.PixelShader ? pso.PixelShader->BlobSize : 0
+            .pShaderBytecode = pso.PixelShader ? pso.PixelShader->GetBlobData().Data : nullptr,
+            .BytecodeLength = pso.PixelShader ? pso.PixelShader->GetBlobData().Size : 0
         },
         .SampleMask = pso.SampleMask,
         .PrimitiveTopologyType = TranslatePrimitiveTopology(pso.Topology),

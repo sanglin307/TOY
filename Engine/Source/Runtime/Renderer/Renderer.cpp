@@ -15,11 +15,21 @@ IRHIModule& GetRHI(RenderAPI api)
 	return *module;
 }
 
+IRenderScene* RendererModule::AllocateScene(GameWorld* world)
+{
+	RenderScene* scene = new RenderScene(world);
+	_Scenes.insert(scene);
+	return scene;
+}
+
+void RendererModule::RemoveScene(IRenderScene* scene)
+{
+	_Scenes.erase(scene);
+	delete scene;
+}
+
 void RendererModule::Init()
 {
-	_Scene = new RenderScene;
-	_Scene->Init();
-
 	_RenderConfig = GameEngine::Instance().GetRenderConfig();
 
 	_Device = GetRHI(_RenderConfig.API).GetDevice();
@@ -32,7 +42,7 @@ void RendererModule::Render(Swapchain* sc)
 	ctx->SetViewport(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 	ctx->SetScissorRect(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 
-	Texture2DResource* rts[] = { sc->GetCurrentBackBuffer() };
+	RenderTexture2D* rts[] = { sc->GetCurrentBackBuffer() };
 	ctx->SetRenderTargets(1, rts, nullptr);
 
 	const f32 colors[] = {0.0f, 1.f, 0.4f, 1.0f};
@@ -43,9 +53,7 @@ void RendererModule::Render(Swapchain* sc)
 
 void RendererModule::Destroy()
 {
-	_Scene->Destroy();
-	delete _Scene;
-	_Scene = nullptr;
+	check(_Scenes.empty());
 
 	RootSignatureManager::Destroy();
 	PipelineManager::Destroy();

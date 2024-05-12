@@ -3,8 +3,8 @@
 class Material
 {
 public:
-	static Material* Create(const std::array<ShaderObject*, (size_t)ShaderProfile::MAX>& shaders);
+	static Material* Create(const std::array<ShaderResource*, (size_t)ShaderProfile::MAX>& shaders);
 	virtual ~Material();
 private:
-	std::array<ShaderObject*, (size_t)ShaderProfile::MAX> _Shaders;
+	std::array<ShaderResource*, (size_t)ShaderProfile::MAX> _Shaders;
 };

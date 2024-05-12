@@ -1,16 +1,27 @@
 #pragma once
 
-class VertexFormat
+enum class VertexFormat
 {
-
+	Float32x4 = 0,
+	Float32x3 = 1,
+	Float32x2 = 2,
+	Float32 = 3,
 };
 
-class StaticMeshVF : public VertexFormat
+enum class VertexAttribute
 {
-public:
-	struct Vertex
-	{
-		Vector3f Position;
-		Vector3f Color;
-	};
+	Position = 0,
+	Normal,
+	UV0,
+	UV1,
+	Tangent,
+	Color,
+	Max
+};
+
+struct VertexData
+{
+	VertexFormat    Format;
+	u8* Data;
+	u64 Size;
 };

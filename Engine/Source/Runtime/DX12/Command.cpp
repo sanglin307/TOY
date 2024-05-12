@@ -14,9 +14,9 @@ void DX12CommandList::Reset()
     check(SUCCEEDED(_Handle->Reset(alloc, nullptr)));
 }
 
-void DX12CommandList::Close(Texture2DResource* presentResource)
+void DX12CommandList::Close(RenderTexture2D* presentResource)
 {
-    DX12Texture2DResource* dx12Res = dynamic_cast<DX12Texture2DResource*>(presentResource);
+    DX12RenderTexture2D* dx12Res = dynamic_cast<DX12RenderTexture2D*>(presentResource);
     if (dx12Res->GetState() != D3D12_RESOURCE_STATE_PRESENT)
     {
         D3D12_RESOURCE_BARRIER barrier = D3D12_RESOURCE_BARRIER{
@@ -62,7 +62,7 @@ void DX12CommandList::SetScissorRect(u32 left, u32 top, u32 right, u32 bottom)
     _Handle->RSSetScissorRects(1, &rect);
 }
 
-void DX12CommandList::SetRenderTargets(u32 rtNum, Texture2DResource** rts, Texture2DResource* depthStencil)
+void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture2D** rts, RenderTexture2D* depthStencil)
 {
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtViews;
     D3D12_CPU_DESCRIPTOR_HANDLE dsView{};
@@ -73,7 +73,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, Texture2DResource** rts, Textu
     {
         for (u32 i=0; i<rtNum; i++)
         {
-            DX12Texture2DResource* dx12Res = dynamic_cast<DX12Texture2DResource*>(rts[i]);
+            DX12RenderTexture2D* dx12Res = dynamic_cast<DX12RenderTexture2D*>(rts[i]);
             rtViews.push_back(dx12Res->GetRenderTargetView());
             if (dx12Res->GetState() != D3D12_RESOURCE_STATE_RENDER_TARGET)
             {
@@ -94,7 +94,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, Texture2DResource** rts, Textu
 
     if (depthStencil)
     {
-        DX12Texture2DResource* dx12depth = dynamic_cast<DX12Texture2DResource*>(depthStencil);
+        DX12RenderTexture2D* dx12depth = dynamic_cast<DX12RenderTexture2D*>(depthStencil);
         dsView = dx12depth->GetDepthStencilView();
         pDepth = &dsView;
     }
@@ -115,9 +115,9 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, Texture2DResource** rts, Textu
 
 }
 
-void DX12CommandList::ClearRenderTarget(Texture2DResource* renderTarget, const f32* colors)
+void DX12CommandList::ClearRenderTarget(RenderTexture2D* renderTarget, const f32* colors)
 {
-    DX12Texture2DResource* dx12Res = dynamic_cast<DX12Texture2DResource*>(renderTarget);
+    DX12RenderTexture2D* dx12Res = dynamic_cast<DX12RenderTexture2D*>(renderTarget);
     _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetView(), colors, 0, nullptr);
 }
 

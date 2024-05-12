@@ -88,15 +88,15 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, b
 
 
 
-BufferResource* DX12Device::CreateBuffer(RenderContext* ctx, u64 size, u32 usage, u8* initData, u32 stride, bool needCpuAccess, bool needAlignment)
+RenderBuffer* DX12Device::CreateBuffer(RenderContext* ctx, const RenderBuffer::CreateInfo& info)
 {
     check(_Device);
 
     ComPtr<ID3D12Resource> resource;
     D3D12_RESOURCE_DESC desc = {
         .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-        .Alignment = needAlignment ? D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT : 0ul,
-        .Width = size,
+        .Alignment = info.Alignment ? D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT : 0ul,
+        .Width = info.Size,
         .Height = 1,
         .DepthOrArraySize = 1,
         .MipLevels = 1,
@@ -108,7 +108,7 @@ BufferResource* DX12Device::CreateBuffer(RenderContext* ctx, u64 size, u32 usage
         .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR
     };
 
-    if (needCpuAccess)
+    if ( info.CpuAccess & (u32)CpuAccessFlags::ReadWrite )
     {
         D3D12_HEAP_PROPERTIES heap = {
             .Type = D3D12_HEAP_TYPE_UPLOAD
@@ -116,12 +116,12 @@ BufferResource* DX12Device::CreateBuffer(RenderContext* ctx, u64 size, u32 usage
 
         check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource))));
 
-        if (initData != nullptr)
+        if (info.InitData != nullptr)
         {
             u8* pData = nullptr;
             D3D12_RANGE range = {};
             check(SUCCEEDED(resource->Map(0, &range, (void**)&pData)));
-            std::memcpy(pData, initData, size);
+            std::memcpy(pData, info.InitData, info.Size);
             resource->Unmap(0, nullptr);
         }
     }
@@ -130,9 +130,9 @@ BufferResource* DX12Device::CreateBuffer(RenderContext* ctx, u64 size, u32 usage
         D3D12_HEAP_PROPERTIES heap = {
                 .Type = D3D12_HEAP_TYPE_DEFAULT
         };
-        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, initData == nullptr ? D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER : D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
+        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, info.InitData == nullptr ? D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER : D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
 
-        if (initData != nullptr)
+        if (info.InitData != nullptr)
         {
             D3D12_HEAP_PROPERTIES uploadHeap = {
                 .Type = D3D12_HEAP_TYPE_UPLOAD
@@ -143,7 +143,7 @@ BufferResource* DX12Device::CreateBuffer(RenderContext* ctx, u64 size, u32 usage
             u8* pData = nullptr;
             D3D12_RANGE range = {};
             check(SUCCEEDED(tempRes->Map(0, &range, (void**)&pData)));
-            std::memcpy(pData, initData, size);
+            std::memcpy(pData, info.InitData, info.Size);
             tempRes->Unmap(0, nullptr);
             
             ID3D12GraphicsCommandList* dxCommandList = std::any_cast<ID3D12GraphicsCommandList*>(ctx->Handle());
@@ -162,7 +162,8 @@ BufferResource* DX12Device::CreateBuffer(RenderContext* ctx, u64 size, u32 usage
         }
     }
 
-    BufferResource* buffer = new DX12BufferResource(size,usage,stride,needCpuAccess,needAlignment,resource);
+    resource->SetName(PlatformUtils::UTF8ToUTF16(info.Name).c_str());
+    RenderBuffer* buffer = new DX12RenderBuffer(info,resource);
     return buffer;
  
 }

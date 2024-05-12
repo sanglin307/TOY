@@ -9,7 +9,7 @@ Material::~Material()
 	}
 }
 
-Material* Material::Create(const std::array<ShaderObject*, (size_t)ShaderProfile::MAX>& shaders)
+Material* Material::Create(const std::array<ShaderResource*, (size_t)ShaderProfile::MAX>& shaders)
 {
 	Material* mat = new Material;
 	mat->_Shaders = shaders;

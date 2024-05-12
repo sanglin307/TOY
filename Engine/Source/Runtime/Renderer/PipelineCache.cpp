@@ -1,22 +1,22 @@
 #include "Private.h"
 
-std::map<std::string, ShaderObject*> ShaderManager::_ShaderMap;
+std::map<std::string, ShaderResource*> ShaderManager::_ShaderMap;
 
-void ShaderManager::Add(ShaderObject* shader)
+void ShaderManager::Add(ShaderResource* shader)
 {
-	if (_ShaderMap.contains(shader->Hash))
+	if (_ShaderMap.contains(shader->GetHash()))
 	{
-		auto oldShader = _ShaderMap.find(shader->Hash)->second;
+		auto oldShader = _ShaderMap.find(shader->GetHash())->second;
 		if (oldShader == shader)
 			return;
 		else
 		{
 			delete oldShader;
-			_ShaderMap.erase(shader->Hash);
+			_ShaderMap.erase(shader->GetHash());
 		}
 	}
 
-	_ShaderMap.insert(std::pair<std::string, ShaderObject*>(shader->Hash, shader));
+	_ShaderMap.insert(std::pair<std::string, ShaderResource*>(shader->GetHash(), shader));
 }
 
 void ShaderManager::Remove(const std::string& hash)

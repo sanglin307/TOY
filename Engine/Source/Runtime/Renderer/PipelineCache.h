@@ -3,11 +3,11 @@
 class ShaderManager
 {
 public:
-	static void Add(ShaderObject* shader);
+	static void Add(ShaderResource* shader);
 	static void Remove(const std::string& hash);
 	static void Destroy();
 private:
-	static std::map<std::string, ShaderObject*> _ShaderMap;
+	static std::map<std::string, ShaderResource*> _ShaderMap;
 };
 
 

@@ -38,12 +38,12 @@ public:
 	virtual std::any Handle() { return nullptr; }
 
 	virtual void Reset() = 0;
-	virtual void Close(Texture2DResource* presentResource) = 0;
+	virtual void Close(RenderTexture2D* presentResource) = 0;
 
 	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth = 0.f, f32 maxDepth = 1.f) = 0;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) = 0;
-	virtual void SetRenderTargets(u32 rtNum, Texture2DResource** rts, Texture2DResource* depthStencil) = 0;
-	virtual void ClearRenderTarget(Texture2DResource* renderTarget, const f32* colors) = 0;
+	virtual void SetRenderTargets(u32 rtNum, RenderTexture2D** rts, RenderTexture2D* depthStencil) = 0;
+	virtual void ClearRenderTarget(RenderTexture2D* renderTarget, const f32* colors) = 0;
 	virtual void SetGraphicsRootSignature(RootSignature* signature) = 0;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
 

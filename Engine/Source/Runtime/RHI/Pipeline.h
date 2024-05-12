@@ -195,8 +195,8 @@ public:
 	{
 		std::vector<InputLayoutDesc>  InputLayout;
 		RootSignature* RootSignature;
-		ShaderObject* VertexShader;
-		ShaderObject* PixelShader;
+		ShaderResource* VertexShader;
+		ShaderResource* PixelShader;
 		BlendDesc       BlendState;
 		u32             SampleMask = 0xffffffff;
 		RasterizerDesc  RasterizerState;

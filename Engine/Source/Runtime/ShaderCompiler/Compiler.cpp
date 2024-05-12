@@ -278,7 +278,7 @@ ShaderReflection* GenerateReflection(ComPtr<ID3D12ShaderReflection> ref)
     return reflectData;
 }
 
-ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
+ShaderResource* ShaderCompiler::CompileHLSL(const Args& args)
 {
     ComPtr<IDxcUtils> _DXCUtils;
     ComPtr<IDxcCompiler3> _DXCCompiler;
@@ -290,7 +290,7 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
     _DXCUtils->CreateDefaultIncludeHandler(&_DXCIncludeHandler);
 
 
-    std::filesystem::path fileNamePath = PathUtil::Shaders() / args.FileName;
+    std::filesystem::path fileNamePath = PathUtil::Shaders() / args.Path;
 
     constexpr u32 ArgsBufferLength = 256;
     WCHAR argsBuffer[ArgsBufferLength];
@@ -311,9 +311,9 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
         };
 
    
-    fillArgs(PlatformUtils::UTF8ToUTF16(args.FileName));
+    fillArgs(PlatformUtils::UTF8ToUTF16(args.Path));
     fillArgs(L"-E");
-    fillArgs(PlatformUtils::UTF8ToUTF16(args.EntryName));
+    fillArgs(PlatformUtils::UTF8ToUTF16(args.EntryPoint));
     fillArgs(L"-T");
     fillArgs(GetTargetProfile(args.Profile));
     fillArgs(DXC_ARG_DEBUG_NAME_FOR_SOURCE);
@@ -358,13 +358,15 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
     dxcResults->GetStatus(&hrStatus);
     if (FAILED(hrStatus))
     {
-        LOG_ERROR(ShaderCompiler, std::format("Shader {} {} compile error: {}", args.FileName, args.EntryName, errors));
+        LOG_ERROR(ShaderCompiler, std::format("Shader {} {} compile error: {}", args.Path, args.EntryPoint, errors));
         return nullptr;
     }
 
-    ShaderObject* shader = new ShaderObject;
-    shader->Profile = args.Profile;
-    shader->DebugName = std::format("File({}) Entry({})", args.FileName, args.EntryName);
+    ShaderResource::Desc desc;
+    desc.Profile = args.Profile;
+    desc.DebugName = std::format("File({}) Entry({})", args.Path, args.EntryPoint);
+    desc.EntryPoint = args.EntryPoint;
+    desc.Path = args.Path;
 
     std::string shaderHash;
     ComPtr<IDxcBlob> dxcHash;
@@ -377,7 +379,7 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
             shaderHash += std::format("{:02X}", dxcHashBuf->HashDigest[i]);
         }
 
-        shader->Hash = shaderHash;
+        desc.Hash = shaderHash;
     }
 
     std::filesystem::path path = PathUtil::ShaderOutput();
@@ -386,7 +388,7 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
         std::filesystem::create_directory(path);
     }
 
-    std::filesystem::path folder = path / std::format("{}_{}", args.FileName, shaderHash);
+    std::filesystem::path folder = path / std::format("{}_{}", args.Path, shaderHash);
     if (!std::filesystem::exists(folder))
     {
         std::filesystem::create_directory(folder);
@@ -397,13 +399,13 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
     dxcResults->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&dxcShader), &dxcShaderName);
     if (dxcShader.Get() != nullptr)
     {
-        std::filesystem::path binfile = folder / std::format("{}.bin", args.FileName);
+        std::filesystem::path binfile = folder / std::format("{}.bin", args.Path);
         std::ofstream fout(binfile, std::ios::binary | std::ios::trunc);
         fout.write((const char*)dxcShader->GetBufferPointer(), dxcShader->GetBufferSize());
         fout.close();
-        shader->BlobSize = dxcShader->GetBufferSize();
-        shader->BlobData = new u8[shader->BlobSize];
-        std::memcpy(shader->BlobData, dxcShader->GetBufferPointer(), shader->BlobSize);
+        desc.Blob.Size = dxcShader->GetBufferSize();
+        desc.Blob.Data = new u8[desc.Blob.Size];
+        std::memcpy(desc.Blob.Data, dxcShader->GetBufferPointer(), desc.Blob.Size);
     }
 
     ComPtr<IDxcBlob> dxcPDB;
@@ -421,7 +423,7 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
     dxcResults->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&dxcReflectionData), nullptr);
     if (dxcReflectionData != nullptr)
     {
-        std::filesystem::path reffile = folder / std::format("{}.ref", args.FileName);
+        std::filesystem::path reffile = folder / std::format("{}.ref", args.Path);
         std::ofstream fout(reffile, std::ios::binary | std::ios::trunc);
         fout.write((const char*)dxcReflectionData->GetBufferPointer(), dxcReflectionData->GetBufferSize());
         fout.close();
@@ -435,8 +437,8 @@ ShaderObject* ShaderCompiler::CompileHLSL(const Args& args)
         ComPtr<ID3D12ShaderReflection> dxcReflection;
         _DXCUtils->CreateReflection(&ReflectionData, IID_PPV_ARGS(&dxcReflection));
 
-        shader->Reflection = GenerateReflection(dxcReflection);
+        desc.Reflection = GenerateReflection(dxcReflection);
     }
 
-    return shader;
+    return new ShaderResource(desc);
 }

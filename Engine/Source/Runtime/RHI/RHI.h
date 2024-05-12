@@ -17,12 +17,6 @@ struct RenderConfig
 
 };
 
-class IRendererModule : public ModuleInterface
-{
-public:
-    virtual void Render(Swapchain* viewport) = 0;
-};
-
 class IRHIModule : public ModuleInterface
 {
 public:

@@ -142,6 +142,7 @@
     <ClInclude Include="Private.h" />
     <ClInclude Include="Public.h" />
     <ClInclude Include="Reflection.h" />
+    <ClInclude Include="Resource.h" />
     <ClInclude Include="RHI.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="VertexFormat.h" />

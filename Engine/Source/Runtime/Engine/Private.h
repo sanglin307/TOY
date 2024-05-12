@@ -12,10 +12,11 @@
 #include "../ShaderCompiler/Public.h"
 
 // inner dependency.
+#include "RenderScene.h"
 #include "FrameRate.h"
 #include "Viewport.h"
 #include "Engine.h"
 #include "Input.h"
 #include "Material.h"
-#include "StaticMesh.h"
+#include "Mesh.h"
 #include "World.h"

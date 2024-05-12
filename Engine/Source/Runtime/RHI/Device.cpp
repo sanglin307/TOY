@@ -284,19 +284,19 @@ InputSlotClass GetSlotClass(const std::string& semanticName,u32 semanticIndex)
     return InputSlotClass::PerVertex;
 }
 
-void RenderDevice::CreateInputLayout(const std::vector<ShaderObject*>& shaders, InputSlotMapping slotMapping, std::vector<InputLayoutDesc>& inputLayout)
+void RenderDevice::CreateInputLayout(const std::vector<ShaderResource*>& shaders, InputSlotMapping slotMapping, std::vector<InputLayoutDesc>& inputLayout)
 {
-    auto iter = std::find_if(shaders.begin(), shaders.end(), [](ShaderObject* s) -> bool { return s->Profile == ShaderProfile::Vertex; });
+    auto iter = std::find_if(shaders.begin(), shaders.end(), [](ShaderResource* s) -> bool { return s->GetProfile() == ShaderProfile::Vertex; });
     if (iter == shaders.end())
     {
         LOG_ERROR(RenderDevice, "No vertex shader found to fill inputLayout!");
         return;
     }
 
-    ShaderReflection* reflection = (*iter)->Reflection;
+    ShaderReflection* reflection = (*iter)->GetReflection();
     if (!reflection || reflection->InputParameter.size() == 0)
     {
-        LOG_ERROR(RenderDevice, std::format("vertex shader don't contain correct reflection information ({})", (*iter)->DebugName));
+        LOG_ERROR(RenderDevice, std::format("vertex shader don't contain correct reflection information ({})", (*iter)->GetDebugName()));
         return;
     }
 

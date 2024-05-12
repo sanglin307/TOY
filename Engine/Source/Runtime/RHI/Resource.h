@@ -156,12 +156,26 @@ protected:
 
 enum class ResourceUsage : u32
 {
-    VertexBuffer = 0x1,
-    IndexBuffer = 0x2,
-    ConstBuffer = 0x4,
-    RenderTarget = 0x8,
-    DepthStencil = 0x10,
+    VertexBuffer = 1u << 0u,
+    IndexBuffer = 1u << 1u,
+    UniformBuffer = 1u << 2u,
+    ShaderResource = 1u << 3u,
+    StreamOutput = 1u << 4u,
+    RenderTarget = 1u << 5u,
+    DepthStencil = 1u << 6u,
+    UnorderedAccess = 1u << 7u,
+    IndirectDrawArgs = 1u << 8u,
+    InputAttachment = 1u << 9u,
+    RayTracing = 1u << 10u,
+    ShadingRate = 1u << 11u
+};
 
+enum class CpuAccessFlags : u32
+{
+    None = 0,
+    Read = 1u << 0u,
+    Write = 1u << 1u,
+    ReadWrite = Read | Write
 };
 
 class RenderResource
@@ -170,27 +184,40 @@ public :
 
     virtual ~RenderResource() {};
     virtual std::any Handle() { return nullptr; }
-
-    u32 Usage = 0;
 };
 
-class BufferResource : public RenderResource
+class RenderBuffer : public RenderResource
 {
 public:
-    bool NeedAlignment = true;
-    bool NeedCpuAccess = false;
-    u64  Size;
-    u32  Stride;
+    struct CreateInfo
+    {
+        u64 Size;
+        u32 Stride;
+        std::string Name;
+        u32 Usage;
+        u32 CpuAccess;
+        bool Alignment;
+        u8* InitData;
+    };
+
+protected:
+    CreateInfo _Info;
 };
 
-class Texture2DResource : public RenderResource
+class RenderTexture2D : public RenderResource
 {
 public:
-    u32 Width;
-    u32 Height;
-    u16 SampleCount = 1;
-    u16 SampleQuality = 0;
-    PixelFormat Format;
+    struct CreateInfo
+    {
+        u32 Width;
+        u32 Height;
+        PixelFormat Format;
+        u32 Usage;
+        u16 SampleCount = 1;
+        u16 SampleQuality = 0;
+    };
+protected:
+    CreateInfo _Info;
 };
 
 enum class ViewDimension
@@ -204,8 +231,6 @@ enum class ViewDimension
     Texture2DMSArray,
     Texture3D
 };
-
-class CommandList;
 
 class Swapchain
 {
@@ -227,35 +252,9 @@ public:
     virtual ~Swapchain() {};
 
     virtual u32 GetCurrentFrameIndex() = 0;
-    virtual Texture2DResource* GetCurrentBackBuffer() = 0;
+    virtual RenderTexture2D* GetCurrentBackBuffer() = 0;
     virtual void Present(bool vSync) = 0;
 
 protected:
     CreateInfo _Info;
-};
-
-class SwapChain
-{
-public:
-    struct Config
-    {
-        u32 Width;
-        u32 Height;
-        u16 SampleCount;
-        u16 SampleQuality;
-        u32 BufferCount;
-        PixelFormat Format;
-    };
-
-    virtual u32 CurrentFrameIndex() { return 0; };
-    virtual ~SwapChain() {};
-    virtual std::any Handle() { return nullptr; }
-
-    virtual void Present(bool vSync) = 0;
-
-    Texture2DResource* RenderTarget(u32 frameIndex) { return _RenderTargets[frameIndex]; }
-
-protected:
-    Config _Config;
-    std::vector<Texture2DResource*> _RenderTargets;
 };

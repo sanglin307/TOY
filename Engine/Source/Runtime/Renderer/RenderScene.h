@@ -1,16 +1,12 @@
 #pragma once
 
 
-class RenderScene
+class RenderScene final: public IRenderScene
 {
 public:
-	void Init();
-	void Destroy();
+	RenderScene(GameWorld* world);
+	virtual ~RenderScene();
 
-
-	struct SceneConstantBuffer
-	{
-		Vector3f offset;
-		float padding[61]; // Padding so the constant buffer is 256-byte aligned.
-	};
+private:
+	GameWorld* _World;
 };
