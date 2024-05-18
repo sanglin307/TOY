@@ -53,6 +53,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RHI", "Engine\Source\Runtim
 		{C76477F1-171D-40EA-918C-CFD99848896B} = {C76477F1-171D-40EA-918C-CFD99848896B}
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{B66BDD9B-4024-479E-BA28-FD92F484D383}"
+	ProjectSection(SolutionItems) = preProject
+		Engine\Config\Engine.toml = Engine\Config\Engine.toml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -132,6 +137,7 @@ Global
 		{1D2949B5-8613-4E3A-847B-A4EAAD56C7E6} = {EA4F9986-C920-495D-9FC0-4BC9F6282B96}
 		{1E229220-0249-45EB-B4F7-B11EBB284ED9} = {EA4F9986-C920-495D-9FC0-4BC9F6282B96}
 		{5407D91A-10F3-4144-816F-86294714D491} = {EA4F9986-C920-495D-9FC0-4BC9F6282B96}
+		{B66BDD9B-4024-479E-BA28-FD92F484D383} = {E52C8821-E035-4F15-9E3E-047149F4FD9A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8D6D4F4A-2438-4BD9-8B56-64072D015675}

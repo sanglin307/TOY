@@ -6,10 +6,15 @@
 #endif
 
 
+//third party
+#define TOML_EXCEPTIONS 0
+#include "toml++/toml.hpp"
+
 // module dependency.
 #include "../Core/Public.h"
 #include "../RHI/Public.h"
 #include "../ShaderCompiler/Public.h"
+
 
 // inner dependency.
 #include "RenderScene.h"

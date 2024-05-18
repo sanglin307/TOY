@@ -2,7 +2,7 @@
 
 class IRenderScene
 {
-protected:
+public:
     virtual ~IRenderScene() {}
 };
 

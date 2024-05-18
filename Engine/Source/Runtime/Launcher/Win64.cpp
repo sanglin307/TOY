@@ -229,7 +229,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     }
     LocalFree(argv);
 
-    GameEngine::Instance().ParseCmds(cmdlineSet);
+    GameEngine::Instance().PreInit(cmdlineSet);
 
     // Initialize the window class.
     WNDCLASSEX windowClass = { 0 };

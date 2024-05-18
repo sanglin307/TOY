@@ -30,15 +30,8 @@ IRHIModule& GameEngine::GetRHI()
 	return *module;
 }
 
-void GameEngine::ParseCmds(const std::set<std::string>& cmds)
+void GameEngine::PreInit(const std::set<std::string>& cmds)
 {
-	_RenderConfig = RenderConfig{
-		.API = RenderAPI::DX12,
-		.FrameCount = 3,
-		.FrameWidth = 1280,
-		.FrameHeight = 800
-	};
-
 	if (cmds.size() > 0)
 	{
 		for (auto cmd : cmds)
@@ -48,16 +41,16 @@ void GameEngine::ParseCmds(const std::set<std::string>& cmds)
 	}
 
 	_Params = cmds;
+
+	LogUtil::Init();
+	InitConfig();
+	_FrameRate.Init();
 }
 
 
 
 void GameEngine::Init(std::any hwnd)
 {
-	LogUtil::Init();
-
-	_FrameRate.Init();
-
 	GetRHI().Init();
 
 	_GameViewport = new GameViewport(hwnd, _RenderConfig);
@@ -97,4 +90,37 @@ void GameEngine::FrameSize(u32& Width, u32& Height)
 {
 	Width = _RenderConfig.FrameWidth;
 	Height = _RenderConfig.FrameHeight;
+}
+
+void GameEngine::InitConfig()
+{
+	std::filesystem::path epath = PathUtil::Config() / "Engine.toml";
+	toml::parse_result engineConfig = toml::parse_file(epath.c_str());
+	if (!engineConfig)
+	{
+		LOG_ERROR(EngineConfig, std::format("parse Engine.toml error {}",engineConfig.error().description()));
+		return;
+	}
+
+	toml::table engineTable = std::move(engineConfig).table();
+
+	auto rconfig = engineTable["RenderConfig"];
+	std::string_view api = rconfig["API"].value_or("DX12");
+
+	RenderAPI renderAPI;
+	if (std::strcmp(api.data(), "DX12") == 0)
+		renderAPI = RenderAPI::DX12;
+	else if (std::strcmp(api.data(), "Vulkan") == 0)
+		renderAPI = RenderAPI::Vulkan;
+	else if (std::strcmp(api.data(), "Metal") == 0)
+		renderAPI = RenderAPI::Metal;
+	else
+		check(0);
+
+	_RenderConfig = RenderConfig{
+		.API = renderAPI,
+		.FrameWidth = rconfig["FrameWidth"].value_or(1600u),
+		.FrameHeight = rconfig["FrameHeight"].value_or(900u)
+	};
+
 }

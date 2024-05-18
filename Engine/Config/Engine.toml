@@ -1,0 +1,4 @@
+[RenderConfig]
+API = "DX12"
+FrameWidth = 1280
+FrameHeight = 800
