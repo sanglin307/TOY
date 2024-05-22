@@ -151,6 +151,7 @@
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="Descriptor.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Resource.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

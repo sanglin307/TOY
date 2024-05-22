@@ -45,14 +45,19 @@ public:
 	virtual std::any Handle() { return _Handle.Get(); }
 
 	virtual void Reset() override;
-	virtual void Close(RenderTexture2D* presentResource) override;
+	virtual void Close(RenderTexture* presentResource) override;
 	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth = 0.f, f32 maxDepth = 1.f) override;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) override;
-	virtual void SetRenderTargets(u32 rtNum, RenderTexture2D** rts, RenderTexture2D* depthStencil) override;
-	virtual void ClearRenderTarget(RenderTexture2D* renderTarget, const f32* colors) override;
+	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) override;
+	virtual void ClearRenderTarget(RenderTexture* renderTarget, const f32* colors) override;
 	virtual void SetGraphicsRootSignature(RootSignature* signature) override;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
 
+	void TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource);
+	void TransitionState(D3D12_RESOURCE_STATES* destStates, D3D12_RESOURCE_STATES* srcState, const ID3D12Resource** resource, u32 number);
+	void TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderTexture* texture);
+	void TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderTexture** texture, u32 number);
+	void TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderBuffer* buffer);
 
 private:
 	DX12CommandList(CommandAllocator* allocator, CommandType type, ComPtr<ID3D12GraphicsCommandList> handle)
@@ -60,6 +65,9 @@ private:
 	{
 		_Handle = handle;
 	}
+
+	
+
 	
 	ComPtr<ID3D12GraphicsCommandList> _Handle;
 };

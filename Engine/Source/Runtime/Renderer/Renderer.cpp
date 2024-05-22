@@ -42,7 +42,7 @@ void RendererModule::Render(Swapchain* sc)
 	ctx->SetViewport(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 	ctx->SetScissorRect(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 
-	RenderTexture2D* rts[] = { sc->GetCurrentBackBuffer() };
+	RenderTexture* rts[] = { sc->GetCurrentBackBuffer() };
 	ctx->SetRenderTargets(1, rts, nullptr);
 
 	const f32 colors[] = {0.0f, 1.f, 0.4f, 1.0f};

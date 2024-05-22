@@ -13,14 +13,15 @@ public:
 	virtual RenderContext* BeginFrame(Swapchain* viewport) = 0;
 	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) = 0;
 
-	virtual Swapchain* CreateSwapchain(const Swapchain::CreateInfo& info) = 0;
+	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& info) = 0;
 	virtual CommandQueue* CreateCommandQueue(const CommandType type) = 0;
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) = 0;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) = 0;
 	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) = 0;
-	virtual RootSignature* CreateRootSignature(const std::vector<ShaderResource*>& shaders) = 0;
+	virtual RootSignature* CreateRootSignature(RootSignatureDesc& desc) = 0;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) = 0;
-	virtual RenderBuffer* CreateBuffer(RenderContext* ctx, const RenderBuffer::CreateInfo& info) = 0;
+	virtual RenderBuffer* CreateBuffer(RenderContext* ctx, const RenderBuffer::Desc& desc) = 0;
+	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) = 0;
 	virtual Fence* CreateFence(u64 initValue) = 0;
 
 	void CreateInputLayout(const std::vector<ShaderResource*>& shaders, InputSlotMapping slotMapping, std::vector<InputLayoutDesc>& inputLayout);

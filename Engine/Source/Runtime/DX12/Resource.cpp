@@ -86,9 +86,12 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, b
     return new DX12DescriptorHeap(hc, heap);
 }
 
+RenderTexture* DX12Device::CreateTexture(const RenderTexture::Desc& desc)
+{
+    return nullptr;
+}
 
-
-RenderBuffer* DX12Device::CreateBuffer(RenderContext* ctx, const RenderBuffer::CreateInfo& info)
+RenderBuffer* DX12Device::CreateBuffer(RenderContext* ctx, const RenderBuffer::Desc& info)
 {
     check(_Device);
 
@@ -146,19 +149,11 @@ RenderBuffer* DX12Device::CreateBuffer(RenderContext* ctx, const RenderBuffer::C
             std::memcpy(pData, info.InitData, info.Size);
             tempRes->Unmap(0, nullptr);
             
-            ID3D12GraphicsCommandList* dxCommandList = std::any_cast<ID3D12GraphicsCommandList*>(ctx->Handle());
-            dxCommandList->CopyResource(resource.Get(), tempRes.Get());
-            D3D12_RESOURCE_BARRIER barrier = {
-                .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
-                .Transition = {
-                    .pResource = resource.Get(),
-                    .Subresource = 0,
-                    .StateBefore = D3D12_RESOURCE_STATE_COPY_DEST,
-                    .StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
-                }
-            };
-            dxCommandList->ResourceBarrier(1, &barrier);
+            ID3D12GraphicsCommandList* deviceCmdlist = std::any_cast<ID3D12GraphicsCommandList*>(ctx->Handle());
+            DX12CommandList* dxCmdlist = dynamic_cast<DX12CommandList*>(ctx);
+
+            deviceCmdlist->CopyResource(resource.Get(), tempRes.Get());
+            dxCmdlist->TransitionState(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST, resource.Get());
         }
     }
 

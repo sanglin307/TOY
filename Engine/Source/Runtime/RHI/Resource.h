@@ -113,14 +113,40 @@ struct PixelFormatInfo
     bool       CompressFormat;
     std::any   PlatformFormat;
 };
- 
+
+enum class SignatureType
+{
+    Direct,
+    Indirect
+};
+
+struct SignatureElement
+{
+    SignatureType    BindType;
+    ShaderInputType  InputType;
+    std::string      Name;
+    u32              BindPoint;
+    u32              BindSpace;
+};
+
+class RootSignatureDesc
+{
+public:
+    void AddSignature(const std::vector<ShaderResource*>& shaders);
+    void AddSignature(SignatureType bindType, ShaderInputType inputType, const std::string& name);
+    void RemoveSignature(const std::string& name);
+
+    RHI_API void Extract(std::vector<SignatureElement*>& directSignature, std::vector<SignatureElement*>& indirectSignature);
+
+protected:
+    std::map<std::string, SignatureElement> _SignatureMap;
+};
 
 class RootSignature
 {
 public:
     virtual ~RootSignature() {}
     virtual std::any Handle() { return nullptr; }
-
 };
 
 enum class DescriptorType
@@ -170,6 +196,18 @@ enum class ResourceUsage : u32
     ShadingRate = 1u << 11u
 };
 
+enum class ResourceDimension
+{
+    Buffer = 0,
+    Texture1D,
+    Texture1DArray,
+    Texture2D,
+    Texture2DArray,
+    Texture3D,
+    TextureCube,
+    TextureCubeArray
+};
+
 enum class CpuAccessFlags : u32
 {
     None = 0,
@@ -178,10 +216,12 @@ enum class CpuAccessFlags : u32
     ReadWrite = Read | Write
 };
 
+
 class RenderResource
 {
 public :
-
+    virtual ResourceDimension GetDimension() = 0;
+    virtual u32 GetUsage() = 0;
     virtual ~RenderResource() {};
     virtual std::any Handle() { return nullptr; }
 };
@@ -189,7 +229,7 @@ public :
 class RenderBuffer : public RenderResource
 {
 public:
-    struct CreateInfo
+    struct Desc
     {
         u64 Size;
         u32 Stride;
@@ -200,42 +240,41 @@ public:
         u8* InitData;
     };
 
+    virtual ResourceDimension GetDimension() override { return ResourceDimension::Buffer; }
+    virtual u32 GetUsage() override { return _Desc.Usage; }
+
 protected:
-    CreateInfo _Info;
+    Desc _Desc;
 };
 
-class RenderTexture2D : public RenderResource
+class RenderTexture : public RenderResource
 {
 public:
-    struct CreateInfo
+    struct Desc
     {
         u32 Width;
         u32 Height;
+        u32 Depth;
         PixelFormat Format;
         u32 Usage;
+        ResourceDimension Dimension;
         u16 SampleCount = 1;
         u16 SampleQuality = 0;
     };
+
+    virtual ResourceDimension GetDimension() override { return _Desc.Dimension; }
+    virtual u32 GetUsage() override { return _Desc.Usage; }
+
 protected:
-    CreateInfo _Info;
+    Desc _Desc;
 };
 
-enum class ViewDimension
-{
-    Buffer = 0,
-    Texture1D,
-    Texture1DArray,
-    Texture2D,
-    Texture2DArray,
-    Texture2DMS,
-    Texture2DMSArray,
-    Texture3D
-};
+
 
 class Swapchain
 {
 public:
-    struct CreateInfo
+    struct Desc
     {
         u32 Width;
         u32 Height;
@@ -245,16 +284,16 @@ public:
         u16 SampleCount = 1;
         u16 SampleQuality = 0;
     };
-    Swapchain(const CreateInfo& info)
+    Swapchain(const Desc& info)
         :_Info(info)
     {}
 
     virtual ~Swapchain() {};
 
     virtual u32 GetCurrentFrameIndex() = 0;
-    virtual RenderTexture2D* GetCurrentBackBuffer() = 0;
+    virtual RenderTexture* GetCurrentBackBuffer() = 0;
     virtual void Present(bool vSync) = 0;
 
 protected:
-    CreateInfo _Info;
+    Desc _Info;
 };

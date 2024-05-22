@@ -14,24 +14,10 @@ void DX12CommandList::Reset()
     check(SUCCEEDED(_Handle->Reset(alloc, nullptr)));
 }
 
-void DX12CommandList::Close(RenderTexture2D* presentResource)
+void DX12CommandList::Close(RenderTexture* presentResource)
 {
-    DX12RenderTexture2D* dx12Res = dynamic_cast<DX12RenderTexture2D*>(presentResource);
-    if (dx12Res->GetState() != D3D12_RESOURCE_STATE_PRESENT)
-    {
-        D3D12_RESOURCE_BARRIER barrier = D3D12_RESOURCE_BARRIER{
-                .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
-                .Transition = {
-                     .pResource = std::any_cast<ID3D12Resource*>(dx12Res->Handle()),
-                     .Subresource = 0,
-                     .StateBefore = dx12Res->GetState(),
-                     .StateAfter = D3D12_RESOURCE_STATE_PRESENT
-                }
-        };
-        dx12Res->SetState(D3D12_RESOURCE_STATE_PRESENT);
-        _Handle->ResourceBarrier(1, &barrier);
-    }
+    DX12RenderTexture* dx12Res = dynamic_cast<DX12RenderTexture*>(presentResource);
+    TransitionState(D3D12_RESOURCE_STATE_PRESENT, dx12Res);
 
     check(SUCCEEDED(_Handle->Close()));
 }
@@ -62,46 +48,29 @@ void DX12CommandList::SetScissorRect(u32 left, u32 top, u32 right, u32 bottom)
     _Handle->RSSetScissorRects(1, &rect);
 }
 
-void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture2D** rts, RenderTexture2D* depthStencil)
+void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil)
 {
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtViews;
     D3D12_CPU_DESCRIPTOR_HANDLE dsView{};
     D3D12_CPU_DESCRIPTOR_HANDLE* pDepth = nullptr;
-    std::vector<D3D12_RESOURCE_BARRIER> rtBarrier;
+    std::vector<DX12RenderTexture*> textures;
 
     if (rtNum > 0 && rts)
     {
         for (u32 i=0; i<rtNum; i++)
         {
-            DX12RenderTexture2D* dx12Res = dynamic_cast<DX12RenderTexture2D*>(rts[i]);
+            DX12RenderTexture* dx12Res = dynamic_cast<DX12RenderTexture*>(rts[i]);
             rtViews.push_back(dx12Res->GetRenderTargetView());
-            if (dx12Res->GetState() != D3D12_RESOURCE_STATE_RENDER_TARGET)
-            {
-                rtBarrier.push_back(D3D12_RESOURCE_BARRIER{
-                    .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                    .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
-                    .Transition = {
-                         .pResource = std::any_cast<ID3D12Resource*>(dx12Res->Handle()),
-                         .Subresource = 0,
-                         .StateBefore = dx12Res->GetState(),
-                         .StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET
-                    }
-                    });
-                dx12Res->SetState(D3D12_RESOURCE_STATE_RENDER_TARGET);
-            }
+            textures.push_back(dx12Res);
         }
+        TransitionState(D3D12_RESOURCE_STATE_RENDER_TARGET, textures.data(), (u32)textures.size());
     }
 
     if (depthStencil)
     {
-        DX12RenderTexture2D* dx12depth = dynamic_cast<DX12RenderTexture2D*>(depthStencil);
+        DX12RenderTexture* dx12depth = dynamic_cast<DX12RenderTexture*>(depthStencil);
         dsView = dx12depth->GetDepthStencilView();
         pDepth = &dsView;
-    }
-
-    if (rtBarrier.size() > 0)
-    {
-        _Handle->ResourceBarrier((UINT)rtBarrier.size(), rtBarrier.data());
     }
 
     if (rtViews.size() > 0)
@@ -115,9 +84,9 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture2D** rts, RenderT
 
 }
 
-void DX12CommandList::ClearRenderTarget(RenderTexture2D* renderTarget, const f32* colors)
+void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const f32* colors)
 {
-    DX12RenderTexture2D* dx12Res = dynamic_cast<DX12RenderTexture2D*>(renderTarget);
+    DX12RenderTexture* dx12Res = dynamic_cast<DX12RenderTexture*>(renderTarget);
     _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetView(), colors, 0, nullptr);
 }
 
@@ -144,18 +113,90 @@ void DX12CommandQueue::Signal(Fence* fence, u64 value)
 
 void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRes)
 {
+    check(srcRes->GetDimension() == dstRes->GetDimension());
+    if (dstRes->GetDimension() == ResourceDimension::Buffer)
+    {
+        DX12RenderBuffer* srcBuffer = dynamic_cast<DX12RenderBuffer*>(srcRes);
+        DX12RenderBuffer* dstBuffer = dynamic_cast<DX12RenderBuffer*>(dstRes);
+        TransitionState(D3D12_RESOURCE_STATE_COPY_SOURCE, srcBuffer);
+        TransitionState(D3D12_RESOURCE_STATE_COPY_DEST, dstBuffer);
+    }
+    else
+    {
+        DX12RenderTexture* srcTex = dynamic_cast<DX12RenderTexture*>(srcRes);
+        DX12RenderTexture* dstTex = dynamic_cast<DX12RenderTexture*>(dstRes);
+        TransitionState(D3D12_RESOURCE_STATE_COPY_SOURCE, srcTex);
+        TransitionState(D3D12_RESOURCE_STATE_COPY_DEST, dstTex);
+    }
+
     ID3D12Resource* srcResource = std::any_cast<ID3D12Resource*>(srcRes->Handle());
     ID3D12Resource* dstResource = std::any_cast<ID3D12Resource*>(dstRes->Handle());
     _Handle->CopyResource(dstResource, srcResource);
+
+   
+}
+
+void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource)
+{
     D3D12_RESOURCE_BARRIER barrier = {
-        .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-        .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
-        .Transition = {
-            .pResource = dstResource,
-            .Subresource = 0,
-            .StateBefore = D3D12_RESOURCE_STATE_COPY_DEST,
-            .StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
-        }
+                .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+                .Transition = {
+                    .pResource = resource,
+                    .Subresource = 0,
+                    .StateBefore = srcState,
+                    .StateAfter = destState
+                }
     };
     _Handle->ResourceBarrier(1, &barrier);
+}
+
+void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES* destStates, D3D12_RESOURCE_STATES* srcState, const ID3D12Resource** resource, u32 number)
+{
+    check(0);
+}
+
+void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderTexture* texture)
+{
+    if (texture->GetState() != destState)
+    {
+        TransitionState(destState, texture->GetState(), std::any_cast<ID3D12Resource*>(texture->Handle()));
+        texture->SetState(destState);
+    }
+}
+
+void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderTexture** texture, u32 number)
+{
+    std::vector<D3D12_RESOURCE_BARRIER> rtBarrier;
+    for (u32 i = 0; i < number; i++)
+    {
+        if (texture[i]->GetState() != destState)
+        {
+            rtBarrier.push_back(D3D12_RESOURCE_BARRIER{
+                    .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                    .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+                    .Transition = {
+                         .pResource = std::any_cast<ID3D12Resource*>(texture[i]->Handle()),
+                         .Subresource = 0,
+                         .StateBefore = texture[i]->GetState(),
+                         .StateAfter = destState
+                    }
+                });
+            texture[i]->SetState(destState);
+        }
+    }
+   
+    if (rtBarrier.size() > 0)
+    {
+        _Handle->ResourceBarrier((UINT)rtBarrier.size(), rtBarrier.data());
+    }
+}
+
+void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderBuffer* buffer)
+{
+    if (buffer->GetState() != destState)
+    {
+        TransitionState(destState, buffer->GetState(), std::any_cast<ID3D12Resource*>(buffer->Handle()));
+        buffer->SetState(destState);
+    }
 }
