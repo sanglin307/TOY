@@ -2,7 +2,7 @@
 
 // for DirectX12 Agility SDK.
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 611; }
-extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
+extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\"; }
 
 static i32 sKeyCodeMap[0xff];
 struct WindowsKeyCodeMapInitializer

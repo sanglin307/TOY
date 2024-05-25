@@ -132,6 +132,7 @@ struct SignatureElement
 class RootSignatureDesc
 {
 public:
+    void AddRootConst();
     void AddSignature(const std::vector<ShaderResource*>& shaders);
     void AddSignature(SignatureType bindType, ShaderInputType inputType, const std::string& name);
     void RemoveSignature(const std::string& name);

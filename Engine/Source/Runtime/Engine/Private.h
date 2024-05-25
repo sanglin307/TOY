@@ -10,6 +10,8 @@
 #define TOML_EXCEPTIONS 0
 #include "toml++/toml.hpp"
 
+#include "hlsl++.h"
+
 // module dependency.
 #include "../Core/Public.h"
 #include "../RHI/Public.h"

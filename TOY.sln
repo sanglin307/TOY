@@ -58,6 +58,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{B66BDD
 		Engine\Config\Engine.toml = Engine\Config\Engine.toml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utility", "Utility", "{86597E04-ECE1-4CF3-9EFA-E6BADC09A88A}"
+	ProjectSection(SolutionItems) = preProject
+		Engine\Source\Thirdparty\hlslpp-3.5\include\hlsl++.natvis = Engine\Source\Thirdparty\hlslpp-3.5\include\hlsl++.natvis
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
