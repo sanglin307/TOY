@@ -52,6 +52,96 @@ RenderDevice::~RenderDevice()
 {
 }
 
+ShaderResource* RenderDevice::LoadShader(const ShaderCreateDesc& desc)
+{
+	if (desc.Path != "" && desc.Entry != "")
+	{
+		u64 sHash = desc.HashResult();
+		auto siter = _ShaderCache.find(sHash);
+		if (siter != _ShaderCache.end())
+		{
+			return siter->second;
+		}
+		else
+		{
+			ShaderResource* shader = ShaderCompiler::CompileHLSL(desc);
+			if (shader != nullptr)
+			{
+				_ShaderCache[sHash] = shader;
+				return shader;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+GraphicPipeline* RenderDevice::LoadGraphicPipeline(const GraphicPipeline::Desc& desc)
+{
+	u64 hash = desc.HashResult();
+	auto iter = _PipelineCache.find(hash);
+	if (iter != _PipelineCache.end())
+	{
+		return iter->second;
+	}
+
+	return nullptr;
+}
+
+void RenderDevice::InitPipelineCache()
+{
+	std::vector<GraphicPipeline::Desc> graphicPipelines;
+
+	// load all pso from PSO folder.
+	for (const auto& file : std::filesystem::directory_iterator(PathUtil::PSO()))
+	{
+		if (file.path().filename().string().find(".toml") == std::string::npos)
+			continue;
+
+		toml::parse_result pso = toml::parse_file(file.path().c_str());
+		if (!pso)
+		{
+			LOG_ERROR(PipelineManager, std::format("parse {} error {}", file.path().string(), pso.error().description()));
+			continue;
+		}
+
+		toml::table psotable = std::move(pso).table();
+		psotable.for_each([&graphicPipelines](const toml::key& key, toml::table& val)
+			{
+				GraphicPipeline::Desc pd;
+				pd.Name = key.str();
+				auto parse_shader = [&val](ShaderCreateDesc& desc, const char* node_name, ShaderProfile profile) {
+					auto s_node = val.get(node_name);
+					if (s_node != nullptr)
+					{
+						check(s_node->is_table());
+						const toml::table* vst = s_node->as_table();
+						desc.Path = vst->at("path").value_or("");
+						desc.Entry = vst->at("entry").value_or("");
+						desc.Profile = profile;
+						const toml::array& ma = *(vst->at("macro").as_array());
+						ma.for_each([&desc](toml::value<std::string> e)
+							{
+								desc.Macros.push_back(e.get());
+							});
+					}
+					};
+				parse_shader(pd.VS, "vs", ShaderProfile::Vertex);
+				parse_shader(pd.PS, "ps", ShaderProfile::Pixel);
+
+				graphicPipelines.push_back(pd);
+			});
+	}
+
+	if (graphicPipelines.size() > 0)
+	{
+		for (auto& gp : graphicPipelines)
+		{
+			CreateGraphicPipeline(gp);
+		}
+	}
+}
+
 RenderDevice::RenderDevice()
 {
 	_Formats.resize((u32)PixelFormat::MAX);

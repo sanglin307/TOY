@@ -1,5 +1,6 @@
 #pragma once
 
+#define NOMINMAX
 #define DX12_API __declspec(dllexport)
 
 #include <wrl/client.h>

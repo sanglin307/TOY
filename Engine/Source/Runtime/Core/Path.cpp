@@ -5,6 +5,7 @@ static std::filesystem::path log_path = bin_path / "Logs";
 static std::filesystem::path config_path = bin_path.parent_path().parent_path() / "Engine" / "Config";
 static std::filesystem::path shader_path = bin_path.parent_path().parent_path() / "Engine" / "Shaders";
 static std::filesystem::path shader_out_path = bin_path.parent_path().parent_path() / "Engine" / "Shaders" / "Output";
+static std::filesystem::path pso_path = bin_path.parent_path().parent_path() / "Engine" / "Shaders" / "PSO";
 
 const std::filesystem::path& PathUtil::Bin()
 {
@@ -31,3 +32,7 @@ const std::filesystem::path& PathUtil::ShaderOutput()
 	return shader_out_path;
 }
 
+const std::filesystem::path& PathUtil::PSO()
+{
+	return pso_path;
+}

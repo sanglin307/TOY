@@ -109,12 +109,13 @@
       <PreprocessorDefinitions>_DEBUG;WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp-3.5/include;$(SolutionDir)Engine/Source/Thirdparty/xxHash-0.8.2;$(SolutionDir)Engine/Source/Thirdparty/DXC/inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Core.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin/Win64/;$(SolutionDir)Engine/Source/Thirdparty/xxHash-0.8.2/build/Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Core.lib;xxhash.lib;dxcompiler.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
@@ -135,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Compiler.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Descriptor.h" />
     <ClInclude Include="Device.h" />
@@ -148,6 +150,7 @@
     <ClInclude Include="VertexFormat.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Compiler.cpp" />
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="Descriptor.cpp" />
     <ClCompile Include="Device.cpp" />

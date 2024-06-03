@@ -1,7 +1,7 @@
 #pragma once
 
 
-class RendererModule : public IRendererModule
+class RendererModule final: public IRendererModule
 {
 public:
     virtual void Init() override;
@@ -11,7 +11,11 @@ public:
     virtual void RemoveScene(IRenderScene* scene) override;
 
 private:
+    void InitRenderPass();
+
     std::set<IRenderScene*> _Scenes;
     RenderDevice* _Device;
     RenderConfig _RenderConfig;
+
+    std::array<RenderPass*, (u32)RenderPassType::MAX> _Passes;
 };

@@ -287,7 +287,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
     return nullptr;
 }
 
-ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderResource*>& shaders)
+ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders)
 {
     std::vector<D3D12_ROOT_PARAMETER1> param;
     std::vector<SRBoundResource*> CBV;
@@ -296,33 +296,32 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderR
     std::vector<SRBoundResource*> Sampler;
     std::vector<D3D12_DESCRIPTOR_RANGE1> ranges;
 
-    auto NonExist = [](std::vector<SRBoundResource*>& container, SRBoundResource* element) -> bool {
-        return std::find_if(container.begin(), container.end(), [element](SRBoundResource* e) -> bool { return element->Name == e->Name; }) == container.end();
-        };
-
-    for (auto s : shaders)
+    for (u32 i=0;i< (u32)ShaderProfile::MAX;i++)
     {
-        ShaderReflection* reflection = s->GetReflection();
+        if (shaders[i] == nullptr)
+            continue;
+
+        ShaderReflection* reflection = shaders[i]->GetReflection();
         if (reflection && reflection->BoundResources.size() > 0)
         {
             for (SRBoundResource& r : reflection->BoundResources)
             {
-                if(r.Type == ShaderInputType::CBUFFER && NonExist(CBV,&r))
+                if(r.Type == ShaderInputType::CBUFFER)
                 {
                     CBV.push_back(&r);
                 }
                 else if ((r.Type == ShaderInputType::TBUFFER || r.Type == ShaderInputType::TEXTURE || r.Type == ShaderInputType::STRUCTURED ||
-                    r.Type == ShaderInputType::BYTEADDRESS) && NonExist(SRV, &r))
+                    r.Type == ShaderInputType::BYTEADDRESS))
                 {
                     SRV.push_back(&r);
                 }
                 else if ((r.Type == ShaderInputType::UAV_RWTYPED || r.Type == ShaderInputType::UAV_RWSTRUCTURED || r.Type == ShaderInputType::UAV_RWBYTEADDRESS ||
                     r.Type == ShaderInputType::UAV_RWSTRUCTURED_WITH_COUNTER || r.Type == ShaderInputType::UAV_FEEDBACKTEXTURE || r.Type == ShaderInputType::UAV_APPEND_STRUCTURED ||
-                    r.Type == ShaderInputType::UAV_CONSUME_STRUCTURED ) && NonExist(UAV, &r))
+                    r.Type == ShaderInputType::UAV_CONSUME_STRUCTURED ))
                 {
                     UAV.push_back(&r);
                 }
-                else if (r.Type == ShaderInputType::SAMPLER && NonExist(Sampler, &r))
+                else if (r.Type == ShaderInputType::SAMPLER)
                 {
                     Sampler.push_back(&r);
                 }
@@ -415,205 +414,6 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const std::vector<ShaderR
     return signature;
 }
 
-ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(RootSignatureDesc& desc)
-{
-    std::vector<D3D12_ROOT_PARAMETER1> param;
-    std::vector<SignatureElement*> CBV;
-    std::vector<SignatureElement*> SRV;
-    std::vector<SignatureElement*> UAV;
-    std::vector<SignatureElement*> Sampler;
-    std::vector<D3D12_DESCRIPTOR_RANGE1> ranges;
- 
-    std::vector<SignatureElement*> directArray;
-    std::vector<SignatureElement*> indirectArray;
-    desc.Extract(directArray, indirectArray);
-
-    // direct signature use shader space 1
-    // indirect signature use shader space 0
-
-    if (directArray.size() > 0)
-    {
-        for (u32 i = 0; i < directArray.size(); ++i)
-        {
-            SignatureElement* e = directArray[i];
-            e->BindPoint = i;
-            e->BindSpace = 1; 
-            D3D12_ROOT_PARAMETER_TYPE paramType;
-
-            if (e->InputType == ShaderInputType::CBUFFER)
-            {
-                paramType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-            }
-            else if ((e->InputType == ShaderInputType::TBUFFER || e->InputType == ShaderInputType::TEXTURE || e->InputType == ShaderInputType::STRUCTURED ||
-                e->InputType == ShaderInputType::BYTEADDRESS))
-            {
-                paramType = D3D12_ROOT_PARAMETER_TYPE_SRV;
-            }
-            else if ((e->InputType == ShaderInputType::UAV_RWTYPED || e->InputType == ShaderInputType::UAV_RWSTRUCTURED || e->InputType == ShaderInputType::UAV_RWBYTEADDRESS ||
-                e->InputType == ShaderInputType::UAV_RWSTRUCTURED_WITH_COUNTER || e->InputType == ShaderInputType::UAV_FEEDBACKTEXTURE || e->InputType == ShaderInputType::UAV_APPEND_STRUCTURED ||
-                e->InputType == ShaderInputType::UAV_CONSUME_STRUCTURED))
-            {
-                paramType = D3D12_ROOT_PARAMETER_TYPE_UAV;
-            }
-            else if (e->InputType == ShaderInputType::SAMPLER)
-            {
-                check(0);
-            }
-
-            param.push_back(D3D12_ROOT_PARAMETER1{
-             .ParameterType = paramType,
-             .Descriptor = {
-                .ShaderRegister = i,
-                .RegisterSpace = 1
-              },
-             .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
-             });
-        }
-    }
-
-    for (auto r : indirectArray)
-    {
-        if (r->InputType == ShaderInputType::CBUFFER)
-        {
-            CBV.push_back(r);
-        }
-        else if ((r->InputType == ShaderInputType::TBUFFER || r->InputType == ShaderInputType::TEXTURE || r->InputType == ShaderInputType::STRUCTURED ||
-            r->InputType == ShaderInputType::BYTEADDRESS))
-        {
-            SRV.push_back(r);
-        }
-        else if ((r->InputType == ShaderInputType::UAV_RWTYPED || r->InputType == ShaderInputType::UAV_RWSTRUCTURED || r->InputType == ShaderInputType::UAV_RWBYTEADDRESS ||
-            r->InputType == ShaderInputType::UAV_RWSTRUCTURED_WITH_COUNTER || r->InputType == ShaderInputType::UAV_FEEDBACKTEXTURE || r->InputType == ShaderInputType::UAV_APPEND_STRUCTURED ||
-            r->InputType == ShaderInputType::UAV_CONSUME_STRUCTURED))
-        {
-            UAV.push_back(r);
-        }
-        else if (r->InputType == ShaderInputType::SAMPLER)
-        {
-            Sampler.push_back(r);
-        }
-    }
-
-    u32 bindPoint = 0;
-    if (CBV.size() > 0)
-    {
-        ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
-            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
-            .NumDescriptors = (u32)CBV.size(),
-            .BaseShaderRegister = bindPoint,
-            .RegisterSpace = 0,
-            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
-            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
-            });
-
-        for (auto c : CBV)
-        {
-            c->BindPoint = bindPoint++;
-            c->BindSpace = 0;
-        }
-    }
-
-    if (SRV.size() > 0)
-    {
-        ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
-            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-            .NumDescriptors = (u32)SRV.size(),
-            .BaseShaderRegister = bindPoint,
-            .RegisterSpace = 0,
-            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
-            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
-            });
-
-        for (auto s : SRV)
-        {
-            s->BindPoint = bindPoint++;
-            s->BindSpace = 0;
-        }
-    }
-
-    if (UAV.size() > 0)
-    {
-        ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
-            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-            .NumDescriptors = (u32)UAV.size(),
-            .BaseShaderRegister = bindPoint,
-            .RegisterSpace = 0,
-            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
-            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
-            });
-
-        for (auto u : UAV)
-        {
-            u->BindPoint = bindPoint++;
-            u->BindSpace = 0;
-        }
-    }
-
-    if (Sampler.size() > 0)
-    {
-        ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
-            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-            .NumDescriptors = (u32)Sampler.size(),
-            .BaseShaderRegister = bindPoint,
-            .RegisterSpace = 0,
-            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
-            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
-            });
-
-        for (auto s : Sampler)
-        {
-            s->BindPoint = bindPoint++;
-            s->BindSpace = 0;
-        }
-    }
- 
-    param.push_back(D3D12_ROOT_PARAMETER1{
-        .ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-        .DescriptorTable = {
-           .NumDescriptorRanges = (u32)ranges.size(),
-           .pDescriptorRanges = ranges.data()
-         },
-        .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
-        });
-
-    D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = {
-         .Version = D3D_ROOT_SIGNATURE_VERSION_1_1,
-         .Desc_1_1 = {
-            .NumParameters = (u32)param.size(),
-            .pParameters = param.data(),
-            .NumStaticSamplers = 0,
-            .pStaticSamplers = nullptr,
-            .Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-                     D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-                     D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-                     D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-                     D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
-                     D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED,
-         }
-    };
-
-    ComPtr<ID3DBlob> signature;
-    ComPtr<ID3DBlob> error;
-    if (FAILED(D3D12SerializeVersionedRootSignature(&rsDesc, signature.GetAddressOf(), error.GetAddressOf())))
-    {
-        std::string se((const char*)error->GetBufferPointer(), error->GetBufferSize());
-        LOG_ERROR(RootSignature, std::format("D3D12SerializeVersionedRootSignature Failed:{}", se));
-        return nullptr;
-    }
-
-    return signature;
-}
-
-RootSignature* DX12Device::CreateRootSignature(RootSignatureDesc& desc)
-{
-    check(_Device);
- 
-    ComPtr<ID3DBlob> signature = GenerateRootSignatureBlob(desc);
-    ComPtr<ID3D12RootSignature> rs;
-    check(SUCCEEDED(_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rs))));
-    
-    return new DX12RootSignature(rs);
-}
 
 D3D12_PRIMITIVE_TOPOLOGY_TYPE TranslatePrimitiveTopology(PrimitiveTopology topology)
 {
@@ -874,33 +674,32 @@ void DX12Device::TranslateDepthStencilState(const DepthStencilDesc& depthState, 
     };
 }
 
-void DX12Device::TranslateInputLayout(const std::vector<InputLayoutDesc>& inputLayouts, std::vector<D3D12_INPUT_ELEMENT_DESC>& dxInputLayout)
+void DX12Device::TranslateInputLayout(const InputLayout& inputLayouts, std::vector<D3D12_INPUT_ELEMENT_DESC>& dxInputLayout)
 {
-    for (u32 i = 0; i < inputLayouts.size(); i++)
+    for (u32 i = 0; i < inputLayouts.Desc.size(); i++)
     {
         dxInputLayout.push_back({
-            .SemanticName = inputLayouts[i].SemanticName.c_str(),
-            .SemanticIndex = inputLayouts[i].SemanticIndex,
-            .Format = TranslatePixelFormat(inputLayouts[i].Format),
-            .InputSlot = inputLayouts[i].SlotIndex,
-            .AlignedByteOffset = inputLayouts[i].SlotOffset,
-            .InputSlotClass = inputLayouts[i].SlotClass == InputSlotClass::PerVertex ? D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA : D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA,
-            .InstanceDataStepRate = inputLayouts[i].InstanceStepRate
+            .SemanticName = inputLayouts.Desc[i].SemanticName.c_str(),
+            .SemanticIndex = inputLayouts.Desc[i].SemanticIndex,
+            .Format = TranslatePixelFormat(inputLayouts.Desc[i].Format),
+            .InputSlot = inputLayouts.Desc[i].SlotIndex,
+            .AlignedByteOffset = inputLayouts.Desc[i].SlotOffset,
+            .InputSlotClass = inputLayouts.Desc[i].SlotClass == InputSlotClass::PerVertex ? D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA : D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA,
+            .InstanceDataStepRate = inputLayouts.Desc[i].InstanceStepRate
         });
     }
 }
 
-void DX12Device::TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, D3D12_GRAPHICS_PIPELINE_STATE_DESC& dxPso)
+void DX12Device::TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders, D3D12_GRAPHICS_PIPELINE_STATE_DESC& dxPso)
 {
     dxPso = {
-       .pRootSignature = std::any_cast<ID3D12RootSignature*>(pso.RootSignature->Handle()),
        .VS = {
-            .pShaderBytecode = pso.VertexShader->GetBlobData().Data,
-            .BytecodeLength = pso.VertexShader->GetBlobData().Size
+            .pShaderBytecode = shaders[(u32)ShaderProfile::Vertex]->GetBlobData().Data,
+            .BytecodeLength = shaders[(u32)ShaderProfile::Vertex]->GetBlobData().Size
        },
        .PS = {
-            .pShaderBytecode = pso.PixelShader ? pso.PixelShader->GetBlobData().Data : nullptr,
-            .BytecodeLength = pso.PixelShader ? pso.PixelShader->GetBlobData().Size : 0
+            .pShaderBytecode = shaders[(u32)ShaderProfile::Pixel] ? shaders[(u32)ShaderProfile::Pixel]->GetBlobData().Data : nullptr,
+            .BytecodeLength = shaders[(u32)ShaderProfile::Pixel] ? shaders[(u32)ShaderProfile::Pixel]->GetBlobData().Size : 0
         },
         .SampleMask = pso.SampleMask,
         .PrimitiveTopologyType = TranslatePrimitiveTopology(pso.Topology),
@@ -928,19 +727,34 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
 {
     check(_Device);
 
+    GraphicPipeline* cache = LoadGraphicPipeline(desc);
+    if (cache != nullptr)
+    {
+        return cache;
+    }
+
+    std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes;
+    shaderRes[(u32)ShaderProfile::Vertex] = LoadShader(desc.VS);
+    shaderRes[(u32)ShaderProfile::Pixel] = LoadShader(desc.PS);
+
     ComPtr<ID3D12PipelineState> pso;
     D3D12_GRAPHICS_PIPELINE_STATE_DESC dxDesc = {};
-    TranslateGraphicPipeline(desc, dxDesc);
+    TranslateGraphicPipeline(desc, shaderRes, dxDesc);
+
+    u64 psoHash = desc.HashResult();
+    dxDesc.pRootSignature = LoadRootSignature(psoHash, shaderRes);
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayouts;
-    TranslateInputLayout(desc.InputLayout, inputLayouts);
+    TranslateInputLayout(desc.Input, inputLayouts);
     dxDesc.InputLayout = {
             .pInputElementDescs = inputLayouts.data(),
             .NumElements = (UINT)inputLayouts.size()
     };
     check(SUCCEEDED(_Device->CreateGraphicsPipelineState(&dxDesc, IID_PPV_ARGS(&pso))));
 
-    return new DX12GraphicPipeline(pso);
+    GraphicPipeline* pipeline = new DX12GraphicPipeline(pso);
+    _PipelineCache[psoHash] = pipeline;
+    return pipeline;
 }
 
 DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
@@ -948,6 +762,21 @@ DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
     return std::any_cast<DXGI_FORMAT>(_Formats[static_cast<u32>(format)].PlatformFormat);
 }
 
+ID3D12RootSignature* DX12Device::LoadRootSignature(u64 hash, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders)
+{
+    auto iter = _RootSignatureCache.find(hash);
+    if (iter != _RootSignatureCache.end())
+    {
+        return iter->second.Get();
+    }
+
+    ComPtr<ID3DBlob> signature = GenerateRootSignatureBlob(shaders);
+    ComPtr<ID3D12RootSignature> rs;
+    check(SUCCEEDED(_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rs))));
+    _RootSignatureCache[hash] = rs;
+
+    return rs.Get();
+}
 
 void DX12Device::InitPixelFormat_Platform()
 {

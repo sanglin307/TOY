@@ -114,42 +114,6 @@ struct PixelFormatInfo
     std::any   PlatformFormat;
 };
 
-enum class SignatureType
-{
-    Direct,
-    Indirect
-};
-
-struct SignatureElement
-{
-    SignatureType    BindType;
-    ShaderInputType  InputType;
-    std::string      Name;
-    u32              BindPoint;
-    u32              BindSpace;
-};
-
-class RootSignatureDesc
-{
-public:
-    void AddRootConst();
-    void AddSignature(const std::vector<ShaderResource*>& shaders);
-    void AddSignature(SignatureType bindType, ShaderInputType inputType, const std::string& name);
-    void RemoveSignature(const std::string& name);
-
-    RHI_API void Extract(std::vector<SignatureElement*>& directSignature, std::vector<SignatureElement*>& indirectSignature);
-
-protected:
-    std::map<std::string, SignatureElement> _SignatureMap;
-};
-
-class RootSignature
-{
-public:
-    virtual ~RootSignature() {}
-    virtual std::any Handle() { return nullptr; }
-};
-
 enum class DescriptorType
 {
     CBV_SRV_UAV = 0,

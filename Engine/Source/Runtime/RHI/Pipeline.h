@@ -23,6 +23,28 @@ struct InputLayoutDesc
 	InputSlotClass SlotClass;
 	u32 InstanceStepRate = 0;
 };
+
+struct InputLayout
+{
+	std::vector<InputLayoutDesc> Desc;
+
+	void HashUpdate(XXH64_state_t* state) const
+	{
+		for (u32 i = 0; i < Desc.size(); i++)
+		{
+			const InputLayoutDesc& desc = Desc[i];
+			XXH64_update(state, desc.SemanticName.c_str(), desc.SemanticName.length());
+			XXH64_update(state, &desc.SemanticIndex, sizeof(desc.SemanticIndex));
+			XXH64_update(state, &desc.Format, sizeof(desc.Format));
+			XXH64_update(state, &desc.SlotIndex, sizeof(desc.SlotIndex));
+			XXH64_update(state, &desc.SlotOffset, sizeof(desc.SlotOffset));
+			XXH64_update(state, &desc.SlotClass, sizeof(desc.SlotClass));
+			XXH64_update(state, &desc.InstanceStepRate, sizeof(desc.InstanceStepRate));
+		}
+	}
+};
+
+
  
 enum class FillMode
 {
@@ -110,6 +132,7 @@ enum class PrimitiveTopology
 	Patch
 };
 
+
 struct RasterizerDesc
 {
 	FillMode Fill = FillMode::Solid;
@@ -123,7 +146,24 @@ struct RasterizerDesc
 	f32 DepthBiasClamp =0.f;
 	f32 SlopScaledDepthBias = 0.f;
 	u32 SampleCount = 0;
+
+	void HashUpdate(XXH64_state_t* state) const
+	{
+		XXH64_update(state, &Fill, sizeof(Fill));
+		XXH64_update(state, &Cull, sizeof(Cull));
+		XXH64_update(state, &FrontCounterClockwise, sizeof(FrontCounterClockwise));
+		XXH64_update(state, &DepthClip, sizeof(DepthClip));
+		XXH64_update(state, &Multisample, sizeof(Multisample));
+		XXH64_update(state, &LineAA, sizeof(LineAA));
+		XXH64_update(state, &ConservativeMode, sizeof(ConservativeMode));
+		XXH64_update(state, &DepthBias, sizeof(DepthBias));
+		XXH64_update(state, &DepthBiasClamp, sizeof(DepthBiasClamp));
+		XXH64_update(state, &SlopScaledDepthBias, sizeof(SlopScaledDepthBias));
+		XXH64_update(state, &SampleCount, sizeof(SampleCount));
+	}
 };
+
+
 
 constexpr static u32 MaxRenderTargetNumber = 8;
 
@@ -146,7 +186,29 @@ struct BlendDesc
 	bool AlphaToCoverageEnable = false;
 	bool IndependentBlendEnable = false;
 	RenderTarget RenderTargets[MaxRenderTargetNumber];
+
+	void HashUpdate(XXH64_state_t* state) const
+	{
+		XXH64_update(state, &AlphaToCoverageEnable, sizeof(AlphaToCoverageEnable));
+		XXH64_update(state, &IndependentBlendEnable, sizeof(IndependentBlendEnable));
+		for (u32 i = 0; i < MaxRenderTargetNumber; i++)
+		{
+			const BlendDesc::RenderTarget& rt = RenderTargets[i];
+			XXH64_update(state, &rt.Enable, sizeof(rt.Enable));
+			XXH64_update(state, &rt.LogicOpEnable, sizeof(rt.LogicOpEnable));
+			XXH64_update(state, &rt.Src, sizeof(rt.Src));
+			XXH64_update(state, &rt.Dest, sizeof(rt.Dest));
+			XXH64_update(state, &rt.Op, sizeof(rt.Op));
+			XXH64_update(state, &rt.SrcAlpha, sizeof(rt.SrcAlpha));
+			XXH64_update(state, &rt.DestAlpha, sizeof(rt.DestAlpha));
+			XXH64_update(state, &rt.AlphaOp, sizeof(rt.AlphaOp));
+			XXH64_update(state, &rt.LogicOp, sizeof(rt.LogicOp));
+			XXH64_update(state, &rt.WriteMask, sizeof(rt.WriteMask));
+		}
+	}
 };
+
+
 
 enum class DepthWriteMask
 {
@@ -165,6 +227,7 @@ enum class StencilOp
 	Incr,
 	Decr
 };
+
 
 struct DepthStencilDesc
 {
@@ -185,6 +248,25 @@ struct DepthStencilDesc
 	StencilOp BackStencilDepthFail = StencilOp::Keep;
 	StencilOp BackStencilPass = StencilOp::Keep;
 	ComparisonFunc BackStencilFunc = ComparisonFunc::Always;
+
+	void HashUpdate(XXH64_state_t* state) const
+	{
+		XXH64_update(state, &DepthEnable, sizeof(DepthEnable));
+		XXH64_update(state, &DepthWriteMask, sizeof(DepthWriteMask));
+		XXH64_update(state, &DepthFunc, sizeof(DepthFunc));
+		XXH64_update(state, &StencilEnable, sizeof(StencilEnable));
+		XXH64_update(state, &StencilReadMask, sizeof(StencilReadMask));
+		XXH64_update(state, &StencilWriteMask, sizeof(StencilWriteMask));
+		XXH64_update(state, &FrontStencilFail, sizeof(FrontStencilFail));
+		XXH64_update(state, &FrontStencilDepthFail, sizeof(FrontStencilDepthFail));
+		XXH64_update(state, &FrontStencilPass, sizeof(FrontStencilPass));
+		XXH64_update(state, &FrontStencilFunc, sizeof(FrontStencilFunc));
+		XXH64_update(state, &BackStencilFail, sizeof(BackStencilFail));
+		XXH64_update(state, &BackStencilDepthFail, sizeof(BackStencilDepthFail));
+		XXH64_update(state, &BackStencilPass, sizeof(BackStencilPass));
+		XXH64_update(state, &BackStencilFunc, sizeof(BackStencilFunc));
+
+	}
 };
 
 
@@ -193,10 +275,10 @@ class GraphicPipeline
 public:
 	struct Desc
 	{
-		std::vector<InputLayoutDesc>  InputLayout;
-		RootSignature* RootSignature;
-		ShaderResource* VertexShader;
-		ShaderResource* PixelShader;
+		std::string Name;
+		InputLayout    Input;
+		ShaderCreateDesc VS;
+		ShaderCreateDesc PS;
 		BlendDesc       BlendState;
 		u32             SampleMask = 0xffffffff;
 		RasterizerDesc  RasterizerState;
@@ -206,7 +288,39 @@ public:
 		PixelFormat DSVFormat = PixelFormat::D32_FLOAT_S8X24_UINT;
 		u32 SampleCount = 1;
 		u32 SampleQuality = 0;
+
+		void HashUpdate(XXH64_state_t* state) const
+		{
+			XXH64_update(state, Name.c_str(), Name.length());
+			Input.HashUpdate(state);
+			VS.HashUpdate(state);
+			PS.HashUpdate(state);
+			BlendState.HashUpdate(state);
+			XXH64_update(state, &SampleMask, sizeof(SampleMask));
+			RasterizerState.HashUpdate(state);
+			DepthStencilState.HashUpdate(state);
+			XXH64_update(state, &Topology, sizeof(Topology));
+			for (u32 i = 0; i < RVTFormats.size(); i++)
+			{
+				XXH64_update(state, &RVTFormats[i], sizeof(RVTFormats[i]));
+			}
+			XXH64_update(state, &DSVFormat, sizeof(DSVFormat));
+			XXH64_update(state, &SampleCount, sizeof(SampleCount));
+			XXH64_update(state, &SampleQuality, sizeof(SampleQuality));
+		}
+
+		u64 HashResult() const
+		{
+			XXH64_state_t* const state = XXH64_createState();
+			HashUpdate(state);
+			XXH64_hash_t const hash = XXH64_digest(state);
+			XXH64_freeState(state);
+			return hash;
+		}
 	};
 
 	virtual ~GraphicPipeline() {}
 };
+
+
+

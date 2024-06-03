@@ -4,11 +4,12 @@
 #define ENGINE_API __declspec(dllexport)
 #endif
 
-#include "RenderScene.h"
+#include "IRenderer.h"
 #include "Input.h"
 #include "FrameRate.h"
 #include "Viewport.h"
 #include "Engine.h"
 #include "Material.h"
 #include "Mesh.h"
+#include "Primitive.h"
 #include "World.h"

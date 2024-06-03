@@ -50,7 +50,6 @@ public:
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) override;
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) override;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const f32* colors) override;
-	virtual void SetGraphicsRootSignature(RootSignature* signature) override;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
 
 	void TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource);

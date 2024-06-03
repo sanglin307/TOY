@@ -90,10 +90,6 @@ void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const f32* 
     _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetView(), colors, 0, nullptr);
 }
 
-void DX12CommandList::SetGraphicsRootSignature(RootSignature* signature)
-{
-    _Handle->SetGraphicsRootSignature(std::any_cast<ID3D12RootSignature*>(signature->Handle()));
-}
 
 void DX12CommandQueue::Excute(u32 ctxNum, RenderContext** ctx)
 {

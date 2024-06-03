@@ -26,6 +26,7 @@
 //third party
 #define TOML_EXCEPTIONS 0
 #include "toml++/toml.hpp"
+#include "xxhash.h"
 
 // iner 
 #include "Types.h"

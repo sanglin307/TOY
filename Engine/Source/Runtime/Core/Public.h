@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef WINDOWS
+#define NOMINMAX
 #define CORE_API __declspec(dllexport)
 #endif
 
@@ -16,7 +17,13 @@
 #include <set>
 #include <map>
 #include <array>
+#include <unordered_map>
 
+//third party
+#define TOML_EXCEPTIONS 0
+#include "toml++/toml.hpp"
+#include "hlsl++.h"
+#include "xxhash.h"
 
 //core
 #include "Types.h"

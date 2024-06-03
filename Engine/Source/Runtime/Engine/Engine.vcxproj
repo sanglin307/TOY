@@ -110,13 +110,13 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableModules>false</EnableModules>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp-3.5/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp-3.5/include;$(SolutionDir)Engine/Source/Thirdparty/xxHash-0.8.2</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Core.lib;ShaderCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
@@ -140,7 +140,8 @@
     <ClInclude Include="Engine.h" />
     <ClInclude Include="FrameRate.h" />
     <ClInclude Include="Material.h" />
-    <ClInclude Include="RenderScene.h" />
+    <ClInclude Include="Primitive.h" />
+    <ClInclude Include="IRenderer.h" />
     <ClInclude Include="Viewport.h" />
     <ClInclude Include="World.h" />
     <ClInclude Include="Input.h" />

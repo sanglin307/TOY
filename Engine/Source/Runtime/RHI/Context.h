@@ -44,7 +44,6 @@ public:
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) = 0;
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) = 0;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const f32* colors) = 0;
-	virtual void SetGraphicsRootSignature(RootSignature* signature) = 0;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
 
 protected:

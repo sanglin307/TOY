@@ -20,6 +20,36 @@ struct ShaderBlobData
 	u64 Size;
 };
 
+struct ShaderCreateDesc
+{
+	ShaderProfile Profile;
+	std::string  Path;
+	std::string  Entry;
+	std::vector<std::string> Macros;
+
+	void HashUpdate(XXH64_state_t* state) const 
+	{
+		XXH64_update(state, &Profile, sizeof(Profile));
+		XXH64_update(state, Path.c_str(), Path.length());
+		XXH64_update(state, Entry.c_str(), Entry.length());
+		for (u32 i = 0; i < Macros.size(); i++)
+		{
+			XXH64_update(state, Macros[i].c_str(), Macros[i].length());
+		}
+	}
+
+	u64 HashResult() const
+	{
+		XXH64_state_t* const state = XXH64_createState();
+		HashUpdate(state);
+		XXH64_hash_t const hash = XXH64_digest(state);
+		XXH64_freeState(state);
+		return hash;
+	}
+};
+
+
+
 class ShaderResource
 {
 public:

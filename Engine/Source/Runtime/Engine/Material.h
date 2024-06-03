@@ -1,10 +1,26 @@
 #pragma once
 
+
+enum class MaterialBlend
+{
+	Opaque,
+	Masked,
+	Transparent,
+};
+
 class Material
 {
 public:
-	static Material* Create(const std::array<ShaderResource*, (size_t)ShaderProfile::MAX>& shaders);
-	virtual ~Material();
+
+
 private:
-	std::array<ShaderResource*, (size_t)ShaderProfile::MAX> _Shaders;
+	hlslpp::float3 _BaseColor;
+	hlslpp::float3 _Emissive;
+	float          _Metalness;
+	float          _Roughness;
+	RenderTexture* _DiffuseTexture;
+	RenderTexture* _NormalTexture;
+	RenderTexture* _RoughnessMetalnessTexture;
+	RenderTexture* _EmissiveTexture;
+	MaterialBlend  _BlendMode;
 };

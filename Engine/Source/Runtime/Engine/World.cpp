@@ -11,33 +11,6 @@ void GameWorld::Init()
 {
 	_RenderScene = GameEngine::Instance().GetRenderer().AllocateScene(this);
 
-	std::array<ShaderResource*, (size_t)ShaderProfile::MAX> shaders;
-	ShaderResource* vs = ShaderCompiler::CompileHLSL(ShaderCompiler::Args{
-		.Profile = ShaderProfile::Vertex,
-		.Path = "shader.hlsl",
-		.EntryPoint = "VSMain",
-		.Debug = true
-		});
-
-	ShaderResource* ps = ShaderCompiler::CompileHLSL(ShaderCompiler::Args{
-		.Profile = ShaderProfile::Pixel,
-		.Path = "shader.hlsl",
-		.EntryPoint = "PSMain",
-		.Debug = true
-		});
-
-	if (vs)
-	{
-		shaders[(i32)ShaderProfile::Vertex] = vs;
-	}
-
-	if (ps)
-	{
-		shaders[(i32)ShaderProfile::Pixel] = ps;
-	}
-
-	Material* mat = Material::Create(shaders);
-
 	u32 width, height;
 	GameEngine::Instance().FrameSize(width, height);
 	f32 aspectRatio = width * 1.f / height;

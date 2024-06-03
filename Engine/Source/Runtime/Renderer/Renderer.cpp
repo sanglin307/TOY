@@ -28,11 +28,24 @@ void RendererModule::RemoveScene(IRenderScene* scene)
 	delete scene;
 }
 
+void RendererModule::InitRenderPass()
+{
+	_Passes[(u32)RenderPassType::Test] = new RenderPassTest;
+
+	for (u32 p = 0; p < (u32)RenderPassType::MAX; p++)
+	{
+		_Passes[p]->Init(_Device);
+	}
+}
+
 void RendererModule::Init()
 {
 	_RenderConfig = GameEngine::Instance().GetRenderConfig();
-
 	_Device = GetRHI(_RenderConfig.API).GetDevice();
+
+	_Device->InitPipelineCache();
+
+	InitRenderPass();
 }
  
 void RendererModule::Render(Swapchain* sc)
@@ -45,20 +58,20 @@ void RendererModule::Render(Swapchain* sc)
 	RenderTexture* rts[] = { sc->GetCurrentBackBuffer() };
 	ctx->SetRenderTargets(1, rts, nullptr);
 
-	const f32 colors[] = {0.0f, 1.f, 0.4f, 1.0f};
+	const f32 colors[] = {0.f, 0.f, 0.f, 1.0f};
 	ctx->ClearRenderTarget(rts[0], colors);
+
+
 
 	_Device->EndFrame(ctx,sc);
 }
 
 void RendererModule::Destroy()
 {
-	check(_Scenes.empty());
+	for (u32 p = 0; p < (u32)RenderPassType::MAX; p++)
+	{
+		delete _Passes[p];
+	}
 
-	RootSignatureManager::Destroy();
-	PipelineManager::Destroy();
-	ShaderManager::Destroy();
- 
-
-	
+	check(_Scenes.empty());	
 }

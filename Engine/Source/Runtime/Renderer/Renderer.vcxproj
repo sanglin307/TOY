@@ -109,13 +109,14 @@
       <PreprocessorDefinitions>_DEBUG;WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp-3.5/include;$(SolutionDir)Engine/Source/Thirdparty/xxHash-0.8.2</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Core.lib;Engine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Core.lib;Engine.lib;xxhash.lib;RHI.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>Core.dll;Engine.dll</DelayLoadDLLs>
-      <AdditionalLibraryDirectories>$(SolutionDir)Bin\Win64\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin/Win64/;$(SolutionDir)Engine/Source/Thirdparty/xxHash-0.8.2/build/Release</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -135,16 +136,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="MeshCommand.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Public.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="RenderPass.h" />
     <ClInclude Include="RenderScene.h" />
-    <ClInclude Include="PipelineCache.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="RenderScene.cpp" />
-    <ClCompile Include="PipelineCache.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
