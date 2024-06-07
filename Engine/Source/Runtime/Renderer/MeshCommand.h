@@ -6,17 +6,12 @@ struct MeshVertexBuffer
 	RenderBuffer*   Buffer;
 };
 
-struct MeshShaderBind
-{
-	ShaderResource* Shader;
-	std::map<std::string,RenderResource*> Parameters;
-};
 
 struct MeshCommand
 {
 	std::vector<MeshVertexBuffer>  VertexBuffers;
 	RenderBuffer* IndexBuffer = nullptr;
 
-	std::array<MeshShaderBind,(u32)ShaderProfile::MAX> ShaderBinds;
+	u64 PrimitiveId;
 	GraphicPipeline* PSO = nullptr;
 };

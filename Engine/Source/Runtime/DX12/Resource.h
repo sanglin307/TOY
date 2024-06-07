@@ -54,19 +54,16 @@ class DX12RenderBuffer : public RenderBuffer
 public:
 	virtual ~DX12RenderBuffer() { _Handle.Reset(); }
 
-	D3D12_RESOURCE_STATES GetState() const { return _ResourceState; }
-	void SetState(D3D12_RESOURCE_STATES state) { _ResourceState = state; }
-
 private:
-	DX12RenderBuffer(const RenderBuffer::Desc& desc,ComPtr<ID3D12Resource> handle)
+	DX12RenderBuffer(const RenderBuffer::Desc& desc,ResourceState state, ComPtr<ID3D12Resource> handle)
 	{
+		State = state;
 		_Desc = desc;
 		_Handle = handle;
 	}
 
 private:
 	ComPtr<ID3D12Resource> _Handle;
-	D3D12_RESOURCE_STATES _ResourceState;
 };
 
 class DX12RenderTexture : public RenderTexture

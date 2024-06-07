@@ -11,11 +11,8 @@ public:
     virtual void RemoveScene(IRenderScene* scene) override;
 
 private:
-    void InitRenderPass();
-
-    std::set<IRenderScene*> _Scenes;
+    RenderScene*  _Scene;
     RenderDevice* _Device;
     RenderConfig _RenderConfig;
-
-    std::array<RenderPass*, (u32)RenderPassType::MAX> _Passes;
+    SceneRenderer* _SceneRender;
 };

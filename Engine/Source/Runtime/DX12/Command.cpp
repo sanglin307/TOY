@@ -16,9 +16,12 @@ void DX12CommandList::Reset()
 
 void DX12CommandList::Close(RenderTexture* presentResource)
 {
-    DX12RenderTexture* dx12Res = dynamic_cast<DX12RenderTexture*>(presentResource);
-    TransitionState(D3D12_RESOURCE_STATE_PRESENT, dx12Res);
+    TransitionState(ResourceState::Present, presentResource);
+    check(SUCCEEDED(_Handle->Close()));
+}
 
+void DX12CommandList::Close()
+{
     check(SUCCEEDED(_Handle->Close()));
 }
 
@@ -107,29 +110,35 @@ void DX12CommandQueue::Signal(Fence* fence, u64 value)
     check(SUCCEEDED(_Handle->Signal(fenceObj, value)));
 }
 
-void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRes)
+void DX12CommandQueue::Wait(Fence* fence, u64 value)
+{
+    ID3D12Fence* fenceObj = std::any_cast<ID3D12Fence*>(fence->Handle());
+    check(SUCCEEDED(_Handle->Wait(fenceObj, value)));
+}
+
+void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRes, ResourceState dstResAfterState)
 {
     check(srcRes->GetDimension() == dstRes->GetDimension());
-    if (dstRes->GetDimension() == ResourceDimension::Buffer)
+     
+    if (!((u32)srcRes->State & (u32)ResourceState::CopySource))
     {
-        DX12RenderBuffer* srcBuffer = dynamic_cast<DX12RenderBuffer*>(srcRes);
-        DX12RenderBuffer* dstBuffer = dynamic_cast<DX12RenderBuffer*>(dstRes);
-        TransitionState(D3D12_RESOURCE_STATE_COPY_SOURCE, srcBuffer);
-        TransitionState(D3D12_RESOURCE_STATE_COPY_DEST, dstBuffer);
+        TransitionState(ResourceState::CopySource, srcRes);
     }
-    else
+
+    if (!((u32)dstRes->State & (u32)ResourceState::CopyDest))
     {
-        DX12RenderTexture* srcTex = dynamic_cast<DX12RenderTexture*>(srcRes);
-        DX12RenderTexture* dstTex = dynamic_cast<DX12RenderTexture*>(dstRes);
-        TransitionState(D3D12_RESOURCE_STATE_COPY_SOURCE, srcTex);
-        TransitionState(D3D12_RESOURCE_STATE_COPY_DEST, dstTex);
+        TransitionState(ResourceState::CopyDest,dstRes);
     }
 
     ID3D12Resource* srcResource = std::any_cast<ID3D12Resource*>(srcRes->Handle());
     ID3D12Resource* dstResource = std::any_cast<ID3D12Resource*>(dstRes->Handle());
     _Handle->CopyResource(dstResource, srcResource);
+    _Manager->AddCopyNum();
 
-   
+    if (dstResAfterState != ResourceState::Reserve)
+    {
+        TransitionState(dstResAfterState, dstRes);
+    }
 }
 
 void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource)
@@ -146,21 +155,7 @@ void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RES
     };
     _Handle->ResourceBarrier(1, &barrier);
 }
-
-void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES* destStates, D3D12_RESOURCE_STATES* srcState, const ID3D12Resource** resource, u32 number)
-{
-    check(0);
-}
-
-void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderTexture* texture)
-{
-    if (texture->GetState() != destState)
-    {
-        TransitionState(destState, texture->GetState(), std::any_cast<ID3D12Resource*>(texture->Handle()));
-        texture->SetState(destState);
-    }
-}
-
+ 
 void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderTexture** texture, u32 number)
 {
     std::vector<D3D12_RESOURCE_BARRIER> rtBarrier;
@@ -188,11 +183,11 @@ void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, DX12Rende
     }
 }
 
-void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderBuffer* buffer)
+void DX12CommandList::TransitionState(ResourceState destState, RenderResource* res)
 {
-    if (buffer->GetState() != destState)
+    if (res->State != destState)
     {
-        TransitionState(destState, buffer->GetState(), std::any_cast<ID3D12Resource*>(buffer->Handle()));
-        buffer->SetState(destState);
+        TransitionState(DX12Device::TranslateResourceState(destState), DX12Device::TranslateResourceState(res->State), std::any_cast<ID3D12Resource*>(res->Handle()));
+        res->State = destState;
     }
 }

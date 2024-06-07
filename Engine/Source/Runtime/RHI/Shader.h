@@ -41,6 +41,7 @@ struct ShaderCreateDesc
 	u64 HashResult() const
 	{
 		XXH64_state_t* const state = XXH64_createState();
+		XXH64_reset(state, 0);
 		HashUpdate(state);
 		XXH64_hash_t const hash = XXH64_digest(state);
 		XXH64_freeState(state);
@@ -87,4 +88,17 @@ public:
 
 private:
 	Desc _Desc;
+};
+
+class ShaderParameterBinding
+{
+public:
+	struct ParameterInfo
+	{
+		SRBoundResource Desc;
+		RenderResource* Resource;
+	};
+
+private:
+	std::map<std::string, ParameterInfo*> _ParameterMap;
 };

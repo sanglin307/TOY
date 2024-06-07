@@ -19,7 +19,7 @@ public:
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) = 0;
 	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) = 0;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) = 0;
-	virtual RenderBuffer* CreateBuffer(RenderContext* ctx, const RenderBuffer::Desc& desc) = 0;
+	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) = 0;
 	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) = 0;
 	virtual Fence* CreateFence(u64 initValue) = 0;
 
@@ -34,10 +34,12 @@ public:
 	RHI_API GraphicPipeline* LoadGraphicPipeline(const GraphicPipeline::Desc& desc);
 	RHI_API ShaderResource* LoadShader(const ShaderCreateDesc& desc);
 
+	void CommitCopyCommand() { _ContextManager->CommitCopyCommand(); }
+	void GpuWaitCopyFinish() { _ContextManager->GpuWaitCopyFinish(); }
+
 protected:
 	std::vector<PixelFormatInfo> _Formats;
 
-	Fence* _FrameFence;
 	ContextManager* _ContextManager;
 	DescriptorManager* _DescriptorManager;
 	std::unordered_map<u64, GraphicPipeline*> _PipelineCache;

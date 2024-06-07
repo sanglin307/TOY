@@ -9,6 +9,7 @@
 #include "../Engine/Public.h"
 
 #include "MeshCommand.h"
-#include "RenderPass.h"
 #include "RenderScene.h"
+#include "RenderPass.h"
+#include "SceneRendering.h"
 #include "Renderer.h"

@@ -276,7 +276,7 @@ public:
 	struct Desc
 	{
 		std::string Name;
-		InputLayout    Input;
+		InputLayout    VertexLayout;
 		ShaderCreateDesc VS;
 		ShaderCreateDesc PS;
 		BlendDesc       BlendState;
@@ -292,7 +292,7 @@ public:
 		void HashUpdate(XXH64_state_t* state) const
 		{
 			XXH64_update(state, Name.c_str(), Name.length());
-			Input.HashUpdate(state);
+			VertexLayout.HashUpdate(state);
 			VS.HashUpdate(state);
 			PS.HashUpdate(state);
 			BlendState.HashUpdate(state);
@@ -312,6 +312,7 @@ public:
 		u64 HashResult() const
 		{
 			XXH64_state_t* const state = XXH64_createState();
+			XXH64_reset(state, 0);
 			HashUpdate(state);
 			XXH64_hash_t const hash = XXH64_digest(state);
 			XXH64_freeState(state);
@@ -320,6 +321,10 @@ public:
 	};
 
 	virtual ~GraphicPipeline() {}
+
+	Desc  Info;
+	std::array<ShaderResource*, (u32)ShaderProfile::MAX> Shaders;
+	ShaderParameterBinding  BindParameters;
 };
 
 

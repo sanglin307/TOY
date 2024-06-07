@@ -2,6 +2,7 @@
 
 class DX12Device final : public RenderDevice
 {
+	friend class DX12CommandList;
 public :
 	DX12Device();
 	virtual ~DX12Device();
@@ -12,7 +13,7 @@ public :
 	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) override;
 	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& desc) override;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
-	virtual RenderBuffer* CreateBuffer(RenderContext* ctx, const RenderBuffer::Desc& desc) override;
+	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) override;
 	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) override;
 	virtual Fence* CreateFence(u64 initValue) override;
 
@@ -32,12 +33,14 @@ private:
 	void TranslateRasterizerState(const RasterizerDesc& rasterizer, D3D12_RASTERIZER_DESC& dxRasterizer);
 	void TranslateDepthStencilState(const DepthStencilDesc& depthState, D3D12_DEPTH_STENCIL_DESC& dxDepthState);
 	void TranslateInputLayout(const InputLayout& inputLayouts, std::vector<D3D12_INPUT_ELEMENT_DESC>& dxInputLayout);
-	D3D12_BLEND TranslateBlendFactor(const BlendFactor factor);
-	D3D12_BLEND_OP TranslateBlendOp(const BlendOp op);
-	D3D12_LOGIC_OP TranslateLogicOp(const LogicOp op);
-	D3D12_CULL_MODE TranslateCullMode(const CullMode mode);
-	D3D12_COMPARISON_FUNC TranslateComparisonFunc(const ComparisonFunc func);
-	D3D12_STENCIL_OP TranslateStencilOp(const StencilOp op);
+	
+	static D3D12_BLEND TranslateBlendFactor(const BlendFactor factor);
+	static D3D12_BLEND_OP TranslateBlendOp(const BlendOp op);
+	static D3D12_LOGIC_OP TranslateLogicOp(const LogicOp op);
+	static D3D12_CULL_MODE TranslateCullMode(const CullMode mode);
+	static D3D12_COMPARISON_FUNC TranslateComparisonFunc(const ComparisonFunc func);
+	static D3D12_STENCIL_OP TranslateStencilOp(const StencilOp op);
+	static D3D12_RESOURCE_STATES TranslateResourceState(const ResourceState state);
 
 	ID3D12RootSignature* LoadRootSignature(u64 hash, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
 

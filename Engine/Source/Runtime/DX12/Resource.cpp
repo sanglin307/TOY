@@ -91,11 +91,13 @@ RenderTexture* DX12Device::CreateTexture(const RenderTexture::Desc& desc)
     return nullptr;
 }
 
-RenderBuffer* DX12Device::CreateBuffer(RenderContext* ctx, const RenderBuffer::Desc& info)
+RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
 {
     check(_Device);
 
     ComPtr<ID3D12Resource> resource;
+    resource->SetName(PlatformUtils::UTF8ToUTF16(info.Name).c_str());
+
     D3D12_RESOURCE_DESC desc = {
         .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
         .Alignment = info.Alignment ? D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT : 0ul,
@@ -127,13 +129,15 @@ RenderBuffer* DX12Device::CreateBuffer(RenderContext* ctx, const RenderBuffer::D
             std::memcpy(pData, info.InitData, info.Size);
             resource->Unmap(0, nullptr);
         }
+
+        return new DX12RenderBuffer(info, ResourceState::GenericRead, resource);
     }
     else
     {
         D3D12_HEAP_PROPERTIES heap = {
                 .Type = D3D12_HEAP_TYPE_DEFAULT
         };
-        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, info.InitData == nullptr ? D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER : D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
+        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, info.InitData == nullptr ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
 
         if (info.InitData != nullptr)
         {
@@ -149,17 +153,20 @@ RenderBuffer* DX12Device::CreateBuffer(RenderContext* ctx, const RenderBuffer::D
             std::memcpy(pData, info.InitData, info.Size);
             tempRes->Unmap(0, nullptr);
             
-            ID3D12GraphicsCommandList* deviceCmdlist = std::any_cast<ID3D12GraphicsCommandList*>(ctx->Handle());
-            DX12CommandList* dxCmdlist = dynamic_cast<DX12CommandList*>(ctx);
+            RenderContext* ctx = _ContextManager->GetCopyContext();
+            RenderBuffer* dstBuffer = new DX12RenderBuffer(info, ResourceState::CopyDest, resource);
+            RenderBuffer* srcBuffer = new DX12RenderBuffer(info, ResourceState::GenericRead, tempRes);
+            ctx->CopyResource(dstBuffer, srcBuffer, ResourceState::GenericRead);
 
-            deviceCmdlist->CopyResource(resource.Get(), tempRes.Get());
-            dxCmdlist->TransitionState(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST, resource.Get());
+            return dstBuffer;
+        }
+        else
+        {
+            return new DX12RenderBuffer(info, ResourceState::Common, resource);
         }
     }
 
-    resource->SetName(PlatformUtils::UTF8ToUTF16(info.Name).c_str());
-    RenderBuffer* buffer = new DX12RenderBuffer(info,resource);
-    return buffer;
+    return nullptr;
  
 }
  

@@ -145,6 +145,32 @@ protected:
     u32 _Offset = 0;
 };
 
+enum class ResourceState : u32
+{
+    Common = 0,
+    VertexAndConstantBuffer = 0x1,
+    IndexBuffer = 0x2,
+    RenderTarget = 0x4,
+    UnorderedAccess = 0x8,
+    DepthWrite = 0x10,
+    DepthRead = 0x20,
+    NonPixelShaderResource = 0x40,
+    PixelShaderResource = 0x80,
+    StreamOut = 0x100,
+    IndirectArgument = 0x200,
+    CopyDest = 0x400,
+    CopySource = 0x800,
+    ResolveDest = 0x1000,
+    ResolveSource = 0x2000,
+    RaytracingAccelerationStructure = 0x400000,
+    ShadingRateSource = 0x1000000,
+    GenericRead = (((((VertexAndConstantBuffer | IndexBuffer) | NonPixelShaderResource) | PixelShaderResource) | IndirectArgument) | CopySource),
+    AllShaderResource = (NonPixelShaderResource | PixelShaderResource),
+    Present = 0,
+    Predication = 0x200,
+    Reserve = 0xFFFFFFFF   // used for reserve current state , don't change
+};
+
 enum class ResourceUsage : u32
 {
     VertexBuffer = 1u << 0u,
@@ -189,6 +215,8 @@ public :
     virtual u32 GetUsage() = 0;
     virtual ~RenderResource() {};
     virtual std::any Handle() { return nullptr; }
+
+    ResourceState State;
 };
 
 class RenderBuffer : public RenderResource

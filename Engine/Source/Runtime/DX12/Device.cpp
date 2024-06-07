@@ -92,7 +92,6 @@ DX12Device::DX12Device()
 
     InitPixelFormat_Platform();
 
-    _FrameFence = CreateFence(0);
     _ContextManager = new ContextManager(this);
     _DescriptorManager = new DescriptorManager(this);
 
@@ -111,14 +110,11 @@ void DX12Device::ReportLiveObjects()
 
 void DX12Device::WaitGPUIdle()
 {
-    u64 lastFenceValue = _ContextManager->GetMaxFenceValue();
-    _ContextManager->GetDirectQueue()->Signal(_FrameFence, lastFenceValue);
-    _FrameFence->CpuWait(lastFenceValue);
+    _ContextManager->WaitGPUIdle();
 }
 
 DX12Device::~DX12Device()
 {
-    delete _FrameFence;
     delete _DescriptorManager;
     delete _ContextManager;
 
@@ -147,6 +143,10 @@ RenderContext* DX12Device::BeginFrame(Swapchain* sc)
 {
     RenderContext* context = _ContextManager->GetDirectContext(sc->GetCurrentFrameIndex());
     context->Reset();
+
+    RenderContext* copyCtx = _ContextManager->GetCopyContext();
+    copyCtx->Reset();
+
     return context;
 }
 
@@ -154,7 +154,7 @@ void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
 {
     RenderTexture* rt = sc->GetCurrentBackBuffer();
     ctx->Close(rt);
- 
+
     CommandQueue* commandQueue = _ContextManager->GetDirectQueue();
     RenderContext* ctxs[] = { ctx };
     commandQueue->Excute(1,ctxs);
@@ -165,17 +165,8 @@ void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
 
     u32 nextFrameIndex = sc->GetCurrentFrameIndex();
 
-    u64& lastFenceValue = _ContextManager->GetFenceValue(lastframeIndex);
-    u64& nextFenceValue = _ContextManager->GetFenceValue(nextFrameIndex);
+    _ContextManager->SwitchToNextFrame(lastframeIndex, nextFrameIndex);
 
-    commandQueue->Signal(_FrameFence, lastFenceValue);
-
-    if (_FrameFence->GetCompletedValue() < nextFenceValue)
-    {
-        _FrameFence->CpuWait(nextFenceValue);
-    }
-
-    nextFenceValue = lastFenceValue + 1; // next frame fence value.
 }
 
 CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
@@ -216,7 +207,7 @@ RenderContext* DX12Device::CreateCommandContext(CommandAllocator* allocator, con
     if (SUCCEEDED(_Device->CreateCommandList(0,TranslateCommandType(type), std::any_cast<ID3D12CommandAllocator*>(allocator->Handle()), nullptr, IID_PPV_ARGS(&commandList))))
     {
         commandList->Close();
-        return new DX12CommandList(allocator, type, commandList);
+        return new DX12CommandList(allocator, type, _ContextManager,commandList);
     }
 
     check(0);
@@ -585,6 +576,60 @@ D3D12_COMPARISON_FUNC DX12Device::TranslateComparisonFunc(const ComparisonFunc f
     return D3D12_COMPARISON_FUNC_NONE;
 }
 
+D3D12_RESOURCE_STATES DX12Device::TranslateResourceState(const ResourceState state)
+{
+    if (state == ResourceState::Common)
+        return D3D12_RESOURCE_STATE_COMMON;
+
+    if (state == ResourceState::Predication)
+        return D3D12_RESOURCE_STATE_PREDICATION;
+
+    switch (state)
+    {
+    case ResourceState::VertexAndConstantBuffer:
+        return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+    case ResourceState::IndexBuffer:
+        return D3D12_RESOURCE_STATE_INDEX_BUFFER;
+    case ResourceState::RenderTarget:
+        return D3D12_RESOURCE_STATE_RENDER_TARGET;
+    case ResourceState::UnorderedAccess:
+        return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    case ResourceState::DepthWrite:
+        return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    case ResourceState::DepthRead:
+        return D3D12_RESOURCE_STATE_DEPTH_READ;
+    case ResourceState::NonPixelShaderResource:
+        return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    case ResourceState::PixelShaderResource:
+        return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    case ResourceState::StreamOut:
+        return D3D12_RESOURCE_STATE_STREAM_OUT;
+    case ResourceState::IndirectArgument:
+        return D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+    case ResourceState::CopyDest:
+        return D3D12_RESOURCE_STATE_COPY_DEST;
+    case ResourceState::CopySource:
+        return D3D12_RESOURCE_STATE_COPY_SOURCE;
+    case ResourceState::ResolveDest:
+        return D3D12_RESOURCE_STATE_RESOLVE_DEST;
+    case ResourceState::ResolveSource:
+        return D3D12_RESOURCE_STATE_RESOLVE_SOURCE;
+    case ResourceState::RaytracingAccelerationStructure:
+        return D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+    case ResourceState::ShadingRateSource:
+        return D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
+    case ResourceState::GenericRead:
+        return D3D12_RESOURCE_STATE_GENERIC_READ;
+    case ResourceState::AllShaderResource:
+        return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+    case ResourceState::Present:
+        return D3D12_RESOURCE_STATE_PRESENT;
+    }
+
+    check(0);
+    return D3D12_RESOURCE_STATE_COMMON;
+}
+
 D3D12_STENCIL_OP DX12Device::TranslateStencilOp(const StencilOp op)
 {
     switch (op)
@@ -733,7 +778,7 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
         return cache;
     }
 
-    std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes;
+    std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes = {};
     shaderRes[(u32)ShaderProfile::Vertex] = LoadShader(desc.VS);
     shaderRes[(u32)ShaderProfile::Pixel] = LoadShader(desc.PS);
 
@@ -745,7 +790,7 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
     dxDesc.pRootSignature = LoadRootSignature(psoHash, shaderRes);
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayouts;
-    TranslateInputLayout(desc.Input, inputLayouts);
+    TranslateInputLayout(desc.VertexLayout, inputLayouts);
     dxDesc.InputLayout = {
             .pInputElementDescs = inputLayouts.data(),
             .NumElements = (UINT)inputLayouts.size()

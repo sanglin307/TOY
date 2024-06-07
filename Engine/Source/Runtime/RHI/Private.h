@@ -7,9 +7,9 @@
 #include "../Core/Public.h"
 
 #include "Reflection.h"
+#include "Resource.h"
 #include "Shader.h"
 #include "Compiler.h"
-#include "Resource.h"
 #include "Pipeline.h"
 #include "Context.h"
 #include "Descriptor.h"

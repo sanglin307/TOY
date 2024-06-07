@@ -1,10 +1,19 @@
 #pragma once
 
+class SceneRenderer;
+
+struct PrimitiveSceneInfo
+{
+	InputLayout VertexLayout;
+	std::vector<MeshVertexBuffer>  VertexBuffers;
+	RenderBuffer* IndexBuffer = nullptr;
+	u64 PrimitiveId;
+};
 
 class RenderScene final: public IRenderScene
 {
 public:
-	RenderScene(GameWorld* world);
+	RenderScene(GameWorld* world, SceneRenderer* renderer);
 	virtual ~RenderScene();
 
 	virtual void AddPrimitive(PrimitiveComponent* primitive) override;
@@ -12,5 +21,6 @@ public:
 
 private:
 	GameWorld* _World;
-	std::vector<PrimitiveComponent*> _Primitives;
+	SceneRenderer* _Renderer;
+	std::vector<PrimitiveSceneInfo*> _Primitives;
 };

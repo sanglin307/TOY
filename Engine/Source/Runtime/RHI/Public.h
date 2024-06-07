@@ -6,8 +6,8 @@
 
 #include "VertexFormat.h"
 #include "Reflection.h"
-#include "Shader.h"
 #include "Resource.h"
+#include "Shader.h"
 #include "Pipeline.h"
 #include "Context.h"
 #include "Descriptor.h"
