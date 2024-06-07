@@ -65,10 +65,10 @@ void ContextManager::AddCopyNum()
 
 void ContextManager::CommitCopyCommand()
 {
+	_CopyContext->Close();
+
 	if (!_ContainCopyOp)
 		return;
-
-	_CopyContext->Close();
 
 	RenderContext* ctxs[] = { _CopyContext };
 	_CopyCommandQueue->Excute(1, ctxs);
@@ -79,7 +79,7 @@ void ContextManager::CommitCopyCommand()
 
 void ContextManager::GpuWaitCopyFinish()
 {
-	check(_ContainCopyOp);  // must finish commit.
+	check(!_ContainCopyOp);  // must finish commit.
 	_DirectCommandQueue->Wait(_CopyQueueFence, _CopyQueueFenceValue);
 }
 
@@ -105,6 +105,9 @@ ContextManager::~ContextManager()
 
 	delete _ComputeCommandAllocator;
 	_ComputeCommandAllocator = nullptr;
+
+	delete _FrameFence;
+	_FrameFence = nullptr;
 
 	delete _DirectCommandQueue;
 	_DirectCommandQueue = nullptr;

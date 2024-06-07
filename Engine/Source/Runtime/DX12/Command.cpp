@@ -56,17 +56,15 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtViews;
     D3D12_CPU_DESCRIPTOR_HANDLE dsView{};
     D3D12_CPU_DESCRIPTOR_HANDLE* pDepth = nullptr;
-    std::vector<DX12RenderTexture*> textures;
-
+    
     if (rtNum > 0 && rts)
     {
         for (u32 i=0; i<rtNum; i++)
         {
             DX12RenderTexture* dx12Res = dynamic_cast<DX12RenderTexture*>(rts[i]);
             rtViews.push_back(dx12Res->GetRenderTargetView());
-            textures.push_back(dx12Res);
         }
-        TransitionState(D3D12_RESOURCE_STATE_RENDER_TARGET, textures.data(), (u32)textures.size());
+        TransitionState(ResourceState::RenderTarget, (RenderResource**)rts, rtNum);
     }
 
     if (depthStencil)
@@ -156,24 +154,25 @@ void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RES
     _Handle->ResourceBarrier(1, &barrier);
 }
  
-void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderTexture** texture, u32 number)
+void DX12CommandList::TransitionState(ResourceState destState, RenderResource** resources, u32 number)
 {
     std::vector<D3D12_RESOURCE_BARRIER> rtBarrier;
     for (u32 i = 0; i < number; i++)
     {
-        if (texture[i]->GetState() != destState)
+        if (resources[i]->State != destState)
         {
             rtBarrier.push_back(D3D12_RESOURCE_BARRIER{
                     .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
                     .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
                     .Transition = {
-                         .pResource = std::any_cast<ID3D12Resource*>(texture[i]->Handle()),
+                         .pResource = std::any_cast<ID3D12Resource*>(resources[i]->Handle()),
                          .Subresource = 0,
-                         .StateBefore = texture[i]->GetState(),
-                         .StateAfter = destState
+                         .StateBefore = DX12Device::TranslateResourceState(resources[i]->State),
+                         .StateAfter = DX12Device::TranslateResourceState(destState)
                     }
                 });
-            texture[i]->SetState(destState);
+
+            resources[i]->State = destState;
         }
     }
    

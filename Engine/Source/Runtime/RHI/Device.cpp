@@ -374,19 +374,14 @@ InputSlotClass GetSlotClass(const std::string& semanticName,u32 semanticIndex)
     return InputSlotClass::PerVertex;
 }
 
-void RenderDevice::CreateInputLayout(const std::vector<ShaderResource*>& shaders, InputSlotMapping slotMapping, std::vector<InputLayoutDesc>& inputLayout)
+void RenderDevice::CreateInputLayout(const ShaderResource* shader, InputSlotMapping slotMapping, InputLayout& inputLayout)
 {
-    auto iter = std::find_if(shaders.begin(), shaders.end(), [](ShaderResource* s) -> bool { return s->GetProfile() == ShaderProfile::Vertex; });
-    if (iter == shaders.end())
-    {
-        LOG_ERROR(RenderDevice, "No vertex shader found to fill inputLayout!");
-        return;
-    }
+    check(shader->GetProfile() == ShaderProfile::Vertex);
 
-    ShaderReflection* reflection = (*iter)->GetReflection();
+    const ShaderReflection* reflection = shader->GetReflection();
     if (!reflection || reflection->InputParameter.size() == 0)
     {
-        LOG_ERROR(RenderDevice, std::format("vertex shader don't contain correct reflection information ({})", (*iter)->GetDebugName()));
+        LOG_ERROR(RenderDevice, std::format("vertex shader don't contain correct reflection information ({})", shader->GetDebugName()));
         return;
     }
 
@@ -396,7 +391,7 @@ void RenderDevice::CreateInputLayout(const std::vector<ShaderResource*>& shaders
 		if (slotMapping == InputSlotMapping::Interleaved)
 		{
 			PixelFormat pixel = GetInputLayoutPixelFormat(input.ComponentType, input.ComponentMask);
-			inputLayout.push_back(InputLayoutDesc{
+			inputLayout.Desc.push_back(InputLayoutDesc{
 				.SemanticName = input.SemanticName,
 				.SemanticIndex = input.SemanticIndex,
 				.Format = pixel,
@@ -411,7 +406,7 @@ void RenderDevice::CreateInputLayout(const std::vector<ShaderResource*>& shaders
 		else if (slotMapping == InputSlotMapping::Seperated)
 		{
 			PixelFormat pixel = GetInputLayoutPixelFormat(input.ComponentType, input.ComponentMask);
-			inputLayout.push_back(InputLayoutDesc{
+			inputLayout.Desc.push_back(InputLayoutDesc{
 				.SemanticName = input.SemanticName,
 				.SemanticIndex = input.SemanticIndex,
 				.Format = pixel,

@@ -6,7 +6,6 @@ void RenderPassTest::Init(RenderDevice* device)
 
 	/*GraphicPipeline::Desc desc = {
 		.Name = "TestPSO",
-		.VertexLayout = 
 		ShaderCreateDesc VS;
 		ShaderCreateDesc PS;
 		BlendDesc       BlendState;

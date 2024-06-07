@@ -23,7 +23,7 @@ public:
 	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) = 0;
 	virtual Fence* CreateFence(u64 initValue) = 0;
 
-	void CreateInputLayout(const std::vector<ShaderResource*>& shaders, InputSlotMapping slotMapping, std::vector<InputLayoutDesc>& inputLayout);
+	RHI_API void CreateInputLayout(const ShaderResource* shader, InputSlotMapping slotMapping, InputLayout& inputLayout);
 
 	u8 GetPixelComponentSize(PixelFormat format);
 	u8 GetPixelComponentNum(PixelFormat format);

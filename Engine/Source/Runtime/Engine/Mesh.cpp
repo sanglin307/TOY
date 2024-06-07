@@ -5,6 +5,7 @@ Mesh* Mesh::Create(PrimitiveTopology topology)
 {
 	Mesh* mesh = new Mesh;
 	mesh->_Topology = topology;
+	mesh->_Data = {};
 	return mesh;
 }
 

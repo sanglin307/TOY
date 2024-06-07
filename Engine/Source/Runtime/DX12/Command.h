@@ -56,7 +56,7 @@ public:
 	virtual void TransitionState(ResourceState destState, RenderResource* buffer) override;
 
 	void TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource);
-	void TransitionState(D3D12_RESOURCE_STATES destState, DX12RenderTexture** texture, u32 number);
+	void TransitionState(ResourceState destState, RenderResource** resources, u32 number);
 
 private:
 	DX12CommandList(CommandAllocator* allocator, CommandType type, ContextManager* manager,ComPtr<ID3D12GraphicsCommandList> handle)

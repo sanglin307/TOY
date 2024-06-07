@@ -71,8 +71,8 @@ public:
 	{
 	}
 
-	ShaderProfile GetProfile() { return _Desc.Profile; }
-	ShaderReflection* GetReflection() { return _Desc.Reflection; }
+	ShaderProfile GetProfile() const { return _Desc.Profile; } 
+	ShaderReflection* GetReflection() const { return _Desc.Reflection; }
 	const std::string& GetDebugName() const { return _Desc.DebugName; }
 	ShaderBlobData GetBlobData() { return _Desc.Blob; }
 	const std::string& GetHash() const { return _Desc.Hash; }

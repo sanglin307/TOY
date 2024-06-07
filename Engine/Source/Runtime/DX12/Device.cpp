@@ -115,6 +115,21 @@ void DX12Device::WaitGPUIdle()
 
 DX12Device::~DX12Device()
 {
+    for (auto iter = _RootSignatureCache.begin(); iter != _RootSignatureCache.end(); iter++)
+    {
+        iter->second.Reset();
+    }
+
+    for (auto iter = _PipelineCache.begin(); iter != _PipelineCache.end(); iter++)
+    {
+        delete iter->second;
+    }
+
+    for (auto iter = _ShaderCache.begin(); iter != _ShaderCache.end(); iter++)
+    {
+        delete iter->second;
+    }
+
     delete _DescriptorManager;
     delete _ContextManager;
 
@@ -264,7 +279,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
 
             DX12RenderTexture* dx12Resource = new DX12RenderTexture(desc,res);
             dx12Resource->SetRenderTargetView(rvtHandle);
-            dx12Resource->SetState(D3D12_RESOURCE_STATE_PRESENT);
+            dx12Resource->State = ResourceState::Present;
 
             rtResources[n] = dx12Resource;
             rvtHandle.ptr += rvtHeap->GetStride();
@@ -772,14 +787,20 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
 {
     check(_Device);
 
+    std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes = {};
+    shaderRes[(u32)ShaderProfile::Vertex] = LoadShader(desc.VS);
+
+    if (desc.VertexLayout.Desc.size() == 0)
+    {
+        CreateInputLayout(shaderRes[(u32)ShaderProfile::Vertex], InputSlotMapping::Seperated, (InputLayout&)desc.VertexLayout);
+    }
+
     GraphicPipeline* cache = LoadGraphicPipeline(desc);
     if (cache != nullptr)
     {
         return cache;
     }
 
-    std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes = {};
-    shaderRes[(u32)ShaderProfile::Vertex] = LoadShader(desc.VS);
     shaderRes[(u32)ShaderProfile::Pixel] = LoadShader(desc.PS);
 
     ComPtr<ID3D12PipelineState> pso;

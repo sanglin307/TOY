@@ -96,9 +96,6 @@ public:
 		_DepthStencilView = handle;
 	}
 
-	D3D12_RESOURCE_STATES GetState() const { return _ResourceState; }
-	void SetState(D3D12_RESOURCE_STATES state) { _ResourceState = state; }
-
 private:
 
 	DX12RenderTexture(const Desc& desc, ComPtr<ID3D12Resource> handle)
@@ -110,6 +107,5 @@ private:
 	D3D12_CPU_DESCRIPTOR_HANDLE _RenderTargetView;
 	D3D12_CPU_DESCRIPTOR_HANDLE _DepthStencilView;
 	ComPtr<ID3D12Resource> _Handle;
-	D3D12_RESOURCE_STATES _ResourceState;
 };
 
