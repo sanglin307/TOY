@@ -61,6 +61,7 @@ void SceneRenderer::Render(Swapchain* sc)
 
 	_Device->GpuWaitCopyFinish();
 	_Device->EndFrame(ctx, sc);
+	_Device->CleanDelayDeleteResource();
 }
 
  

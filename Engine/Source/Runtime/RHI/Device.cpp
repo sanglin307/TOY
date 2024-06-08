@@ -76,6 +76,17 @@ ShaderResource* RenderDevice::LoadShader(const ShaderCreateDesc& desc)
 	return nullptr;
 }
 
+GraphicPipeline* RenderDevice::LoadGraphicPipeline(const std::string& name)
+{
+	auto iter = _PipelineCacheByName.find(name);
+	if (iter != _PipelineCacheByName.end())
+	{
+		return iter->second;
+	}
+
+	return nullptr;
+}
+
 GraphicPipeline* RenderDevice::LoadGraphicPipeline(const GraphicPipeline::Desc& desc)
 {
 	u64 hash = desc.HashResult();
@@ -139,6 +150,31 @@ void RenderDevice::InitPipelineCache()
 		{
 			CreateGraphicPipeline(gp);
 		}
+	}
+}
+
+void RenderDevice::AddDelayDeleteResource(RenderResource* res, u32 delayFrame)
+{
+	_DelayDeleteResources.push_back(DelayDeleteResource{
+		.FrameNum = _FrameNum,
+		.DelayFrameNum = delayFrame,
+		.Resource = res
+		});
+}
+
+void RenderDevice::CleanDelayDeleteResource()
+{
+	auto iter = _DelayDeleteResources.begin();
+	while(iter != _DelayDeleteResources.end())
+	{
+		if (_FrameNum > iter->FrameNum + iter->DelayFrameNum)
+		{
+			delete iter->Resource;
+			auto diter = iter++;
+			_DelayDeleteResources.erase(diter);
+		}
+		else
+			iter++;
 	}
 }
 

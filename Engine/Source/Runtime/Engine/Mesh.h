@@ -4,7 +4,7 @@ class Mesh
 {
 public:
 	virtual ~Mesh();
-	static Mesh* Create(PrimitiveTopology topology);
+	Mesh(PrimitiveTopology topology);
 	void InsertAttribute(VertexAttribute attribute, const VertexData& data);
 	const std::array<VertexData,(u32)VertexAttribute::Max>& GetVertexData() const
 	{

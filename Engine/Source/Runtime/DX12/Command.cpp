@@ -9,20 +9,26 @@ void DX12Fence::CpuWait(u64 fenceValue)
 
 void DX12CommandList::Reset()
 {
+    check(_State == ContextState::Close);
     ID3D12CommandAllocator* alloc = std::any_cast<ID3D12CommandAllocator*>(_Allocator->Handle());
     check(SUCCEEDED(alloc->Reset()));
     check(SUCCEEDED(_Handle->Reset(alloc, nullptr)));
+    _State = ContextState::Open;
 }
 
 void DX12CommandList::Close(RenderTexture* presentResource)
 {
+    check(_State == ContextState::Open);
     TransitionState(ResourceState::Present, presentResource);
     check(SUCCEEDED(_Handle->Close()));
+    _State = ContextState::Close;
 }
 
 void DX12CommandList::Close()
 {
+    check(_State == ContextState::Open);
     check(SUCCEEDED(_Handle->Close()));
+    _State = ContextState::Close;
 }
 
 void DX12CommandList::SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth, f32 maxDepth)
@@ -114,7 +120,7 @@ void DX12CommandQueue::Wait(Fence* fence, u64 value)
     check(SUCCEEDED(_Handle->Wait(fenceObj, value)));
 }
 
-void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRes, ResourceState dstResAfterState)
+void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRes)
 {
     check(srcRes->GetDimension() == dstRes->GetDimension());
      
@@ -133,10 +139,6 @@ void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRe
     _Handle->CopyResource(dstResource, srcResource);
     _Manager->AddCopyNum();
 
-    if (dstResAfterState != ResourceState::Reserve)
-    {
-        TransitionState(dstResAfterState, dstRes);
-    }
 }
 
 void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource)

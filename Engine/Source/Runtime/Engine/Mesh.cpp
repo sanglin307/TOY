@@ -1,12 +1,9 @@
 #include "Private.h"
 
-
-Mesh* Mesh::Create(PrimitiveTopology topology)
+Mesh::Mesh(PrimitiveTopology topology)
 {
-	Mesh* mesh = new Mesh;
-	mesh->_Topology = topology;
-	mesh->_Data = {};
-	return mesh;
+	_Topology = topology;
+	_Data = {};
 }
 
 Mesh::~Mesh()

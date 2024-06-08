@@ -156,13 +156,8 @@ Fence* DX12Device::CreateFence(u64 initValue)
 
 RenderContext* DX12Device::BeginFrame(Swapchain* sc)
 {
-    RenderContext* context = _ContextManager->GetDirectContext(sc->GetCurrentFrameIndex());
-    context->Reset();
-
-    RenderContext* copyCtx = _ContextManager->GetCopyContext();
-    copyCtx->Reset();
-
-    return context;
+    _FrameNum++;
+    return _ContextManager->GetDirectContext(sc->GetCurrentFrameIndex());
 }
 
 void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
@@ -787,6 +782,11 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
 {
     check(_Device);
 
+    if (desc.Name.size() > 0 && desc.VS.Path.size() == 0)  // no shaders, find it using name only.
+    {
+        return LoadGraphicPipeline(desc.Name);
+    }
+
     std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes = {};
     shaderRes[(u32)ShaderProfile::Vertex] = LoadShader(desc.VS);
 
@@ -819,7 +819,11 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
     check(SUCCEEDED(_Device->CreateGraphicsPipelineState(&dxDesc, IID_PPV_ARGS(&pso))));
 
     GraphicPipeline* pipeline = new DX12GraphicPipeline(pso);
+    pipeline->Info = desc;
+    pipeline->Shaders = shaderRes;
+
     _PipelineCache[psoHash] = pipeline;
+    _PipelineCacheByName[desc.Name] = pipeline;
     return pipeline;
 }
 

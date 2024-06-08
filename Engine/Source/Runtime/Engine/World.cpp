@@ -29,7 +29,7 @@ void GameWorld::Init()
 		{ 0.0f, 0.0f, 1.0f } 
 	};
 
-	Mesh* mesh = Mesh::Create(PrimitiveTopology::Triangle);
+	Mesh* mesh = new Mesh(PrimitiveTopology::Triangle);
 	mesh->InsertAttribute(VertexAttribute::Position, VertexData{
 		.Format = VertexFormat::Float32x3,
 		.Data = (u8*)positionVertices,
@@ -41,16 +41,19 @@ void GameWorld::Init()
 		.Size = 3 * sizeof(hlslpp::float3)
 		});
 	
-	_Meshes.push_back(mesh);
+	PrimitiveComponent* pc = new PrimitiveComponent;
+	pc->MeshData = mesh;
+	_Primitives.push_back(pc);
+	_RenderScene->AddPrimitive(pc);
 }
 
 void GameWorld::Destroy()
 {
-	for (Mesh* mesh : _Meshes)
+	for (PrimitiveComponent* p : _Primitives)
 	{
-		delete mesh;
+		delete p;
 	}
-	_Meshes.clear();
+	_Primitives.clear();
 	
 	GameEngine::Instance().GetRenderer().RemoveScene(_RenderScene);
 }

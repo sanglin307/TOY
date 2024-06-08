@@ -3,13 +3,25 @@
 RenderContext::RenderContext(CommandType type, CommandAllocator* allocator, ContextManager* manager)
 	:_Type(type),
 	_Allocator(allocator),
-	_Manager(manager)
+	_Manager(manager),
+	_State(ContextState::Close)
 {
+}
+
+RenderContext* RenderContext::ReadyForRecord()
+{
+	if (_State == ContextState::Open)
+		return this;
+
+	Reset();
+	return this;
 }
  
 ContextManager::ContextManager(RenderDevice* device)
 {
 	_Device = device;
+	_Device->SetContextManager(this);
+
 	for (u32 index = 0; index < CommandAllocatorNumber; index++)
 	{
 		_DirectCommandAllocators.push_back(device->CreateCommandAllocator(CommandType::Direct));
@@ -27,6 +39,16 @@ ContextManager::ContextManager(RenderDevice* device)
 	_CopyCommandQueue = device->CreateCommandQueue(CommandType::Copy);
 	_CopyContext = device->CreateCommandContext(_CopyCommandAllocator, CommandType::Copy);
 	_CopyQueueFence = device->CreateFence(_CopyQueueFenceValue);
+}
+
+RenderContext* ContextManager::GetDirectContext(u32 index) 
+{ 
+	return _DirectContexts[index]->ReadyForRecord();
+}
+
+RenderContext* ContextManager::GetCopyContext()
+{ 
+	return _CopyContext->ReadyForRecord(); 
 }
 
 void ContextManager::SwitchToNextFrame(u32 lastFrameIndex, u32 nextFrameIndex)
@@ -65,11 +87,10 @@ void ContextManager::AddCopyNum()
 
 void ContextManager::CommitCopyCommand()
 {
-	_CopyContext->Close();
-
 	if (!_ContainCopyOp)
 		return;
 
+	_CopyContext->Close();
 	RenderContext* ctxs[] = { _CopyContext };
 	_CopyCommandQueue->Excute(1, ctxs);
 	_CopyCommandQueue->Signal(_CopyQueueFence, _CopyQueueFenceValue);

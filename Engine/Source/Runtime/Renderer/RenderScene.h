@@ -4,6 +4,7 @@ class SceneRenderer;
 
 struct PrimitiveSceneInfo
 {
+	~PrimitiveSceneInfo();
 	InputLayout VertexLayout;
 	std::vector<MeshVertexBuffer>  VertexBuffers;
 	RenderBuffer* IndexBuffer = nullptr;

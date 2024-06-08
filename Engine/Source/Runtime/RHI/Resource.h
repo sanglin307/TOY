@@ -219,6 +219,13 @@ public :
     ResourceState State;
 };
 
+struct DelayDeleteResource
+{
+    u64 FrameNum;
+    u32 DelayFrameNum;
+    RenderResource* Resource;
+};
+
 class RenderBuffer : public RenderResource
 {
 public:

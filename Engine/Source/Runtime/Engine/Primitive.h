@@ -3,7 +3,16 @@
 class PrimitiveComponent
 {
 public:
-	Mesh* MeshData;
-	Material* MaterialData;
-	u64 PrimitiveId;
+	~PrimitiveComponent()
+	{
+		if (MeshData)
+			delete MeshData;
+
+		if (MaterialData)
+			delete MaterialData;
+	}
+
+	Mesh* MeshData = nullptr;
+	Material* MaterialData = nullptr;
+	u64 PrimitiveId = 0;
 };

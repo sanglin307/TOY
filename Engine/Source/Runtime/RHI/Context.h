@@ -8,6 +8,12 @@ enum class CommandType
 	Copy
 };
 
+enum class ContextState
+{
+	Open = 0,
+	Close
+};
+
 class Fence
 {
 public:
@@ -38,7 +44,6 @@ public:
 	RHI_API virtual ~RenderContext() {};
 	virtual std::any Handle() { return nullptr; }
 
-	virtual void Reset() = 0;
 	virtual void Close(RenderTexture* presentResource) = 0;
 	virtual void Close() = 0;
 
@@ -46,13 +51,19 @@ public:
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) = 0;
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) = 0;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const f32* colors) = 0;
-	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes, ResourceState dstResAfterState = ResourceState::Reserve) = 0;
+	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
 	virtual void TransitionState(ResourceState destState, RenderResource* buffer) = 0;
 
+	RenderContext* ReadyForRecord();
+
 protected:
+
+	virtual void Reset() = 0;
+
 	CommandType _Type;
 	CommandAllocator* _Allocator;
 	ContextManager* _Manager;
+	ContextState _State;
 };
 
 class CommandQueue
@@ -73,19 +84,19 @@ public:
 	RHI_API ContextManager(RenderDevice* device);
 	RHI_API ~ContextManager();
 
-	static constexpr u32 CommandAllocatorNumber = 3;
-
 	RHI_API void WaitGPUIdle();
-	RenderContext* GetDirectContext(u32 index) { return _DirectContexts[index]; }
-	CommandQueue* GetDirectQueue() { return _DirectCommandQueue; }
+	RHI_API RenderContext* GetDirectContext(u32 index);
+	RHI_API CommandQueue* GetDirectQueue() { return _DirectCommandQueue; }
 	RHI_API void SwitchToNextFrame(u32 lastFrameIndex, u32 nextFrameIndex);
 
-	RenderContext* GetCopyContext() {  return _CopyContext; }
+	RHI_API RenderContext* GetCopyContext();
 	RHI_API void AddCopyNum();
 	RHI_API void CommitCopyCommand();
 	RHI_API void GpuWaitCopyFinish();
 
 private:
+	static constexpr u32 CommandAllocatorNumber = 3;
+
 	CommandQueue* _DirectCommandQueue;
 	std::vector<CommandAllocator*> _DirectCommandAllocators;
 	std::vector<RenderContext*> _DirectContexts;

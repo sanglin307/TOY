@@ -32,16 +32,27 @@ public:
 
 	RHI_API void InitPipelineCache();
 	RHI_API GraphicPipeline* LoadGraphicPipeline(const GraphicPipeline::Desc& desc);
+	RHI_API GraphicPipeline* LoadGraphicPipeline(const std::string& name);
 	RHI_API ShaderResource* LoadShader(const ShaderCreateDesc& desc);
 
 	void CommitCopyCommand() { _ContextManager->CommitCopyCommand(); }
 	void GpuWaitCopyFinish() { _ContextManager->GpuWaitCopyFinish(); }
 
-protected:
-	std::vector<PixelFormatInfo> _Formats;
+	void SetContextManager(ContextManager* manager)
+	{
+		_ContextManager = manager;
+	}
 
+	RHI_API void AddDelayDeleteResource(RenderResource* res, u32 delayFrame = 1);
+	RHI_API void CleanDelayDeleteResource();
+
+protected:
+	u64 _FrameNum = 0;
+	std::vector<PixelFormatInfo> _Formats;
+	std::list<DelayDeleteResource> _DelayDeleteResources;
 	ContextManager* _ContextManager;
 	DescriptorManager* _DescriptorManager;
 	std::unordered_map<u64, GraphicPipeline*> _PipelineCache;
+	std::unordered_map<std::string, GraphicPipeline*> _PipelineCacheByName;
 	std::unordered_map<u64, ShaderResource*> _ShaderCache;
 };

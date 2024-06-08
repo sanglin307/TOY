@@ -45,20 +45,22 @@ public:
 	virtual ~DX12CommandList() { _Handle.Reset(); }
 	virtual std::any Handle() { return _Handle.Get(); }
 
-	virtual void Reset() override;
+	
 	virtual void Close(RenderTexture* presentResource) override;
 	virtual void Close() override;
 	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth = 0.f, f32 maxDepth = 1.f) override;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) override;
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) override;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const f32* colors) override;
-	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes, ResourceState dstResAfterState = ResourceState::Reserve) override;
+	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
 	virtual void TransitionState(ResourceState destState, RenderResource* buffer) override;
 
 	void TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource);
 	void TransitionState(ResourceState destState, RenderResource** resources, u32 number);
 
 private:
+	virtual void Reset() override;
+
 	DX12CommandList(CommandAllocator* allocator, CommandType type, ContextManager* manager,ComPtr<ID3D12GraphicsCommandList> handle)
 		:RenderContext(type,allocator,manager)
 	{

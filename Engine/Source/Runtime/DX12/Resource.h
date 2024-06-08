@@ -53,7 +53,7 @@ class DX12RenderBuffer : public RenderBuffer
 	friend class DX12Device;
 public:
 	virtual ~DX12RenderBuffer() { _Handle.Reset(); }
-
+	virtual std::any Handle() override { return _Handle.Get(); }
 private:
 	DX12RenderBuffer(const RenderBuffer::Desc& desc,ResourceState state, ComPtr<ID3D12Resource> handle)
 	{

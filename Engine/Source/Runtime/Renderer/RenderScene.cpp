@@ -1,5 +1,16 @@
 #include "Private.h"
 
+PrimitiveSceneInfo::~PrimitiveSceneInfo()
+{
+	for (auto v : VertexBuffers)
+	{
+		delete v.Buffer;
+	}
+
+	if (IndexBuffer)
+		delete IndexBuffer;
+}
+
 RenderScene::RenderScene(GameWorld* world,SceneRenderer* renderer)
 {
 	_World = world;
@@ -9,6 +20,10 @@ RenderScene::RenderScene(GameWorld* world,SceneRenderer* renderer)
 
 RenderScene::~RenderScene()
 {
+	for (PrimitiveSceneInfo* p : _Primitives)
+	{
+		delete p;
+	}
 }
 
 void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
@@ -28,11 +43,15 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 	for (u32 i=0;i < vertexData.size(); i++)
 	{
 		const VertexData& d = vertexData[i];
+		if (!d.Size)
+			continue;
+
 		RenderBuffer::Desc desc = {
 			 .Size = d.Size,
 			 .Stride = d.GetStride(),
 			 .Name = std::format("VertexBuffer_{}_{}",primitive->PrimitiveId,i),
 			 .Usage = (u32)ResourceUsage::VertexBuffer,
+			 .CpuAccess = 0,
 			 .Alignment = true,
 			 .InitData = d.Data
 		};
