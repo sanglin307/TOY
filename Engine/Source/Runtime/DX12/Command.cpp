@@ -31,6 +31,43 @@ void DX12CommandList::Close()
     _State = ContextState::Close;
 }
 
+void DX12CommandList::SetGraphicPipeline(GraphicPipeline* pipeline)
+{
+    u64 hash = pipeline->Info.HashResult();
+
+    // root signature
+    ID3D12RootSignature* rs = _Device->LoadRootSignature(hash);
+    check(rs);
+    _Handle->SetGraphicsRootSignature(rs);
+
+    //descriptor heap
+    DescriptorHeap* desHeap = _Device->_DescriptorManager->GetShaderResourceHeap();
+    ID3D12DescriptorHeap* ppHeap[] = { std::any_cast<ID3D12DescriptorHeap*>(desHeap->Handle()) };
+    _Handle->SetDescriptorHeaps(1, ppHeap);
+
+    // topology
+    _Handle->IASetPrimitiveTopology(DX12Device::TranslatePrimitiveTopology(pipeline->Info.Topology));
+    // pso
+    ID3D12PipelineState* ps = std::any_cast<ID3D12PipelineState*>(pipeline->Handle());
+    _Handle->SetPipelineState(ps);
+ 
+}
+
+void DX12CommandList::DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
+{
+    check(vbNum > 0);
+    std::vector<D3D12_VERTEX_BUFFER_VIEW> vbv;
+    for (u32 i = 0; i < vbNum; i++)
+    {
+        DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(vbs[i]);
+        vbv.push_back(buffer->GetVertexBufferView());
+    }
+
+    u32 vertexPerInstance = (u32)(vbs[0]->GetSize() / vbs[0]->GetStride());
+    _Handle->IASetVertexBuffers(0, (UINT)vbv.size(), vbv.data());
+    _Handle->DrawInstanced(vertexPerInstance, instanceCount, vertexOffset, instanceOffset);
+}
+
 void DX12CommandList::SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth, f32 maxDepth)
 {
     D3D12_VIEWPORT vp = {
@@ -67,7 +104,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
     {
         for (u32 i=0; i<rtNum; i++)
         {
-            DX12RenderTexture* dx12Res = dynamic_cast<DX12RenderTexture*>(rts[i]);
+            DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(rts[i]);
             rtViews.push_back(dx12Res->GetRenderTargetView());
         }
         TransitionState(ResourceState::RenderTarget, (RenderResource**)rts, rtNum);
@@ -75,7 +112,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
 
     if (depthStencil)
     {
-        DX12RenderTexture* dx12depth = dynamic_cast<DX12RenderTexture*>(depthStencil);
+        DX12RenderTexture* dx12depth = static_cast<DX12RenderTexture*>(depthStencil);
         dsView = dx12depth->GetDepthStencilView();
         pDepth = &dsView;
     }
@@ -93,7 +130,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
 
 void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const f32* colors)
 {
-    DX12RenderTexture* dx12Res = dynamic_cast<DX12RenderTexture*>(renderTarget);
+    DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(renderTarget);
     _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetView(), colors, 0, nullptr);
 }
 

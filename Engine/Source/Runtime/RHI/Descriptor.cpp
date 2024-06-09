@@ -3,7 +3,7 @@
 DescriptorManager::DescriptorManager(RenderDevice* device)
 {
     _Device = device;
-    _GlobalDescriptorHeap = _Device->CreateDescriptorHeap(DescriptorType::CBV_SRV_UAV, GlobalDescriptorNumber, true);
+    _ShaderResourceDescriptorHeap = _Device->CreateDescriptorHeap(DescriptorType::CBV_SRV_UAV, GlobalDescriptorNumber, true);
     _SamplerDescriptorHeap = _Device->CreateDescriptorHeap(DescriptorType::Sampler, SamplerDescriptorNumber, true);
     _RVTDescriptorHeap = _Device->CreateDescriptorHeap(DescriptorType::RVT, RVTDescriptorNumber, false);
     _DSVDescriptorHeap = _Device->CreateDescriptorHeap(DescriptorType::DSV, DSVDescriptorNumber, false);
@@ -11,8 +11,8 @@ DescriptorManager::DescriptorManager(RenderDevice* device)
 
 DescriptorManager::~DescriptorManager()
 {
-    delete _GlobalDescriptorHeap;
-    _GlobalDescriptorHeap = nullptr;
+    delete _ShaderResourceDescriptorHeap;
+    _ShaderResourceDescriptorHeap = nullptr;
 
     delete _SamplerDescriptorHeap;
     _SamplerDescriptorHeap = nullptr;

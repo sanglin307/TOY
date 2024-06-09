@@ -15,30 +15,30 @@ void GameWorld::Init()
 	GameEngine::Instance().FrameSize(width, height);
 	f32 aspectRatio = width * 1.f / height;
 
-	hlslpp::float3 positionVertices[] =
+	float positionVertices[] =
 	{
-		{ 0.0f, 0.25f * aspectRatio, 0.0f },
-		{ 0.25f, -0.25f * aspectRatio, 0.0f },
-		{ -0.25f, -0.25f * aspectRatio, 0.0f }
+		 0.0f, 0.25f * aspectRatio, 0.0f,
+		 0.25f, -0.25f * aspectRatio, 0.0f,
+		 -0.25f, -0.25f * aspectRatio, 0.0f
 	};
 
-	hlslpp::float3 colorVertices[] =
+	float colorVertices[] =
 	{
-		{ 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f },
-		{ 0.0f, 0.0f, 1.0f } 
+		 1.0f, 0.0f, 0.0f,
+		 0.0f, 1.0f, 0.0f,
+		 0.0f, 0.0f, 1.0f 
 	};
 
 	Mesh* mesh = new Mesh(PrimitiveTopology::Triangle);
 	mesh->InsertAttribute(VertexAttribute::Position, VertexData{
 		.Format = VertexFormat::Float32x3,
 		.Data = (u8*)positionVertices,
-		.Size = 3 * sizeof(hlslpp::float3)
+		.Size = 3 * 3 * sizeof(float)
 		});
 	mesh->InsertAttribute(VertexAttribute::Color, VertexData{
 		.Format = VertexFormat::Float32x3,
 		.Data = (u8*)colorVertices,
-		.Size = 3 * sizeof(hlslpp::float3)
+		.Size = 3 * 3 * sizeof(float)
 		});
 	
 	PrimitiveComponent* pc = new PrimitiveComponent;

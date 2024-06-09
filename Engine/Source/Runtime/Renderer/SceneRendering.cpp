@@ -48,7 +48,6 @@ void SceneRenderer::Render(Swapchain* sc)
 	//resource init and copy op
 	_Device->CommitCopyCommand();
 	
-
 	ctx->SetViewport(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 	ctx->SetScissorRect(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 
@@ -57,6 +56,11 @@ void SceneRenderer::Render(Swapchain* sc)
 
 	const f32 colors[] = { 0.f, 0.f, 0.f, 1.0f };
 	ctx->ClearRenderTarget(rts[0], colors);
+
+	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
+	{
+		_Passes[p]->Render(_Device, ctx);
+	}
 
 
 	_Device->GpuWaitCopyFinish();

@@ -7,10 +7,11 @@ public:
     RHI_API ~DescriptorManager();
 
     DescriptorHeap* GetRVTHeap() { return _RVTDescriptorHeap; }
+    DescriptorHeap* GetShaderResourceHeap() { return _ShaderResourceDescriptorHeap; }
 
 private:
 
-    DescriptorHeap* _GlobalDescriptorHeap;
+    DescriptorHeap* _ShaderResourceDescriptorHeap;
     DescriptorHeap* _SamplerDescriptorHeap;
     DescriptorHeap* _RVTDescriptorHeap;
     DescriptorHeap* _DSVDescriptorHeap;

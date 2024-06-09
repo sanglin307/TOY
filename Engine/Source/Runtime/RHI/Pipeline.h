@@ -128,8 +128,7 @@ enum class PrimitiveTopology
 {
 	Point,
 	Line,
-	Triangle,
-	Patch
+	Triangle
 };
 
 
@@ -231,7 +230,7 @@ enum class StencilOp
 
 struct DepthStencilDesc
 {
-	bool DepthEnable = true;
+	bool DepthEnable = false;
 	DepthWriteMask DepthWriteMask = DepthWriteMask::All;
 	ComparisonFunc DepthFunc = ComparisonFunc::Less;
 
@@ -285,7 +284,7 @@ public:
 		DepthStencilDesc DepthStencilState;
 		PrimitiveTopology Topology = PrimitiveTopology::Triangle;
 		std::vector<PixelFormat> RVTFormats = { PixelFormat::R8G8B8A8_UNORM };
-		PixelFormat DSVFormat = PixelFormat::D32_FLOAT_S8X24_UINT;
+		PixelFormat DSVFormat = PixelFormat::UNKNOWN;
 		u32 SampleCount = 1;
 		u32 SampleQuality = 0;
 
@@ -321,6 +320,7 @@ public:
 	};
 
 	virtual ~GraphicPipeline() {}
+	virtual std::any Handle() { return nullptr; }
 
 	Desc  Info;
 	std::array<ShaderResource*, (u32)ShaderProfile::MAX> Shaders;

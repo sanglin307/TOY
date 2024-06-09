@@ -47,12 +47,15 @@ public:
 	virtual void Close(RenderTexture* presentResource) = 0;
 	virtual void Close() = 0;
 
+	virtual void SetGraphicPipeline(GraphicPipeline* pipeline) = 0;
 	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth = 0.f, f32 maxDepth = 1.f) = 0;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) = 0;
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) = 0;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const f32* colors) = 0;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
-	virtual void TransitionState(ResourceState destState, RenderResource* buffer) = 0;
+	virtual void TransitionState(ResourceState destState, RenderResource* res) = 0;
+
+	virtual void DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
 
 	RenderContext* ReadyForRecord();
 

@@ -13,7 +13,16 @@ void RenderPassTest::Init(RenderDevice* device)
 
 void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 {
-
+	ctx->SetGraphicPipeline(PSO);
+	for (auto c : _Commands)
+	{
+		std::vector<RenderBuffer*> buffers;
+		for (auto v : c->VertexBuffers)
+		{
+			buffers.push_back(v.Buffer);
+		}
+		ctx->DrawInstanced((u32)buffers.size(), buffers.data());
+	}
 }
 
 void RenderPassTest::AddPrimitive(PrimitiveSceneInfo* primitive)

@@ -41,8 +41,10 @@ private:
 	static D3D12_COMPARISON_FUNC TranslateComparisonFunc(const ComparisonFunc func);
 	static D3D12_STENCIL_OP TranslateStencilOp(const StencilOp op);
 	static D3D12_RESOURCE_STATES TranslateResourceState(const ResourceState state);
+	static D3D_PRIMITIVE_TOPOLOGY TranslatePrimitiveTopology(const PrimitiveTopology topology);
 
 	ID3D12RootSignature* LoadRootSignature(u64 hash, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
+	ID3D12RootSignature* LoadRootSignature(u64 hash);
 
 	ComPtr<IDXGIFactory4> _Factory;
 	ComPtr<IDXGIAdapter1> _Adapter;

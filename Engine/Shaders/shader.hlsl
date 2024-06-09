@@ -10,11 +10,11 @@ struct PSInput
 	float4 color : COLOR;
 };
 
-PSInput VSMain(float4 position : POSITION, float3 color : COLOR)
+PSInput VSMain(float3 position : POSITION, float3 color : COLOR)
 {
 	PSInput result;
 
-	result.position = position + offset;
+    result.position = float4(position, 1) + offset;
     result.color = float4(color, 1);
 
 	return result;

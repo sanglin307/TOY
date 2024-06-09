@@ -217,7 +217,7 @@ RenderContext* DX12Device::CreateCommandContext(CommandAllocator* allocator, con
     if (SUCCEEDED(_Device->CreateCommandList(0,TranslateCommandType(type), std::any_cast<ID3D12CommandAllocator*>(allocator->Handle()), nullptr, IID_PPV_ARGS(&commandList))))
     {
         commandList->Close();
-        return new DX12CommandList(allocator, type, _ContextManager,commandList);
+        return new DX12CommandList(allocator, type, _ContextManager,this,commandList);
     }
 
     check(0);
@@ -416,7 +416,8 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(std::array<ShaderResource
 }
 
 
-D3D12_PRIMITIVE_TOPOLOGY_TYPE TranslatePrimitiveTopology(PrimitiveTopology topology)
+// used for pso create.
+D3D12_PRIMITIVE_TOPOLOGY_TYPE TranslatePrimitiveTopologyType(PrimitiveTopology topology)
 {
     if (topology == PrimitiveTopology::Triangle)
         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -424,8 +425,8 @@ D3D12_PRIMITIVE_TOPOLOGY_TYPE TranslatePrimitiveTopology(PrimitiveTopology topol
         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
     else if (topology == PrimitiveTopology::Line)
         return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-    else if (topology == PrimitiveTopology::Patch)
-        return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+    else
+        check(0);
     
     return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
 }
@@ -640,6 +641,23 @@ D3D12_RESOURCE_STATES DX12Device::TranslateResourceState(const ResourceState sta
     return D3D12_RESOURCE_STATE_COMMON;
 }
 
+D3D_PRIMITIVE_TOPOLOGY DX12Device::TranslatePrimitiveTopology(const PrimitiveTopology topology)
+{
+    switch (topology)
+    {
+    case PrimitiveTopology::Point:
+        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case PrimitiveTopology::Line:
+        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case PrimitiveTopology::Triangle:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    default:
+        check(0);
+    }
+
+    return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+}
+
 D3D12_STENCIL_OP DX12Device::TranslateStencilOp(const StencilOp op)
 {
     switch (op)
@@ -757,7 +775,7 @@ void DX12Device::TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, std:
             .BytecodeLength = shaders[(u32)ShaderProfile::Pixel] ? shaders[(u32)ShaderProfile::Pixel]->GetBlobData().Size : 0
         },
         .SampleMask = pso.SampleMask,
-        .PrimitiveTopologyType = TranslatePrimitiveTopology(pso.Topology),
+        .PrimitiveTopologyType = TranslatePrimitiveTopologyType(pso.Topology),
         .DSVFormat = TranslatePixelFormat(pso.DSVFormat),
         .SampleDesc = {
             .Count = pso.SampleCount,
@@ -832,13 +850,22 @@ DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
     return std::any_cast<DXGI_FORMAT>(_Formats[static_cast<u32>(format)].PlatformFormat);
 }
 
-ID3D12RootSignature* DX12Device::LoadRootSignature(u64 hash, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders)
+ID3D12RootSignature* DX12Device::LoadRootSignature(u64 hash)
 {
     auto iter = _RootSignatureCache.find(hash);
     if (iter != _RootSignatureCache.end())
     {
         return iter->second.Get();
     }
+
+    return nullptr;
+}
+
+ID3D12RootSignature* DX12Device::LoadRootSignature(u64 hash, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders)
+{
+    ID3D12RootSignature* cache = LoadRootSignature(hash);
+    if (cache)
+        return cache;
 
     ComPtr<ID3DBlob> signature = GenerateRootSignatureBlob(shaders);
     ComPtr<ID3D12RootSignature> rs;

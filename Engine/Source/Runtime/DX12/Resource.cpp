@@ -169,5 +169,15 @@ RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
     return nullptr;
  
 }
- 
+
+D3D12_VERTEX_BUFFER_VIEW DX12RenderBuffer::GetVertexBufferView()
+{
+    check(_Desc.Usage & (u32)ResourceUsage::VertexBuffer);
+
+    return D3D12_VERTEX_BUFFER_VIEW{
+        .BufferLocation = _Handle->GetGPUVirtualAddress(),
+        .SizeInBytes = (UINT)_Desc.Size,
+        .StrideInBytes = _Desc.Stride
+    };
+}
  
