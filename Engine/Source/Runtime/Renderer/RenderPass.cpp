@@ -9,10 +9,31 @@ void RenderPassTest::Init(RenderDevice* device)
 	};
 	PSO = device->CreateGraphicPipeline(desc);
 
+	RenderBuffer::Desc udesc = {
+		.Size = sizeof(SceneConstantBuffer),
+		.Name = "SceneConstantBuffer",
+		.Usage = (u32)ResourceUsage::UniformBuffer,
+		.CpuAccess = (u32)CpuAccessFlags::Write,
+		.Alignment = true
+	};
+	UniformBuffer = device->CreateBuffer(udesc);
+	PSO->BindParameter("SceneConstantBuffer", UniformBuffer);
+
 }
 
 void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 {
+	//update 
+	const float translationSpeed = 0.005f;
+	const float offsetBounds = 1.25f;
+
+	UniformData.offset.x += translationSpeed;
+	if (UniformData.offset.x > offsetBounds)
+	{
+		UniformData.offset.x = -offsetBounds;
+	}
+	UniformBuffer->UploadData((u8*)&UniformData, sizeof(UniformData));
+
 	ctx->SetGraphicPipeline(PSO);
 	for (auto c : _Commands)
 	{

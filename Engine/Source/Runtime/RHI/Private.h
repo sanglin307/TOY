@@ -12,6 +12,5 @@
 #include "Compiler.h"
 #include "Pipeline.h"
 #include "Context.h"
-#include "Descriptor.h"
 #include "Device.h"
 #include "RHI.h"

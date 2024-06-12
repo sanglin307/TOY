@@ -152,6 +152,7 @@ copy /Y $(SolutionDir)Engine\Source\Thirdparty\DirectX12\bin\x64\d3d12SDKLayers.
   <ItemGroup>
     <ClCompile Include="Command.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="RHI.cpp" />
     <ClCompile Include="Resource.cpp" />
   </ItemGroup>

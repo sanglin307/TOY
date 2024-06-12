@@ -94,6 +94,7 @@ DX12Device::DX12Device()
 
     _ContextManager = new ContextManager(this);
     _DescriptorManager = new DescriptorManager(this);
+    _GlobalRootSignature = new DX12RootSignature(this);
 
 }
 
@@ -237,7 +238,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
     };
 
-    DescriptorHeap* rvtHeap = _DescriptorManager->GetRVTHeap();
+    DescriptorHeap* rvtHeap = _DescriptorManager->GetHeap(DescriptorType::RVT);
     CommandQueue* queue = _ContextManager->GetDirectQueue();
 
     ComPtr<IDXGISwapChain1> swapChain;
@@ -257,7 +258,8 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
 
         std::vector<RenderTexture*> rtResources;
         rtResources.resize(info.FrameCount);
-        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(rvtHeap->GetCPUDescriptorHandle(info.FrameCount));
+        DescriptorAllocation rvtAlloc = rvtHeap->Allocate(info.FrameCount);
+        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(rvtHeap->CPUHandle(rvtAlloc));
         for (u32 n = 0; n < info.FrameCount; n++)
         {
             ComPtr<ID3D12Resource> res;
@@ -272,15 +274,15 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
                  .Dimension = ResourceDimension::Texture2D
             };
 
-            DX12RenderTexture* dx12Resource = new DX12RenderTexture(desc,res);
-            dx12Resource->SetRenderTargetView(rvtHandle);
+            DX12RenderTexture* dx12Resource = new DX12RenderTexture(this,desc,res);
+            dx12Resource->SetRenderTargetView(rvtAlloc, rvtHandle);
             dx12Resource->State = ResourceState::Present;
 
             rtResources[n] = dx12Resource;
             rvtHandle.ptr += rvtHeap->GetStride();
         }
 
-        return new DX12Swapchain(info, rtResources, swapChain3);
+        return new DX12Swapchain(info, rvtAlloc, rtResources, swapChain3);
     }
 
 
@@ -299,7 +301,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(std::array<ShaderResource
 
     for (u32 i=0;i< (u32)ShaderProfile::MAX;i++)
     {
-        if (shaders[i] == nullptr)
+        if (!shaders[i])
             continue;
 
         ShaderReflection* reflection = shaders[i]->GetReflection();
@@ -824,9 +826,8 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
     ComPtr<ID3D12PipelineState> pso;
     D3D12_GRAPHICS_PIPELINE_STATE_DESC dxDesc = {};
     TranslateGraphicPipeline(desc, shaderRes, dxDesc);
-
-    u64 psoHash = desc.HashResult();
-    dxDesc.pRootSignature = LoadRootSignature(psoHash, shaderRes);
+ 
+    dxDesc.pRootSignature = std::any_cast<ID3D12RootSignature*>(_GlobalRootSignature->Handle());
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayouts;
     TranslateInputLayout(desc.VertexLayout, inputLayouts);
@@ -838,9 +839,30 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
 
     GraphicPipeline* pipeline = new DX12GraphicPipeline(pso);
     pipeline->Info = desc;
-    pipeline->Shaders = shaderRes;
 
-    _PipelineCache[psoHash] = pipeline;
+    std::unordered_map<std::string, ShaderParameter*> ShaderParameters;
+    for (u32 i = 0; i < (u32)ShaderProfile::MAX; i++)
+    {
+        if (!shaderRes[i])
+            continue;
+
+        ShaderReflection* reflection = shaderRes[i]->GetReflection();
+        if (reflection && reflection->BoundResources.size() > 0)
+        {
+            for (u32 r = 0; r < reflection->BoundResources.size(); r++)
+            {
+                if (pipeline->GetParameter(reflection->BoundResources[r].Name) != nullptr)
+                    continue;
+
+                ShaderParameter* sp = _GlobalRootSignature->Allocate(reflection->BoundResources[r]);
+                check(sp);
+                ShaderParameter* copysp = new ShaderParameter(*sp);
+                pipeline->AddParameter(copysp);
+            }
+        }
+    }
+
+    _PipelineCache[desc.HashResult()] = pipeline;
     _PipelineCacheByName[desc.Name] = pipeline;
     return pipeline;
 }
@@ -859,6 +881,13 @@ ID3D12RootSignature* DX12Device::LoadRootSignature(u64 hash)
     }
 
     return nullptr;
+}
+
+ComPtr<ID3D12RootSignature> DX12Device::CreateRootSignature(ComPtr<ID3DBlob> signature)
+{
+    ComPtr<ID3D12RootSignature> rs;
+    check(SUCCEEDED(_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rs))));
+    return rs;
 }
 
 ID3D12RootSignature* DX12Device::LoadRootSignature(u64 hash, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders)

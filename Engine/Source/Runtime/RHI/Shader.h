@@ -89,16 +89,3 @@ public:
 private:
 	Desc _Desc;
 };
-
-class ShaderParameterBinding
-{
-public:
-	struct ParameterInfo
-	{
-		SRBoundResource Desc;
-		RenderResource* Resource;
-	};
-
-private:
-	std::map<std::string, ParameterInfo*> _ParameterMap;
-};

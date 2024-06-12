@@ -1,25 +1,22 @@
 #include "Private.h"
 
+ 
 std::any DX12DescriptorHeap::Handle()
 {
     return _Handle.Get();
 }
 
-std::any DX12DescriptorHeap::GetCPUDescriptorHandle(u32 reserve)
+std::any DX12DescriptorHeap::CPUHandle(DescriptorAllocation& pos)
 {
-    check(_Offset + reserve < _Config.Number);
     D3D12_CPU_DESCRIPTOR_HANDLE base = _Handle->GetCPUDescriptorHandleForHeapStart();
-    base.ptr += _Offset * _Config.Stride;
-    _Offset += reserve;
+    base.ptr += pos.Count * _Config.Stride;
     return base;
 }
 
-std::any DX12DescriptorHeap::GetGPUDescriptorHandle(u32 reserve)
+std::any DX12DescriptorHeap::GPUHandle(DescriptorAllocation& pos)
 {
-    check(_Offset + reserve < _Config.Number);
     D3D12_GPU_DESCRIPTOR_HANDLE base = _Handle->GetGPUDescriptorHandleForHeapStart();
-    base.ptr += _Offset * _Config.Stride;
-    _Offset += reserve;
+    base.ptr += pos.Count * _Config.Stride;
     return base;
 }
 
@@ -58,7 +55,7 @@ D3D12_DESCRIPTOR_HEAP_TYPE TranslateDescriptorType(DescriptorType type)
     return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
 }
 
-DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible)
+DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, bool gpuVisible)
 {
     check(_Device);
 
@@ -71,14 +68,14 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, u32 num, b
     ComPtr<ID3D12DescriptorHeap> heap;
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {
         .Type = heapType,
-        .NumDescriptors = num,
+        .NumDescriptors = DescriptorHeap::cHeapDescriptorMax,
         .Flags = gpuVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE
     };
     check(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
 
     DescriptorHeap::Config hc = {
         .Type = type,
-        .Number = num,
+        .Number = DescriptorHeap::cHeapDescriptorMax,
         .Stride = _Device->GetDescriptorHandleIncrementSize(heapType),
         .GPUVisible = gpuVisible,
     };
@@ -129,7 +126,27 @@ RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
             resource->Unmap(0, nullptr);
         }
 
-        return new DX12RenderBuffer(info, ResourceState::GenericRead, resource);
+        DX12RenderBuffer* renderBuffer = new DX12RenderBuffer(this, info, ResourceState::GenericRead, resource);
+        u8* uniformDataMap = nullptr;
+        if (info.Usage & (u32)ResourceUsage::UniformBuffer)
+        {
+            D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {
+                 .BufferLocation = resource->GetGPUVirtualAddress(),
+                 .SizeInBytes = (UINT)info.Size
+            };
+           
+            DescriptorHeap* heap = _DescriptorManager->GetHeap(DescriptorType::CBV_SRV_UAV);
+            renderBuffer->_CBVDescriptor = heap->Allocate(1);
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(heap->CPUHandle(renderBuffer->_CBVDescriptor));
+            _Device->CreateConstantBufferView(&cbvDesc, cpuHandle);
+
+            D3D12_RANGE range = {};
+            check(SUCCEEDED(resource->Map(0, &range, (void**)&uniformDataMap)));
+            renderBuffer->_UniformDataMapPointer = uniformDataMap;
+            renderBuffer->_ConstBufferView = cpuHandle;
+        }
+
+        return renderBuffer;
     }
     else
     {
@@ -154,15 +171,15 @@ RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
             tempRes->Unmap(0, nullptr);
             
             RenderContext* ctx = _ContextManager->GetCopyContext();
-            RenderBuffer* dstBuffer = new DX12RenderBuffer(info, ResourceState::Common, resource);
-            RenderBuffer* srcBuffer = new DX12RenderBuffer(info, ResourceState::GenericRead, tempRes);
+            RenderBuffer* dstBuffer = new DX12RenderBuffer(this,info, ResourceState::Common, resource);
+            RenderBuffer* srcBuffer = new DX12RenderBuffer(this,info, ResourceState::GenericRead, tempRes);
             ctx->CopyResource(dstBuffer, srcBuffer);
             AddDelayDeleteResource(srcBuffer);
             return dstBuffer;
         }
         else
         {
-            return new DX12RenderBuffer(info, ResourceState::Common, resource);
+            return new DX12RenderBuffer(this,info, ResourceState::Common, resource);
         }
     }
 
@@ -179,5 +196,12 @@ D3D12_VERTEX_BUFFER_VIEW DX12RenderBuffer::GetVertexBufferView()
         .SizeInBytes = (UINT)_Desc.Size,
         .StrideInBytes = _Desc.Stride
     };
+}
+
+void DX12RenderBuffer::UploadData(u8* data, size_t size)
+{
+    check(data != nullptr && size > 0);
+    check(_Desc.CpuAccess & (u32)CpuAccessFlags::Write);
+    std::memcpy(_UniformDataMapPointer, data, size);
 }
  

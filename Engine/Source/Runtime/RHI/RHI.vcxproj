@@ -138,7 +138,6 @@
   <ItemGroup>
     <ClInclude Include="Compiler.h" />
     <ClInclude Include="Context.h" />
-    <ClInclude Include="Descriptor.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Private.h" />
@@ -154,6 +153,7 @@
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="Descriptor.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="Resource.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

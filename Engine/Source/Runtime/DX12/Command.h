@@ -59,6 +59,7 @@ public:
 	void TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource);
 	void TransitionState(ResourceState destState, RenderResource** resources, u32 number);
 
+	virtual void SetGraphicShaderParameter(const ShaderParameter* param) override;
 	virtual void DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
 
 private:

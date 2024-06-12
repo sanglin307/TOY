@@ -10,7 +10,7 @@ public :
     virtual CommandQueue* CreateCommandQueue(const CommandType type) override;
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) override;
-	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) override;
+	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, bool gpuVisible) override;
 	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& desc) override;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
 	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) override;
@@ -21,6 +21,8 @@ public :
 	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) override;
 
 	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
+
+	ComPtr<ID3D12RootSignature> CreateRootSignature(ComPtr<ID3DBlob> signature);
 
 private:
 	void ReportLiveObjects();
@@ -51,6 +53,7 @@ private:
 	ComPtr<ID3D12Device5> _Device;
 
 	std::unordered_map<u64, ComPtr<ID3D12RootSignature>> _RootSignatureCache;
+	
  
 };
 

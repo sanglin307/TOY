@@ -123,6 +123,14 @@ enum class DescriptorType
     Max
 };
 
+struct DescriptorAllocation
+{
+    u32 Offset;
+    u32 Count;
+};
+
+
+
 class DescriptorHeap
 {
 public:
@@ -134,15 +142,47 @@ public:
         bool GPUVisible;
     };
 
+    RHI_API DescriptorHeap();
     virtual ~DescriptorHeap() {};
     virtual std::any Handle() { return nullptr; }
-    virtual std::any GetCPUDescriptorHandle(u32 reserve = 0) { return nullptr; }
-    virtual std::any GetGPUDescriptorHandle(u32 reserve = 0) { return nullptr; }
+    virtual std::any CPUHandle(DescriptorAllocation& pos) = 0;
+    virtual std::any GPUHandle(DescriptorAllocation& pos) = 0;
+    RHI_API DescriptorAllocation Allocate(u32 num);
+    RHI_API void Free(DescriptorAllocation& pos);
+    u32 GetAvailableNum();
+    u32 GetMaxNumber() { return _Config.Number; }
     u32 GetStride() { return _Config.Stride; }
   
 protected:
     Config _Config;
-    u32 _Offset = 0;
+ 
+    static constexpr u32 cHeapDescriptorMax = 4000;
+    static constexpr u32 cSingleDescriptorNum = 2048;
+
+    // for single descriptor allocation ,use bit set.
+    // for multiple descriptor allocation, use list.
+    std::bitset<cSingleDescriptorNum> _SingleDescriptorBitSet;
+    u32 _SingleDescriptorAllocatedNum = 0;
+    std::list<DescriptorAllocation> _AllocList;
+    u32 _MultipleDescriptorAllocatedNum = 0;
+    std::list<DescriptorAllocation> _FreeList;
+};
+
+class RenderDevice;
+class DescriptorManager
+{
+public:
+    RHI_API DescriptorManager(RenderDevice* device);
+    RHI_API ~DescriptorManager();
+
+    DescriptorHeap* GetHeap(DescriptorType type)
+    {
+        return _Heaps[(u32)type];
+    }
+ 
+private:
+    DescriptorHeap* _Heaps[(u32)DescriptorType::Max];
+    RenderDevice* _Device;
 };
 
 enum class ResourceState : u32
@@ -217,6 +257,7 @@ public :
     virtual std::any Handle() { return nullptr; }
 
     ResourceState State;
+    RenderDevice* Device = nullptr;
 };
 
 struct DelayDeleteResource
@@ -244,6 +285,7 @@ public:
     u32 GetStride() const { return _Desc.Stride; }
     virtual ResourceDimension GetDimension() override { return ResourceDimension::Buffer; }
     virtual u32 GetUsage() override { return _Desc.Usage; }
+    virtual void UploadData(u8* data, size_t size) = 0;
 
 protected:
     Desc _Desc;

@@ -17,7 +17,7 @@ public:
 	virtual CommandQueue* CreateCommandQueue(const CommandType type) = 0;
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) = 0;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) = 0;
-	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, u32 num, bool gpuVisible) = 0;
+	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, bool gpuVisible) = 0;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) = 0;
 	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) = 0;
 	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) = 0;
@@ -46,12 +46,18 @@ public:
 	RHI_API void AddDelayDeleteResource(RenderResource* res, u32 delayFrame = 1);
 	RHI_API void CleanDelayDeleteResource();
 
+	DescriptorHeap* GetDescriptorHeap(DescriptorType type)
+	{
+		return _DescriptorManager->GetHeap(type);
+	}
+
 protected:
 	u64 _FrameNum = 0;
 	std::vector<PixelFormatInfo> _Formats;
 	std::list<DelayDeleteResource> _DelayDeleteResources;
 	ContextManager* _ContextManager;
 	DescriptorManager* _DescriptorManager;
+	RootSignature* _GlobalRootSignature;
 	std::unordered_map<u64, GraphicPipeline*> _PipelineCache;
 	std::unordered_map<std::string, GraphicPipeline*> _PipelineCacheByName;
 	std::unordered_map<u64, ShaderResource*> _ShaderCache;

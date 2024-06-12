@@ -268,7 +268,43 @@ struct DepthStencilDesc
 	}
 };
 
+enum class ShaderBindType
+{
+	RootCBV = 0,
+	RootSRV,
+	RootUAV,
+	TableOneCBV,
+	TableOneSRV,
+	TableOneUAV,
+	TableOneSampler,
+	TableMultipleCBV,
+	TableMultipleSRV,
+	TableMultipleUAV,
+	TableMultipleSampler,
+	Max
+};
 
+struct ShaderParameter
+{
+	std::string Name;
+	ShaderBindType BindType;
+	u32 RootParamIndex; 
+	RenderResource* Resource;
+};
+
+class RootSignature
+{
+public:
+	virtual ~RootSignature() {};
+	virtual std::any Handle() { return nullptr; }
+
+	virtual ShaderParameter* Allocate(const SRBoundResource& res) = 0;
+
+protected:
+	std::unordered_map<std::string, ShaderParameter*> _ParamsMap;
+};
+
+class RenderContext;
 class GraphicPipeline
 {
 public:
@@ -322,9 +358,15 @@ public:
 	virtual ~GraphicPipeline() {}
 	virtual std::any Handle() { return nullptr; }
 
+	RHI_API void BindParameter(RenderContext* ctx);
+	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
+	RHI_API void AddParameter(ShaderParameter* parameter);
+	RHI_API ShaderParameter* GetParameter(const std::string& name);
+
 	Desc  Info;
-	std::array<ShaderResource*, (u32)ShaderProfile::MAX> Shaders;
-	ShaderParameterBinding  BindParameters;
+
+protected:
+	std::unordered_map<std::string, ShaderParameter*> _ShaderParameters;
 };
 
 
