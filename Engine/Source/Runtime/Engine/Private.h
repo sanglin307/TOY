@@ -6,11 +6,11 @@
 #define ENGINE_API __declspec(dllexport)
 #endif
 
+#include "glm.hpp"
 
 // module dependency.
 #include "../Core/Public.h"
 #include "../RHI/Public.h"
-
 
 // inner dependency.
 #include "IRenderer.h"

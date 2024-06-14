@@ -14,8 +14,8 @@ public:
 
 
 private:
-	float  _BaseColor;
-	float  _Emissive;
+	glm::vec3   _BaseColor;
+	glm::vec3   _Emissive;
 	float          _Metalness;
 	float          _Roughness;
 	RenderTexture* _DiffuseTexture;

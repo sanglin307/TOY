@@ -12,6 +12,7 @@
 #include <WinUser.h>
 #include <shellapi.h>
 
+#include "glm.hpp"
 
 #include "../Core/Public.h"
 #include "../RHI/Public.h"

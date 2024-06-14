@@ -15,30 +15,30 @@ void GameWorld::Init()
 	GameEngine::Instance().FrameSize(width, height);
 	f32 aspectRatio = width * 1.f / height;
 
-	float positionVertices[] =
+	glm::vec3 positionVertices[] =
 	{
-		 0.0f, 0.25f * aspectRatio, 0.0f,
-		 0.25f, -0.25f * aspectRatio, 0.0f,
-		 -0.25f, -0.25f * aspectRatio, 0.0f
+		{0.0f, 0.25f * aspectRatio, 0.0f},
+		{0.25f, -0.25f * aspectRatio, 0.0f},
+		{-0.25f, -0.25f * aspectRatio, 0.0f}
 	};
 
-	float colorVertices[] =
+	glm::vec3 colorVertices[] =
 	{
-		 1.0f, 0.0f, 0.0f,
-		 0.0f, 1.0f, 0.0f,
-		 0.0f, 0.0f, 1.0f 
+		{1.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f}
 	};
 
 	Mesh* mesh = new Mesh(PrimitiveTopology::Triangle);
 	mesh->InsertAttribute(VertexAttribute::Position, VertexData{
 		.Format = VertexFormat::Float32x3,
 		.Data = (u8*)positionVertices,
-		.Size = 3 * 3 * sizeof(float)
+		.Size = 3 * sizeof(glm::vec3)
 		});
 	mesh->InsertAttribute(VertexAttribute::Color, VertexData{
 		.Format = VertexFormat::Float32x3,
 		.Data = (u8*)colorVertices,
-		.Size = 3 * 3 * sizeof(float)
+		.Size = 3 * sizeof(glm::vec3)
 		});
 	
 	PrimitiveComponent* pc = new PrimitiveComponent;

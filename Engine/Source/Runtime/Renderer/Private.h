@@ -4,6 +4,8 @@
 #define RENDERER_API __declspec(dllexport)
 #endif
 
+#include "glm.hpp"
+
 #include "../Core/Public.h"
 #include "../RHI/Public.h"
 #include "../Engine/Public.h"
