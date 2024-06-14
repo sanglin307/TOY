@@ -1,5 +1,8 @@
 #include "Private.h"
 
+#define TOML_EXCEPTIONS 0
+#include "toml++/toml.hpp"
+
 GameEngine& GameEngine::Instance()
 {
 	static GameEngine Inst;

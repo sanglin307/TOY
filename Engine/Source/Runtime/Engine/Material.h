@@ -14,8 +14,8 @@ public:
 
 
 private:
-	hlslpp::float3 _BaseColor;
-	hlslpp::float3 _Emissive;
+	float  _BaseColor;
+	float  _Emissive;
 	float          _Metalness;
 	float          _Roughness;
 	RenderTexture* _DiffuseTexture;

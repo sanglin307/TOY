@@ -27,10 +27,10 @@ void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 	const float translationSpeed = 0.005f;
 	const float offsetBounds = 1.25f;
 
-	UniformData.offset.x += translationSpeed;
-	if (UniformData.offset.x > offsetBounds)
+	UniformData.offset[0] += translationSpeed;
+	if (UniformData.offset[0] > offsetBounds)
 	{
-		UniformData.offset.x = -offsetBounds;
+		UniformData.offset[0] = -offsetBounds;
 	}
 	UniformBuffer->UploadData((u8*)&UniformData, sizeof(UniformData));
 

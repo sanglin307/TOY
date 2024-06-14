@@ -1,5 +1,7 @@
 #include "Private.h"
- 
+
+#define TOML_EXCEPTIONS 0
+#include "toml++/toml.hpp"
 
 PixelFormat GetInputLayoutPixelFormat(ShaderComponentType componentType, u8 componentMask)
 {

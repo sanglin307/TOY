@@ -22,15 +22,12 @@
 #include <map>
 #include <string>
 #include <ctime>
-
-//third party
-#define TOML_EXCEPTIONS 0
-#include "toml++/toml.hpp"
-#include "xxhash.h"
+#include <any>
 
 // iner 
 #include "Types.h"
 #include "Log.h"
+#include "Hash.h"
 #include "Path.h"
 #include "Platform.h"
 #include "Module.h"

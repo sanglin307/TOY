@@ -27,25 +27,22 @@ struct ShaderCreateDesc
 	std::string  Entry;
 	std::vector<std::string> Macros;
 
-	void HashUpdate(XXH64_state_t* state) const 
+	void HashUpdate(std::any handle) const 
 	{
-		XXH64_update(state, &Profile, sizeof(Profile));
-		XXH64_update(state, Path.c_str(), Path.length());
-		XXH64_update(state, Entry.c_str(), Entry.length());
+		HashStreamUpdate(handle, &Profile, sizeof(Profile));
+		HashStreamUpdate(handle, Path.c_str(), Path.length());
+		HashStreamUpdate(handle, Entry.c_str(), Entry.length());
 		for (u32 i = 0; i < Macros.size(); i++)
 		{
-			XXH64_update(state, Macros[i].c_str(), Macros[i].length());
+			HashStreamUpdate(handle, Macros[i].c_str(), Macros[i].length());
 		}
 	}
 
 	u64 HashResult() const
 	{
-		XXH64_state_t* const state = XXH64_createState();
-		XXH64_reset(state, 0);
-		HashUpdate(state);
-		XXH64_hash_t const hash = XXH64_digest(state);
-		XXH64_freeState(state);
-		return hash;
+		std::any handle = HashStreamStart();
+		HashUpdate(handle);
+		return HashStreamEnd(handle);
 	}
 };
 

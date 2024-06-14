@@ -20,15 +20,10 @@
 #include <unordered_map>
 #include <bitset>
 
-//third party
-#define TOML_EXCEPTIONS 0
-#include "toml++/toml.hpp"
-#include "hlsl++.h"
-#include "xxhash.h"
-
 //core
 #include "Types.h"
 #include "Log.h"
+#include "Hash.h"
 #include "Path.h"
 #include "Platform.h"
 #include "Module.h"

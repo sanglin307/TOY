@@ -15,6 +15,7 @@
 // inner dependency.
 #include "IRenderer.h"
 #include "FrameRate.h"
+#include "Image.h"
 #include "Viewport.h"
 #include "Engine.h"
 #include "Input.h"

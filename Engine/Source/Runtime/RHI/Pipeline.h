@@ -28,18 +28,18 @@ struct InputLayout
 {
 	std::vector<InputLayoutDesc> Desc;
 
-	void HashUpdate(XXH64_state_t* state) const
+	void HashUpdate(std::any handle) const
 	{
 		for (u32 i = 0; i < Desc.size(); i++)
 		{
 			const InputLayoutDesc& desc = Desc[i];
-			XXH64_update(state, desc.SemanticName.c_str(), desc.SemanticName.length());
-			XXH64_update(state, &desc.SemanticIndex, sizeof(desc.SemanticIndex));
-			XXH64_update(state, &desc.Format, sizeof(desc.Format));
-			XXH64_update(state, &desc.SlotIndex, sizeof(desc.SlotIndex));
-			XXH64_update(state, &desc.SlotOffset, sizeof(desc.SlotOffset));
-			XXH64_update(state, &desc.SlotClass, sizeof(desc.SlotClass));
-			XXH64_update(state, &desc.InstanceStepRate, sizeof(desc.InstanceStepRate));
+			HashStreamUpdate(handle, desc.SemanticName.c_str(), desc.SemanticName.length());
+			HashStreamUpdate(handle, &desc.SemanticIndex, sizeof(desc.SemanticIndex));
+			HashStreamUpdate(handle, &desc.Format, sizeof(desc.Format));
+			HashStreamUpdate(handle, &desc.SlotIndex, sizeof(desc.SlotIndex));
+			HashStreamUpdate(handle, &desc.SlotOffset, sizeof(desc.SlotOffset));
+			HashStreamUpdate(handle, &desc.SlotClass, sizeof(desc.SlotClass));
+			HashStreamUpdate(handle, &desc.InstanceStepRate, sizeof(desc.InstanceStepRate));
 		}
 	}
 };
@@ -146,19 +146,19 @@ struct RasterizerDesc
 	f32 SlopScaledDepthBias = 0.f;
 	u32 SampleCount = 0;
 
-	void HashUpdate(XXH64_state_t* state) const
+	void HashUpdate(std::any handle) const
 	{
-		XXH64_update(state, &Fill, sizeof(Fill));
-		XXH64_update(state, &Cull, sizeof(Cull));
-		XXH64_update(state, &FrontCounterClockwise, sizeof(FrontCounterClockwise));
-		XXH64_update(state, &DepthClip, sizeof(DepthClip));
-		XXH64_update(state, &Multisample, sizeof(Multisample));
-		XXH64_update(state, &LineAA, sizeof(LineAA));
-		XXH64_update(state, &ConservativeMode, sizeof(ConservativeMode));
-		XXH64_update(state, &DepthBias, sizeof(DepthBias));
-		XXH64_update(state, &DepthBiasClamp, sizeof(DepthBiasClamp));
-		XXH64_update(state, &SlopScaledDepthBias, sizeof(SlopScaledDepthBias));
-		XXH64_update(state, &SampleCount, sizeof(SampleCount));
+		HashStreamUpdate(handle, &Fill, sizeof(Fill));
+		HashStreamUpdate(handle, &Cull, sizeof(Cull));
+		HashStreamUpdate(handle, &FrontCounterClockwise, sizeof(FrontCounterClockwise));
+		HashStreamUpdate(handle, &DepthClip, sizeof(DepthClip));
+		HashStreamUpdate(handle, &Multisample, sizeof(Multisample));
+		HashStreamUpdate(handle, &LineAA, sizeof(LineAA));
+		HashStreamUpdate(handle, &ConservativeMode, sizeof(ConservativeMode));
+		HashStreamUpdate(handle, &DepthBias, sizeof(DepthBias));
+		HashStreamUpdate(handle, &DepthBiasClamp, sizeof(DepthBiasClamp));
+		HashStreamUpdate(handle, &SlopScaledDepthBias, sizeof(SlopScaledDepthBias));
+		HashStreamUpdate(handle, &SampleCount, sizeof(SampleCount));
 	}
 };
 
@@ -186,23 +186,23 @@ struct BlendDesc
 	bool IndependentBlendEnable = false;
 	RenderTarget RenderTargets[MaxRenderTargetNumber];
 
-	void HashUpdate(XXH64_state_t* state) const
+	void HashUpdate(std::any handle) const
 	{
-		XXH64_update(state, &AlphaToCoverageEnable, sizeof(AlphaToCoverageEnable));
-		XXH64_update(state, &IndependentBlendEnable, sizeof(IndependentBlendEnable));
+		HashStreamUpdate(handle, &AlphaToCoverageEnable, sizeof(AlphaToCoverageEnable));
+		HashStreamUpdate(handle, &IndependentBlendEnable, sizeof(IndependentBlendEnable));
 		for (u32 i = 0; i < MaxRenderTargetNumber; i++)
 		{
 			const BlendDesc::RenderTarget& rt = RenderTargets[i];
-			XXH64_update(state, &rt.Enable, sizeof(rt.Enable));
-			XXH64_update(state, &rt.LogicOpEnable, sizeof(rt.LogicOpEnable));
-			XXH64_update(state, &rt.Src, sizeof(rt.Src));
-			XXH64_update(state, &rt.Dest, sizeof(rt.Dest));
-			XXH64_update(state, &rt.Op, sizeof(rt.Op));
-			XXH64_update(state, &rt.SrcAlpha, sizeof(rt.SrcAlpha));
-			XXH64_update(state, &rt.DestAlpha, sizeof(rt.DestAlpha));
-			XXH64_update(state, &rt.AlphaOp, sizeof(rt.AlphaOp));
-			XXH64_update(state, &rt.LogicOp, sizeof(rt.LogicOp));
-			XXH64_update(state, &rt.WriteMask, sizeof(rt.WriteMask));
+			HashStreamUpdate(handle, &rt.Enable, sizeof(rt.Enable));
+			HashStreamUpdate(handle, &rt.LogicOpEnable, sizeof(rt.LogicOpEnable));
+			HashStreamUpdate(handle, &rt.Src, sizeof(rt.Src));
+			HashStreamUpdate(handle, &rt.Dest, sizeof(rt.Dest));
+			HashStreamUpdate(handle, &rt.Op, sizeof(rt.Op));
+			HashStreamUpdate(handle, &rt.SrcAlpha, sizeof(rt.SrcAlpha));
+			HashStreamUpdate(handle, &rt.DestAlpha, sizeof(rt.DestAlpha));
+			HashStreamUpdate(handle, &rt.AlphaOp, sizeof(rt.AlphaOp));
+			HashStreamUpdate(handle, &rt.LogicOp, sizeof(rt.LogicOp));
+			HashStreamUpdate(handle, &rt.WriteMask, sizeof(rt.WriteMask));
 		}
 	}
 };
@@ -248,22 +248,22 @@ struct DepthStencilDesc
 	StencilOp BackStencilPass = StencilOp::Keep;
 	ComparisonFunc BackStencilFunc = ComparisonFunc::Always;
 
-	void HashUpdate(XXH64_state_t* state) const
+	void HashUpdate(std::any handle) const
 	{
-		XXH64_update(state, &DepthEnable, sizeof(DepthEnable));
-		XXH64_update(state, &DepthWriteMask, sizeof(DepthWriteMask));
-		XXH64_update(state, &DepthFunc, sizeof(DepthFunc));
-		XXH64_update(state, &StencilEnable, sizeof(StencilEnable));
-		XXH64_update(state, &StencilReadMask, sizeof(StencilReadMask));
-		XXH64_update(state, &StencilWriteMask, sizeof(StencilWriteMask));
-		XXH64_update(state, &FrontStencilFail, sizeof(FrontStencilFail));
-		XXH64_update(state, &FrontStencilDepthFail, sizeof(FrontStencilDepthFail));
-		XXH64_update(state, &FrontStencilPass, sizeof(FrontStencilPass));
-		XXH64_update(state, &FrontStencilFunc, sizeof(FrontStencilFunc));
-		XXH64_update(state, &BackStencilFail, sizeof(BackStencilFail));
-		XXH64_update(state, &BackStencilDepthFail, sizeof(BackStencilDepthFail));
-		XXH64_update(state, &BackStencilPass, sizeof(BackStencilPass));
-		XXH64_update(state, &BackStencilFunc, sizeof(BackStencilFunc));
+		HashStreamUpdate(handle, &DepthEnable, sizeof(DepthEnable));
+		HashStreamUpdate(handle, &DepthWriteMask, sizeof(DepthWriteMask));
+		HashStreamUpdate(handle, &DepthFunc, sizeof(DepthFunc));
+		HashStreamUpdate(handle, &StencilEnable, sizeof(StencilEnable));
+		HashStreamUpdate(handle, &StencilReadMask, sizeof(StencilReadMask));
+		HashStreamUpdate(handle, &StencilWriteMask, sizeof(StencilWriteMask));
+		HashStreamUpdate(handle, &FrontStencilFail, sizeof(FrontStencilFail));
+		HashStreamUpdate(handle, &FrontStencilDepthFail, sizeof(FrontStencilDepthFail));
+		HashStreamUpdate(handle, &FrontStencilPass, sizeof(FrontStencilPass));
+		HashStreamUpdate(handle, &FrontStencilFunc, sizeof(FrontStencilFunc));
+		HashStreamUpdate(handle, &BackStencilFail, sizeof(BackStencilFail));
+		HashStreamUpdate(handle, &BackStencilDepthFail, sizeof(BackStencilDepthFail));
+		HashStreamUpdate(handle, &BackStencilPass, sizeof(BackStencilPass));
+		HashStreamUpdate(handle, &BackStencilFunc, sizeof(BackStencilFunc));
 
 	}
 };
@@ -324,34 +324,31 @@ public:
 		u32 SampleCount = 1;
 		u32 SampleQuality = 0;
 
-		void HashUpdate(XXH64_state_t* state) const
+		void HashUpdate(std::any handle) const
 		{
-			XXH64_update(state, Name.c_str(), Name.length());
-			VertexLayout.HashUpdate(state);
-			VS.HashUpdate(state);
-			PS.HashUpdate(state);
-			BlendState.HashUpdate(state);
-			XXH64_update(state, &SampleMask, sizeof(SampleMask));
-			RasterizerState.HashUpdate(state);
-			DepthStencilState.HashUpdate(state);
-			XXH64_update(state, &Topology, sizeof(Topology));
+			HashStreamUpdate(handle, Name.c_str(), Name.length());
+			VertexLayout.HashUpdate(handle);
+			VS.HashUpdate(handle);
+			PS.HashUpdate(handle);
+			BlendState.HashUpdate(handle);
+			HashStreamUpdate(handle, &SampleMask, sizeof(SampleMask));
+			RasterizerState.HashUpdate(handle);
+			DepthStencilState.HashUpdate(handle);
+			HashStreamUpdate(handle, &Topology, sizeof(Topology));
 			for (u32 i = 0; i < RVTFormats.size(); i++)
 			{
-				XXH64_update(state, &RVTFormats[i], sizeof(RVTFormats[i]));
+				HashStreamUpdate(handle, &RVTFormats[i], sizeof(RVTFormats[i]));
 			}
-			XXH64_update(state, &DSVFormat, sizeof(DSVFormat));
-			XXH64_update(state, &SampleCount, sizeof(SampleCount));
-			XXH64_update(state, &SampleQuality, sizeof(SampleQuality));
+			HashStreamUpdate(handle, &DSVFormat, sizeof(DSVFormat));
+			HashStreamUpdate(handle, &SampleCount, sizeof(SampleCount));
+			HashStreamUpdate(handle, &SampleQuality, sizeof(SampleQuality));
 		}
 
 		u64 HashResult() const
 		{
-			XXH64_state_t* const state = XXH64_createState();
-			XXH64_reset(state, 0);
-			HashUpdate(state);
-			XXH64_hash_t const hash = XXH64_digest(state);
-			XXH64_freeState(state);
-			return hash;
+			std::any handle = HashStreamStart();
+			HashUpdate(handle);
+			return HashStreamEnd(handle);
 		}
 	};
 

@@ -30,7 +30,7 @@ public:
 
 	struct SceneConstantBuffer
 	{
-		hlslpp::float4 offset;
+		float offset[4];
 		float padding[60]; // Padding so the constant buffer is 256-byte aligned.
 	};
 

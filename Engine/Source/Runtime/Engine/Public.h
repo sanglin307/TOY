@@ -8,6 +8,7 @@
 #include "Input.h"
 #include "FrameRate.h"
 #include "Viewport.h"
+#include "Image.h"
 #include "Engine.h"
 #include "Material.h"
 #include "Mesh.h"
