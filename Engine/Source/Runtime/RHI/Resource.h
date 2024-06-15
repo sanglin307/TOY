@@ -145,8 +145,6 @@ public:
     RHI_API DescriptorHeap();
     virtual ~DescriptorHeap() {};
     virtual std::any Handle() { return nullptr; }
-    virtual std::any CPUHandle(DescriptorAllocation& pos) = 0;
-    virtual std::any GPUHandle(DescriptorAllocation& pos) = 0;
     RHI_API DescriptorAllocation Allocate(u32 num);
     RHI_API void Free(DescriptorAllocation& pos);
     u32 GetAvailableNum();
@@ -296,14 +294,18 @@ class RenderTexture : public RenderResource
 public:
     struct Desc
     {
+        std::string Name;
         u32 Width;
         u32 Height;
-        u32 Depth;
+        u16 DepthOrArraySize;
+        u16 MipLevels;
         PixelFormat Format;
         u32 Usage;
         ResourceDimension Dimension;
         u16 SampleCount = 1;
         u16 SampleQuality = 0;
+        u8* Data;
+        u64 Size;
     };
 
     virtual ResourceDimension GetDimension() override { return _Desc.Dimension; }

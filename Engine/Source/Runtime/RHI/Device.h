@@ -25,10 +25,10 @@ public:
 
 	RHI_API void CreateInputLayout(const ShaderResource* shader, InputSlotMapping slotMapping, InputLayout& inputLayout);
 
-	u8 GetPixelComponentSize(PixelFormat format);
-	u8 GetPixelComponentNum(PixelFormat format);
-	u8 GetPixelSize(PixelFormat format);
-	bool IsCompressedPixelFormat(PixelFormat format);
+	RHI_API u8 GetPixelComponentSize(PixelFormat format);
+	RHI_API u8 GetPixelComponentNum(PixelFormat format);
+	RHI_API u8 GetPixelSize(PixelFormat format);
+	RHI_API bool IsCompressedPixelFormat(PixelFormat format);
 
 	RHI_API void InitPipelineCache();
 	RHI_API GraphicPipeline* LoadGraphicPipeline(const GraphicPipeline::Desc& desc);

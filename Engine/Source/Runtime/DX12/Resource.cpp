@@ -6,14 +6,14 @@ std::any DX12DescriptorHeap::Handle()
     return _Handle.Get();
 }
 
-std::any DX12DescriptorHeap::CPUHandle(DescriptorAllocation& pos)
+D3D12_CPU_DESCRIPTOR_HANDLE DX12DescriptorHeap::CPUHandle(DescriptorAllocation& pos)
 {
     D3D12_CPU_DESCRIPTOR_HANDLE base = _Handle->GetCPUDescriptorHandleForHeapStart();
     base.ptr += pos.Count * _Config.Stride;
     return base;
 }
 
-std::any DX12DescriptorHeap::GPUHandle(DescriptorAllocation& pos)
+D3D12_GPU_DESCRIPTOR_HANDLE DX12DescriptorHeap::GPUHandle(DescriptorAllocation& pos)
 {
     D3D12_GPU_DESCRIPTOR_HANDLE base = _Handle->GetGPUDescriptorHandleForHeapStart();
     base.ptr += pos.Count * _Config.Stride;
@@ -85,7 +85,99 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, bool gpuVi
 
 RenderTexture* DX12Device::CreateTexture(const RenderTexture::Desc& desc)
 {
-    return nullptr;
+    check(_Device);
+    ComPtr<ID3D12Resource> resource;
+    D3D12_RESOURCE_DESC texDesc = {
+        .Dimension = TranslateResourceDimension(desc.Dimension),
+        .Width = desc.Width,
+        .Height = desc.Height,
+        .DepthOrArraySize = desc.DepthOrArraySize,
+        .MipLevels = 1,
+        .Format = TranslatePixelFormat(desc.Format),
+        .SampleDesc {
+            .Count = 1,
+            .Quality = 0
+        },
+        .Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN,
+        .Flags = D3D12_RESOURCE_FLAG_NONE
+    };
+
+    if (desc.Usage & (u32)ResourceUsage::RenderTarget)
+    {
+        texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    }
+
+    if (desc.Usage & (u32)ResourceUsage::DepthStencil)
+    {
+        texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    }
+
+    if (desc.Usage & (u32)ResourceUsage::UnorderedAccess)
+    {
+        texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+
+    D3D12_HEAP_PROPERTIES heap = {
+                .Type = D3D12_HEAP_TYPE_DEFAULT
+    };
+    check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
+    resource->SetName(PlatformUtils::UTF8ToUTF16(desc.Name).c_str());
+
+    const u64 uploadBufferSize = GetTextureRequiredIntermediateSize(resource.Get(), 0, 1);
+    D3D12_RESOURCE_DESC tempDesc = {
+        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+        .Alignment = 0,
+        .Width = uploadBufferSize,
+        .Height = 1,
+        .DepthOrArraySize = 1,
+        .MipLevels = 1,
+        .Format = DXGI_FORMAT_UNKNOWN,
+        .SampleDesc {
+            .Count = 1,
+            .Quality = 0
+        },
+        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR
+    };
+    ComPtr<ID3D12Resource> tempRes;
+    D3D12_HEAP_PROPERTIES uploadHeap = {
+           .Type = D3D12_HEAP_TYPE_UPLOAD
+    };
+    check(SUCCEEDED(_Device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &tempDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&tempRes))));
+    D3D12_SUBRESOURCE_DATA textureData = {
+        .pData = desc.Data,
+        .RowPitch = desc.Width * GetPixelSize(desc.Format)
+    };
+    textureData.SlicePitch = textureData.RowPitch * desc.Height;
+
+    DX12CommandList* ctx = static_cast<DX12CommandList*>(_ContextManager->GetCopyContext());
+    DX12RenderTexture* dstTexture = new DX12RenderTexture(this, desc, ResourceState::CopyDest, resource);
+    RenderBuffer::Desc buffDesc = {
+        .Size = uploadBufferSize
+    };
+    RenderBuffer* srcBuffer = new DX12RenderBuffer(this, buffDesc, ResourceState::GenericRead, tempRes);
+    ctx->UpdateSubresource(dstTexture, srcBuffer, 0, 0, 1, &textureData);
+    AddDelayDeleteResource(srcBuffer);
+
+    if (desc.Usage & (u32)ResourceUsage::ShaderResource)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+             .Format = texDesc.Format,
+             .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
+             .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+             .Texture2D = {
+                .MipLevels = desc.MipLevels
+             }
+        };
+
+        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetHeap(DescriptorType::CBV_SRV_UAV));
+        DescriptorAllocation srvDescriptor = heap->Allocate(1);
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(srvDescriptor);
+        D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = heap->GPUHandle(srvDescriptor);
+        _Device->CreateShaderResourceView(resource.Get(), &srvDesc, cpuHandle);
+        dstTexture->SetShaderResourcelView(srvDescriptor, cpuHandle,gpuHandle);
+    }
+
+    return dstTexture;
 }
 
 RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
@@ -135,15 +227,16 @@ RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
                  .SizeInBytes = (UINT)info.Size
             };
            
-            DescriptorHeap* heap = _DescriptorManager->GetHeap(DescriptorType::CBV_SRV_UAV);
-            renderBuffer->_CBVDescriptor = heap->Allocate(1);
-            D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(heap->CPUHandle(renderBuffer->_CBVDescriptor));
+            DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetHeap(DescriptorType::CBV_SRV_UAV));
+            DescriptorAllocation descriptor = heap->Allocate(1);
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(descriptor);
+            D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = heap->GPUHandle(descriptor);
             _Device->CreateConstantBufferView(&cbvDesc, cpuHandle);
 
             D3D12_RANGE range = {};
             check(SUCCEEDED(resource->Map(0, &range, (void**)&uniformDataMap)));
             renderBuffer->_UniformDataMapPointer = uniformDataMap;
-            renderBuffer->_ConstBufferView = cpuHandle;
+            renderBuffer->SetConstBufferView(descriptor,cpuHandle,gpuHandle);
         }
 
         return renderBuffer;

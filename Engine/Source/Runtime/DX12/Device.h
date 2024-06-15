@@ -35,7 +35,12 @@ private:
 	void TranslateRasterizerState(const RasterizerDesc& rasterizer, D3D12_RASTERIZER_DESC& dxRasterizer);
 	void TranslateDepthStencilState(const DepthStencilDesc& depthState, D3D12_DEPTH_STENCIL_DESC& dxDepthState);
 	void TranslateInputLayout(const InputLayout& inputLayouts, std::vector<D3D12_INPUT_ELEMENT_DESC>& dxInputLayout);
-	
+
+	u64 GetTextureRequiredIntermediateSize(ID3D12Resource* resource, u32 firstSubresource, u32 subResourceNum);
+	void UpdateSubresource(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* destResource, ID3D12Resource* tempResource, u64 tempResOffset, u32 firstSubresource, u32 NumSubresources, const D3D12_SUBRESOURCE_DATA* pSrcData);
+
+	static D3D12_SRV_DIMENSION TranslateResourceViewDimension(const ResourceDimension rd, bool multipleSample = false);
+	static D3D12_RESOURCE_DIMENSION TranslateResourceDimension(const ResourceDimension rd);
 	static D3D12_BLEND TranslateBlendFactor(const BlendFactor factor);
 	static D3D12_BLEND_OP TranslateBlendOp(const BlendOp op);
 	static D3D12_LOGIC_OP TranslateLogicOp(const LogicOp op);

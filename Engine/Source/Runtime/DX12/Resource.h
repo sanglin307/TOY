@@ -39,8 +39,8 @@ class DX12DescriptorHeap : public DescriptorHeap
 public:
 	virtual ~DX12DescriptorHeap() { _Handle.Reset(); }
 	virtual std::any Handle() override;
-	virtual std::any CPUHandle(DescriptorAllocation& pos) override;
-	virtual std::any GPUHandle(DescriptorAllocation& pos) override;
+	D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle(DescriptorAllocation& pos);
+	D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle(DescriptorAllocation& pos);
 private:
 	DX12DescriptorHeap(const DescriptorHeap::Config& config, ComPtr<ID3D12DescriptorHeap> handle)
 	{
@@ -70,9 +70,43 @@ public:
 	}
 	virtual std::any Handle() override { return _Handle.Get(); }
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView();
-	DescriptorAllocation GetCBVDescriptor()
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetConstBufferViewCPUHandle()
 	{
-		return _CBVDescriptor;
+		return _ConstBufferViewCPUHandle;
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE GetConstBufferViewGPUHandle()
+	{
+		return _ConstBufferViewGPUHandle;
+	}
+
+	void SetConstBufferView(DescriptorAllocation descriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+	{
+		_Desc.Usage |= (u32)ResourceUsage::UniformBuffer;
+		_CBVDescriptor = descriptor;
+		_ConstBufferViewCPUHandle = cpuHandle;
+		_ConstBufferViewGPUHandle = gpuHandle;
+	}
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceViewCPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::ShaderResource);
+		return _ShaderResourceViewCPUHandle;
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE GetShaderResourceViewGPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::ShaderResource);
+		return _ShaderResourceViewGPUHandle;
+	}
+
+	void SetShaderResourcelView(DescriptorAllocation srvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+	{
+		_Desc.Usage |= (u32)ResourceUsage::ShaderResource;
+		_ShaderResourceViewCPUHandle = cpuHandle;
+		_ShaderResourceViewGPUHandle = gpuHandle;
+		_SRVDescriptor = srvDescriptor;
 	}
 
 	virtual void UploadData(u8* data, size_t size) override;
@@ -86,10 +120,16 @@ private:
 		_Handle = handle;
 	}
 
-private: 
+private:
+	D3D12_CPU_DESCRIPTOR_HANDLE _ShaderResourceViewCPUHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE _ShaderResourceViewGPUHandle;
+	DescriptorAllocation _SRVDescriptor;
+
 	DescriptorAllocation _CBVDescriptor;
-	D3D12_CPU_DESCRIPTOR_HANDLE _ConstBufferView;
+	D3D12_CPU_DESCRIPTOR_HANDLE _ConstBufferViewCPUHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE _ConstBufferViewGPUHandle;
 	u8* _UniformDataMapPointer;
+
 	ComPtr<ID3D12Resource> _Handle;
 };
 
@@ -99,44 +139,89 @@ class DX12RenderTexture : public RenderTexture
 public:
 	virtual ~DX12RenderTexture() { _Handle.Reset(); }
 	virtual std::any Handle() override { return _Handle.Get(); } 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() 
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewCPUHandle() 
 	{
 		check(_Desc.Usage & (u32)ResourceUsage::RenderTarget);
-		return _RenderTargetView;
+		return _RenderTargetViewCPUHandle;
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView()
+	D3D12_GPU_DESCRIPTOR_HANDLE GetRenderTargetViewGPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::RenderTarget);
+		return _RenderTargetViewGPUHandle;
+	}
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewCPUHandle()
 	{
 		check(_Desc.Usage & (u32)ResourceUsage::DepthStencil);
-		return _DepthStencilView;
+		return _DepthStencilViewCPUHandle;
 	}
 
-	void SetRenderTargetView(DescriptorAllocation rvtDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE handle)
+	D3D12_GPU_DESCRIPTOR_HANDLE GetDepthStencilViewGPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::DepthStencil);
+		return _DepthStencilViewGPUHandle;
+	}
+
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceViewCPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::ShaderResource);
+		return _ShaderResourceViewCPUHandle;
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE GetShaderResourceViewGPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::ShaderResource);
+		return _ShaderResourceViewGPUHandle;
+	}
+
+	void SetRenderTargetView(DescriptorAllocation rvtDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::RenderTarget;
-		_RenderTargetView = handle;
+		_RenderTargetViewCPUHandle = cpuHandle;
+		_RenderTargetViewGPUHandle = gpuHandle;
 		_RVTDescriptor = rvtDescriptor;
 	}
 
-	void SetDepthStencilView(DescriptorAllocation dsvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE handle)
+	void SetDepthStencilView(DescriptorAllocation dsvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::DepthStencil;
-		_DepthStencilView = handle;
+		_DepthStencilViewCPUHandle = cpuHandle;
+		_DepthStencilViewGPUHandle = gpuHandle;
 		_DSVDescriptor = dsvDescriptor;
+	}
+
+
+	void SetShaderResourcelView(DescriptorAllocation srvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+	{
+		_Desc.Usage |= (u32)ResourceUsage::ShaderResource;
+		_ShaderResourceViewCPUHandle = cpuHandle;
+		_ShaderResourceViewGPUHandle = gpuHandle;
+		_SRVDescriptor = srvDescriptor;
 	}
 
 private:
 
-	DX12RenderTexture(RenderDevice* device, const Desc& desc, ComPtr<ID3D12Resource> handle)
+	DX12RenderTexture(RenderDevice* device, const Desc& desc, ResourceState state, ComPtr<ID3D12Resource> handle)
 	{
 		Device = device;
 		_Desc = desc;
+		State = state;
 		_Handle = handle;
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE _RenderTargetView;
+	D3D12_CPU_DESCRIPTOR_HANDLE _ShaderResourceViewCPUHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE _ShaderResourceViewGPUHandle;
+	DescriptorAllocation _SRVDescriptor;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE _RenderTargetViewCPUHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE _RenderTargetViewGPUHandle;
 	DescriptorAllocation _RVTDescriptor;
-	D3D12_CPU_DESCRIPTOR_HANDLE _DepthStencilView;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE _DepthStencilViewCPUHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE _DepthStencilViewGPUHandle;
 	DescriptorAllocation _DSVDescriptor;
 	ComPtr<ID3D12Resource> _Handle;
 };

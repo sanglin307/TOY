@@ -1,10 +1,5 @@
 #pragma once
 
-enum class ImageFormat
-{
-	JPG = 0,
-	PNG,
-};
 
 struct Image
 {
@@ -18,7 +13,7 @@ struct Image
 	u32 Channel;
 	u8* Data = nullptr;
 	u32 Size;
-	ImageFormat Format;
+	PixelFormat Format;
 };
 
 class ImageReader

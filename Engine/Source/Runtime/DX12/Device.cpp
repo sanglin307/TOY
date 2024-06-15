@@ -238,7 +238,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
     };
 
-    DescriptorHeap* rvtHeap = _DescriptorManager->GetHeap(DescriptorType::RVT);
+    DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetHeap(DescriptorType::RVT));
     CommandQueue* queue = _ContextManager->GetDirectQueue();
 
     ComPtr<IDXGISwapChain1> swapChain;
@@ -259,27 +259,28 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
         std::vector<RenderTexture*> rtResources;
         rtResources.resize(info.FrameCount);
         DescriptorAllocation rvtAlloc = rvtHeap->Allocate(info.FrameCount);
-        D3D12_CPU_DESCRIPTOR_HANDLE rvtHandle = std::any_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(rvtHeap->CPUHandle(rvtAlloc));
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = rvtHeap->CPUHandle(rvtAlloc);
+        D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = rvtHeap->GPUHandle(rvtAlloc);
         for (u32 n = 0; n < info.FrameCount; n++)
         {
             ComPtr<ID3D12Resource> res;
             check(SUCCEEDED(swapChain3->GetBuffer(n, IID_PPV_ARGS(&res))));
-            _Device->CreateRenderTargetView(res.Get(), nullptr, rvtHandle);
+            _Device->CreateRenderTargetView(res.Get(), nullptr, cpuHandle);
 
             RenderTexture::Desc desc = {
                  .Width = info.Width,
                  .Height = info.Height,
-                 .Depth = 1,
+                 .DepthOrArraySize = 1,
                  .Format = info.Format,
                  .Dimension = ResourceDimension::Texture2D
             };
 
-            DX12RenderTexture* dx12Resource = new DX12RenderTexture(this,desc,res);
-            dx12Resource->SetRenderTargetView(rvtAlloc, rvtHandle);
-            dx12Resource->State = ResourceState::Present;
+            DX12RenderTexture* dx12Resource = new DX12RenderTexture(this,desc, ResourceState::Present,res);
+            dx12Resource->SetRenderTargetView(rvtAlloc, cpuHandle,gpuHandle);
 
             rtResources[n] = dx12Resource;
-            rvtHandle.ptr += rvtHeap->GetStride();
+            cpuHandle.ptr += rvtHeap->GetStride();
+            gpuHandle.ptr += rvtHeap->GetStride();
         }
 
         return new DX12Swapchain(info, rvtAlloc, rtResources, swapChain3);
@@ -560,6 +561,65 @@ D3D12_CULL_MODE DX12Device::TranslateCullMode(const CullMode mode)
     return D3D12_CULL_MODE_NONE;
 }
 
+D3D12_SRV_DIMENSION DX12Device::TranslateResourceViewDimension(const ResourceDimension rd, bool multipleSample)
+{
+    switch (rd)
+    {
+    case  ResourceDimension::Buffer:
+        return D3D12_SRV_DIMENSION_BUFFER;
+    case ResourceDimension::Texture1D:
+        return D3D12_SRV_DIMENSION_TEXTURE1D;
+    case ResourceDimension::Texture1DArray:
+        return D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+    case ResourceDimension::Texture2D:
+    {
+        if (multipleSample)
+            return D3D12_SRV_DIMENSION_TEXTURE2DMS;
+        else
+            return D3D12_SRV_DIMENSION_TEXTURE2D;
+    }
+    case ResourceDimension::Texture2DArray:
+    {
+        if (multipleSample)
+            return D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
+        else
+            return D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+    }
+    case ResourceDimension::TextureCube:
+        return D3D12_SRV_DIMENSION_TEXTURECUBE;
+    case ResourceDimension::TextureCubeArray:
+        return D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+    case ResourceDimension::Texture3D:
+        return D3D12_SRV_DIMENSION_TEXTURE3D;
+    default:
+        return D3D12_SRV_DIMENSION_UNKNOWN;
+    }
+
+    return D3D12_SRV_DIMENSION_UNKNOWN;
+}
+
+
+D3D12_RESOURCE_DIMENSION DX12Device::TranslateResourceDimension(const ResourceDimension rd)
+{
+    switch (rd)
+    {
+    case  ResourceDimension::Buffer:
+        return D3D12_RESOURCE_DIMENSION_BUFFER;
+    case ResourceDimension::Texture1D:
+    case ResourceDimension::Texture1DArray:
+        return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+    case ResourceDimension::Texture2D:
+    case ResourceDimension::Texture2DArray:
+    case ResourceDimension::TextureCube:
+    case ResourceDimension::TextureCubeArray:
+        return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    case ResourceDimension::Texture3D:
+        return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+    default:
+        return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+    }
+}
+
 D3D12_COMPARISON_FUNC DX12Device::TranslateComparisonFunc(const ComparisonFunc func)
 {
     switch (func)
@@ -747,6 +807,15 @@ void DX12Device::TranslateDepthStencilState(const DepthStencilDesc& depthState, 
             .StencilFunc = TranslateComparisonFunc(depthState.BackStencilFunc)
         }
     };
+}
+
+u64 DX12Device::GetTextureRequiredIntermediateSize(ID3D12Resource* resource, u32 firstSubresource, u32 subResourceNum)
+{
+    auto Desc = resource->GetDesc();
+    u64 requiredSize = 0;
+
+    _Device->GetCopyableFootprints(&Desc, firstSubresource, subResourceNum, 0, nullptr, nullptr, nullptr, &requiredSize);
+    return requiredSize;
 }
 
 void DX12Device::TranslateInputLayout(const InputLayout& inputLayouts, std::vector<D3D12_INPUT_ELEMENT_DESC>& dxInputLayout)

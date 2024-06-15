@@ -46,10 +46,37 @@ Image* ImageReader::Load(const std::string& file)
 
 		Image* image = new Image;
 		u8* imageData = stbi_load_from_memory((u8*)data, (int)size, (int*)&(image->Width), (int*)&(image->Height), (int*)&(image->Channel), STBI_default);
-		image->Size = image->Width * image->Height * image->Channel;
-		image->Data = (u8*)std::malloc(image->Size);
-		std::memcpy(image->Data, imageData, image->Size);
+		if (image->Channel == 3)
+		{
+			// convert to 4 
+			image->Size = image->Width * image->Height * 4;
+			image->Data = (u8*)std::malloc(image->Size);
+			u32 readpos = 0;
+			for (u32 i = 0; i < image->Size; i+=4,readpos+=3)
+			{
+				image->Data[i] = imageData[readpos];
+				image->Data[i+1] = imageData[readpos+1];
+				image->Data[i+2] = imageData[readpos+2];
+				image->Data[i+3] = 0;
+			}
+			image->Format = PixelFormat::R8G8B8A8_UNORM;
+		}
+		else
+		{
+			check(image->Channel <= 4);
+			image->Size = image->Width * image->Height * image->Channel;
+			image->Data = (u8*)std::malloc(image->Size);
+			std::memcpy(image->Data, imageData, image->Size);
+			if(image->Channel == 1)
+				image->Format = PixelFormat::R8_UNORM;
+			else if(image->Channel == 2)
+				image->Format = PixelFormat::R8G8_UNORM;
+			else if(image->Channel == 4)
+				image->Format = PixelFormat::R8G8B8A8_UNORM;
+		}
+	
 		stbi_image_free(imageData);
+		
 		_ImageCache[file] = image;
 		return image;
 	}

@@ -75,19 +75,20 @@ void DX12CommandList::SetGraphicShaderParameter(const ShaderParameter* param)
     }
     else
     {
-        DescriptorHeap* heap = _Device->GetDescriptorHeap(DescriptorType::CBV_SRV_UAV);
         if (param->Resource->GetDimension() == ResourceDimension::Buffer)
         {
             DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
             D3D12_GPU_DESCRIPTOR_HANDLE handle;
             if (buffer->GetUsage() & (u32)ResourceUsage::UniformBuffer)
             {
-                DescriptorAllocation da = buffer->GetCBVDescriptor();
-                handle = std::any_cast<D3D12_GPU_DESCRIPTOR_HANDLE>(heap->GPUHandle(da));
+                handle = buffer->GetConstBufferViewGPUHandle();
+            }
+            else if (buffer->GetUsage() & (u32)ResourceUsage::ShaderResource)
+            {
+                handle = buffer->GetShaderResourceViewGPUHandle();
             }
             else
             {
-                //TODO
                 check(0);
             }
             _Handle->SetGraphicsRootDescriptorTable(param->RootParamIndex, handle);
@@ -95,9 +96,16 @@ void DX12CommandList::SetGraphicShaderParameter(const ShaderParameter* param)
         else
         {
             DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(param->Resource);
-            check(0); //TODO.
+            if (tex->GetUsage() & (u32)ResourceUsage::ShaderResource)
+            {
+                D3D12_GPU_DESCRIPTOR_HANDLE handle = tex->GetShaderResourceViewGPUHandle();
+                _Handle->SetGraphicsRootDescriptorTable(param->RootParamIndex, handle);
+            }
+            else
+            {
+                check(0);
+            }   
         }
-        
     }
 
 }
@@ -154,7 +162,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
         for (u32 i=0; i<rtNum; i++)
         {
             DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(rts[i]);
-            rtViews.push_back(dx12Res->GetRenderTargetView());
+            rtViews.push_back(dx12Res->GetRenderTargetViewCPUHandle());
         }
         TransitionState(ResourceState::RenderTarget, (RenderResource**)rts, rtNum);
     }
@@ -162,7 +170,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
     if (depthStencil)
     {
         DX12RenderTexture* dx12depth = static_cast<DX12RenderTexture*>(depthStencil);
-        dsView = dx12depth->GetDepthStencilView();
+        dsView = dx12depth->GetDepthStencilViewCPUHandle();
         pDepth = &dsView;
     }
 
@@ -180,7 +188,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
 void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const f32* colors)
 {
     DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(renderTarget);
-    _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetView(), colors, 0, nullptr);
+    _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetViewCPUHandle(), colors, 0, nullptr);
 }
 
 
@@ -205,6 +213,80 @@ void DX12CommandQueue::Wait(Fence* fence, u64 value)
     ID3D12Fence* fenceObj = std::any_cast<ID3D12Fence*>(fence->Handle());
     check(SUCCEEDED(_Handle->Wait(fenceObj, value)));
 }
+
+void DX12CommandList::UpdateSubresource(RenderTexture* destResource, RenderBuffer* tempResource, u64 tempResOffset, u32 firstSubresource, u32 numSubresources, const D3D12_SUBRESOURCE_DATA* srcData)
+{
+    if (!((u32)tempResource->State & (u32)ResourceState::CopySource))
+    {
+        TransitionState(ResourceState::CopySource, tempResource);
+    }
+
+    if (!((u32)destResource->State & (u32)ResourceState::CopyDest))
+    {
+        TransitionState(ResourceState::CopyDest, destResource);
+    }
+
+    ID3D12Resource* dstResource = std::any_cast<ID3D12Resource*>(destResource->Handle());
+    ID3D12Resource* srcResource = std::any_cast<ID3D12Resource*>(tempResource->Handle());
+
+    u64 requiredSize = 0;
+    u64 tempAllocSize = static_cast<u64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(u32) + sizeof(u64)) * numSubresources;
+    void* tempMem = std::malloc(tempAllocSize);
+
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts = static_cast<D3D12_PLACED_SUBRESOURCE_FOOTPRINT*>(tempMem);
+    u64* pRowSizesInBytes = reinterpret_cast<u64*>(pLayouts + numSubresources);
+    auto pNumRows = reinterpret_cast<u32*>(pRowSizesInBytes + numSubresources);
+
+    auto Desc = dstResource->GetDesc();
+    _Device->_Device->GetCopyableFootprints(&Desc, firstSubresource, numSubresources, tempResOffset, pLayouts, pNumRows, pRowSizesInBytes, &requiredSize);
+
+    auto tempDesc = srcResource->GetDesc();
+    u8* pData;
+    HRESULT hr = srcResource->Map(0, nullptr, reinterpret_cast<void**>(&pData));
+    for (u32 i = 0; i < numSubresources; ++i)
+    {
+        D3D12_MEMCPY_DEST DestData = { pData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, SIZE_T(pLayouts[i].Footprint.RowPitch) * SIZE_T(pNumRows[i]) };
+        for (u32 z = 0; z < pLayouts[i].Footprint.Depth; ++z)
+        {
+            auto pDestSlice = static_cast<u8*>(DestData.pData) + DestData.SlicePitch * z;
+            auto pSrcSlice = static_cast<const u8*>(srcData[i].pData) + srcData[i].SlicePitch * u64(z);
+            for (u32 y = 0; y < pNumRows[i]; ++y)
+            {
+                std::memcpy(pDestSlice + DestData.RowPitch * y,
+                    pSrcSlice + srcData[i].RowPitch * u64(y),
+                    pRowSizesInBytes[i]);
+            }
+        }
+    }
+    srcResource->Unmap(0, nullptr);
+
+    if (Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+    {
+        _Handle->CopyBufferRegion(dstResource, 0, srcResource, pLayouts[0].Offset, pLayouts[0].Footprint.Width);
+    }
+    else
+    {
+        for (u32 i = 0; i < numSubresources; ++i)
+        {
+            D3D12_TEXTURE_COPY_LOCATION dst = {
+                 .pResource = dstResource,
+                 .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                 .SubresourceIndex = i + firstSubresource
+            };
+            D3D12_TEXTURE_COPY_LOCATION src = {
+                .pResource = srcResource,
+                .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+                .PlacedFootprint = pLayouts[i]
+            };
+
+            _Handle->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+        }
+    }
+
+    std::free(tempMem);
+    _Manager->AddCopyNum();
+}
+
 
 void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRes)
 {
