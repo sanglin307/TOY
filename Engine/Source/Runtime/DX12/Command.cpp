@@ -33,17 +33,17 @@ void DX12CommandList::Close()
 
 void DX12CommandList::SetGraphicPipeline(GraphicPipeline* pipeline)
 {
-    u64 hash = pipeline->Info.HashResult();
-
     // root signature
-    ID3D12RootSignature* rs = std::any_cast<ID3D12RootSignature*>(_Device->_GlobalRootSignature->Handle());
+    RootSignature* rootsig = pipeline->GetRootSignature();
+    ID3D12RootSignature* rs = std::any_cast<ID3D12RootSignature*>(rootsig->Handle());
     check(rs);
     _Handle->SetGraphicsRootSignature(rs);
 
     //descriptor heap
     DescriptorHeap* desHeap = _Device->_DescriptorManager->GetHeap(DescriptorType::CBV_SRV_UAV);
-    ID3D12DescriptorHeap* ppHeap[] = { std::any_cast<ID3D12DescriptorHeap*>(desHeap->Handle()) };
-    _Handle->SetDescriptorHeaps(1, ppHeap);
+    DescriptorHeap* samplerHeap = _Device->_DescriptorManager->GetHeap(DescriptorType::Sampler);
+    ID3D12DescriptorHeap* ppHeap[] = { std::any_cast<ID3D12DescriptorHeap*>(desHeap->Handle()), std::any_cast<ID3D12DescriptorHeap*>(samplerHeap->Handle()) };
+    _Handle->SetDescriptorHeaps(2, ppHeap);
 
     pipeline->BindParameter(this);
 
@@ -57,54 +57,61 @@ void DX12CommandList::SetGraphicPipeline(GraphicPipeline* pipeline)
 
 void DX12CommandList::SetGraphicShaderParameter(const ShaderParameter* param)
 {
-    if (!param->Resource)
-        return;
-
-    ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
     if (param->BindType == ShaderBindType::RootCBV)
     {
+        ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
         _Handle->SetGraphicsRootConstantBufferView(param->RootParamIndex, res->GetGPUVirtualAddress());
     }
     else if (param->BindType == ShaderBindType::RootSRV)
     {
+        ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
         _Handle->SetGraphicsRootShaderResourceView(param->RootParamIndex, res->GetGPUVirtualAddress());
     }
     else if (param->BindType == ShaderBindType::RootUAV)
     {
+        ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
         _Handle->SetGraphicsRootUnorderedAccessView(param->RootParamIndex, res->GetGPUVirtualAddress());
     }
     else
     {
-        if (param->Resource->GetDimension() == ResourceDimension::Buffer)
+        if (param->BindType == ShaderBindType::TableSampler)
         {
-            DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
-            D3D12_GPU_DESCRIPTOR_HANDLE handle;
-            if (buffer->GetUsage() & (u32)ResourceUsage::UniformBuffer)
-            {
-                handle = buffer->GetConstBufferViewGPUHandle();
-            }
-            else if (buffer->GetUsage() & (u32)ResourceUsage::ShaderResource)
-            {
-                handle = buffer->GetShaderResourceViewGPUHandle();
-            }
-            else
-            {
-                check(0);
-            }
-            _Handle->SetGraphicsRootDescriptorTable(param->RootParamIndex, handle);
+            DX12Sampler* sampler = static_cast<DX12Sampler*>(param->Resource);
+            _Handle->SetGraphicsRootDescriptorTable(param->RootParamIndex, sampler->GetGPUHandle());
         }
         else
         {
-            DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(param->Resource);
-            if (tex->GetUsage() & (u32)ResourceUsage::ShaderResource)
+            if (param->Resource->GetDimension() == ResourceDimension::Buffer)
             {
-                D3D12_GPU_DESCRIPTOR_HANDLE handle = tex->GetShaderResourceViewGPUHandle();
+                DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
+                D3D12_GPU_DESCRIPTOR_HANDLE handle;
+                if (buffer->GetUsage() & (u32)ResourceUsage::UniformBuffer)
+                {
+                    handle = buffer->GetConstBufferViewGPUHandle();
+                }
+                else if (buffer->GetUsage() & (u32)ResourceUsage::ShaderResource)
+                {
+                    handle = buffer->GetShaderResourceViewGPUHandle();
+                }
+                else
+                {
+                    check(0);
+                }
                 _Handle->SetGraphicsRootDescriptorTable(param->RootParamIndex, handle);
             }
             else
             {
-                check(0);
-            }   
+                DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(param->Resource);
+                if (tex->GetUsage() & (u32)ResourceUsage::ShaderResource)
+                {
+                    D3D12_GPU_DESCRIPTOR_HANDLE handle = tex->GetShaderResourceViewGPUHandle();
+                    _Handle->SetGraphicsRootDescriptorTable(param->RootParamIndex, handle);
+                }
+                else
+                {
+                    check(0);
+                }
+            }
         }
     }
 

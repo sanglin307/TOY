@@ -9,14 +9,14 @@ std::any DX12DescriptorHeap::Handle()
 D3D12_CPU_DESCRIPTOR_HANDLE DX12DescriptorHeap::CPUHandle(DescriptorAllocation& pos)
 {
     D3D12_CPU_DESCRIPTOR_HANDLE base = _Handle->GetCPUDescriptorHandleForHeapStart();
-    base.ptr += pos.Count * _Config.Stride;
+    base.ptr += pos.Offset * _Config.Stride;
     return base;
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE DX12DescriptorHeap::GPUHandle(DescriptorAllocation& pos)
 {
     D3D12_GPU_DESCRIPTOR_HANDLE base = _Handle->GetGPUDescriptorHandleForHeapStart();
-    base.ptr += pos.Count * _Config.Stride;
+    base.ptr += pos.Offset * _Config.Stride;
     return base;
 }
 
@@ -298,3 +298,6 @@ void DX12RenderBuffer::UploadData(u8* data, size_t size)
     std::memcpy(_UniformDataMapPointer, data, size);
 }
  
+DX12Sampler::~DX12Sampler()
+{
+}

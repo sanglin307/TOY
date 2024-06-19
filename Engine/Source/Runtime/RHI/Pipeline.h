@@ -79,19 +79,6 @@ enum class LogicOp
 	OrInverted
 };
 
-enum class ComparisonFunc
-{
-	None,
-	Never,
-	Less,
-	Equal,
-	LessEqual,
-	Greater,
-	NotEqual,
-	GreaterEqual,
-	Always
-};
-
 enum class BlendFactor
 {
 	Zero = 0,
@@ -273,35 +260,65 @@ enum class ShaderBindType
 	RootCBV = 0,
 	RootSRV,
 	RootUAV,
-	TableOneCBV,
-	TableOneSRV,
-	TableOneUAV,
-	TableOneSampler,
-	TableMultipleCBV,
-	TableMultipleSRV,
-	TableMultipleUAV,
-	TableMultipleSampler,
+	TableCBV,
+	TableSRV,
+	TableUAV,
+	TableSampler,
 	Max
+};
+
+struct RootSignatureParamDesc
+{
+	ShaderBindType Type;
+	u32 DescriptorNum;
+};
+
+class RootSignature
+{
+public:
+	struct Desc
+	{
+		u32 RootCBVNum;
+		u32 RootSRVNum;
+		u32 RootUAVNum;
+		u32 TableCBVNum;
+		u32 TableSRVNum;
+		u32 TableUAVNum;
+		u32 TableSamplerNum;
+
+		u64 HashResult() const
+		{
+			return Hash(this, sizeof(Desc));
+		}
+	};
+
+	constexpr static u32 cRootDescriptorSpace = 1;
+
+	virtual ~RootSignature() {};
+	virtual std::any Handle() { return nullptr; }
+
+	const std::vector<RootSignatureParamDesc>& GetParamDesc() const
+	{
+		return _ParamsDesc;
+	}
+
+	const Desc& GetDesc() const
+	{
+		return _Info;
+	}
+ 
+protected:
+	Desc _Info;
+	std::vector<RootSignatureParamDesc> _ParamsDesc;
 };
 
 struct ShaderParameter
 {
 	std::string Name;
 	ShaderBindType BindType;
-	u32 RootParamIndex; 
+	u32 RootParamIndex;
+	u32 TableOffset;
 	RenderResource* Resource;
-};
-
-class RootSignature
-{
-public:
-	virtual ~RootSignature() {};
-	virtual std::any Handle() { return nullptr; }
-
-	virtual ShaderParameter* Allocate(const SRBoundResource& res) = 0;
-
-protected:
-	std::unordered_map<std::string, ShaderParameter*> _ParamsMap;
 };
 
 class RenderContext;
@@ -357,13 +374,19 @@ public:
 
 	RHI_API void BindParameter(RenderContext* ctx);
 	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
-	RHI_API void AddParameter(ShaderParameter* parameter);
 	RHI_API ShaderParameter* GetParameter(const std::string& name);
+	RHI_API RootSignature* GetRootSignature() const
+	{
+		return _RootSignature;
+	}
+
+	RHI_API void AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
 
 	Desc  Info;
-
 protected:
+	
 	std::unordered_map<std::string, ShaderParameter*> _ShaderParameters;
+	RootSignature* _RootSignature;
 };
 
 

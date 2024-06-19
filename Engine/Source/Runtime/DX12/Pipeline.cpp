@@ -1,6 +1,7 @@
 #include "Private.h"
 
-DX12RootSignature::DX12RootSignature(DX12Device* device)
+/*
+DX12GlobalRootSignature::DX12GlobalRootSignature(DX12Device* device)
 {
 	std::vector<D3D12_ROOT_PARAMETER1> param;
 
@@ -274,7 +275,7 @@ DX12RootSignature::DX12RootSignature(DX12Device* device)
 	_Handle = device->CreateRootSignature(signature);
 }
 
-ShaderParameter* DX12RootSignature::Allocate(const SRBoundResource& r)
+ShaderParameter* DX12GlobalRootSignature::Allocate(const SRBoundResource& r)
 {
 	auto iter = _ParamsMap.find(r.Name);
 	if (iter != _ParamsMap.end())
@@ -346,7 +347,7 @@ ShaderParameter* DX12RootSignature::Allocate(const SRBoundResource& r)
 		r.Type == ShaderInputType::UAV_RWSTRUCTURED_WITH_COUNTER || r.Type == ShaderInputType::UAV_FEEDBACKTEXTURE || r.Type == ShaderInputType::UAV_APPEND_STRUCTURED ||
 		r.Type == ShaderInputType::UAV_CONSUME_STRUCTURED))
 	{
-		if (r.BindCount > 1) // multple descriptor table
+		if (r.BindCount > 1) // multiple descriptor table
 		{
 			check(r.BindCount < cRootTableDescriptorSizeMax);
 			if (RootParameterUsed[(u32)ShaderBindType::TableMultipleUAV] < RootParameterNumber[(u32)ShaderBindType::TableMultipleUAV])
@@ -375,7 +376,7 @@ ShaderParameter* DX12RootSignature::Allocate(const SRBoundResource& r)
 	}
 	else if (r.Type == ShaderInputType::SAMPLER)
 	{
-		if (r.BindCount > 1) // multple descriptor table
+		if (r.BindCount > 1) // multiple descriptor table
 		{
 			check(r.BindCount < cRootTableDescriptorSizeMax);
 			if (RootParameterUsed[(u32)ShaderBindType::TableMultipleSampler] < RootParameterNumber[(u32)ShaderBindType::TableMultipleSampler])
@@ -406,3 +407,4 @@ ShaderParameter* DX12RootSignature::Allocate(const SRBoundResource& r)
 
 	return param;
 }
+*/

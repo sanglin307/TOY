@@ -234,7 +234,8 @@ enum class ResourceDimension
     Texture2DArray,
     Texture3D,
     TextureCube,
-    TextureCubeArray
+    TextureCubeArray,
+    Sampler
 };
 
 enum class CpuAccessFlags : u32
@@ -315,6 +316,70 @@ protected:
     Desc _Desc;
 };
 
+enum class SampleFilter
+{
+    Min_Mag_Mip_Point = 0,
+    Min_Mag_Point_Mip_Linear,
+    Min_Point_Mag_Linear_Mip_Point,
+    Min_Point_Mag_Mip_Linear,
+    Min_Linear_Mag_Mip_Point,
+    Min_Linear_Mag_Point_Mip_Linear,
+    Min_Mag_Linear_Mip_Point,
+    Min_Mag_Mip_Linear,
+    Min_Mag_Anisotropic_Mip_Point,
+    Anisotropic
+};
+
+enum class TextureAddressMode
+{
+    Wrap,
+    Mirror,
+    Clamp,
+    Border
+};
+
+enum class ComparisonFunc
+{
+    None,
+    Never,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterEqual,
+    Always
+};
+
+class Sampler : public RenderResource
+{
+public:
+    struct Desc
+    {
+        SampleFilter Filter = SampleFilter::Min_Mag_Mip_Linear;
+        TextureAddressMode AddressU = TextureAddressMode::Wrap;
+        TextureAddressMode AddressV = TextureAddressMode::Wrap;
+        TextureAddressMode AddressW = TextureAddressMode::Wrap;
+        float MipLODBias = 0;
+        u32   MaxAnisotropy = 1;
+        ComparisonFunc ComparisonFunc = ComparisonFunc::None;
+        float BorderColor[4] = { 0.0,0.0,0.0,0.0 };
+        float MinLOD = 0;
+        float MaxLOD = std::numeric_limits<float>::max();
+
+        u64 HashResult() const
+        {
+            return Hash(this, sizeof(Desc));
+        }
+    };
+    virtual ~Sampler() {};
+    virtual ResourceDimension GetDimension() override { return ResourceDimension::Sampler; }
+    virtual u32 GetUsage() override { return 0; }
+   
+
+protected:
+    Desc _Info;
+};
 
 
 class Swapchain

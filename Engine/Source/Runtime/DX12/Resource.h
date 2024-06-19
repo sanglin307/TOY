@@ -146,24 +146,11 @@ public:
 		return _RenderTargetViewCPUHandle;
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE GetRenderTargetViewGPUHandle()
-	{
-		check(_Desc.Usage & (u32)ResourceUsage::RenderTarget);
-		return _RenderTargetViewGPUHandle;
-	}
-
 	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewCPUHandle()
 	{
 		check(_Desc.Usage & (u32)ResourceUsage::DepthStencil);
 		return _DepthStencilViewCPUHandle;
 	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE GetDepthStencilViewGPUHandle()
-	{
-		check(_Desc.Usage & (u32)ResourceUsage::DepthStencil);
-		return _DepthStencilViewGPUHandle;
-	}
-
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceViewCPUHandle()
 	{
@@ -177,19 +164,17 @@ public:
 		return _ShaderResourceViewGPUHandle;
 	}
 
-	void SetRenderTargetView(DescriptorAllocation rvtDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+	void SetRenderTargetView(DescriptorAllocation rvtDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::RenderTarget;
 		_RenderTargetViewCPUHandle = cpuHandle;
-		_RenderTargetViewGPUHandle = gpuHandle;
 		_RVTDescriptor = rvtDescriptor;
 	}
 
-	void SetDepthStencilView(DescriptorAllocation dsvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+	void SetDepthStencilView(DescriptorAllocation dsvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::DepthStencil;
 		_DepthStencilViewCPUHandle = cpuHandle;
-		_DepthStencilViewGPUHandle = gpuHandle;
 		_DSVDescriptor = dsvDescriptor;
 	}
 
@@ -217,12 +202,38 @@ private:
 	DescriptorAllocation _SRVDescriptor;
 
 	D3D12_CPU_DESCRIPTOR_HANDLE _RenderTargetViewCPUHandle;
-	D3D12_GPU_DESCRIPTOR_HANDLE _RenderTargetViewGPUHandle;
 	DescriptorAllocation _RVTDescriptor;
 
 	D3D12_CPU_DESCRIPTOR_HANDLE _DepthStencilViewCPUHandle;
-	D3D12_GPU_DESCRIPTOR_HANDLE _DepthStencilViewGPUHandle;
 	DescriptorAllocation _DSVDescriptor;
 	ComPtr<ID3D12Resource> _Handle;
 };
 
+class DX12Sampler : public Sampler
+{
+	friend class DX12Device;
+public:
+	~DX12Sampler();
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle()
+	{
+		return _CpuHandle;
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle()
+	{
+		return _GpuHandle;
+	}
+
+private:
+	DX12Sampler(const Sampler::Desc& desc, DescriptorAllocation descriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+	{
+		_Info = desc;
+		_CpuHandle = cpuHandle;
+		_GpuHandle = gpuHandle;
+	}
+
+	DescriptorAllocation _Descriptor;
+	D3D12_CPU_DESCRIPTOR_HANDLE _CpuHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE _GpuHandle;
+};

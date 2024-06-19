@@ -19,6 +19,32 @@ void RenderPassTest::Init(RenderDevice* device)
 	UniformBuffer = device->CreateBuffer(udesc);
 	PSO->BindParameter("SceneConstantBuffer", UniformBuffer);
 
+	Image* image = ImageReader::Instance().Load("GTA.png");
+	RenderTexture::Desc td = {
+		.Name = "GTA.png",
+		.Width = image->Width,
+		.Height = image->Height,
+		.DepthOrArraySize = 1,
+		.MipLevels = 1,
+		.Format = image->Format,
+		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Dimension = ResourceDimension::Texture2D,
+		.Data = image->Data,
+		.Size = image->Size
+	};
+	_texture = device->CreateTexture(td);
+	PSO->BindParameter("g_texture", _texture);
+
+	Sampler::Desc sd;
+	_sampler = device->CreateSampler(sd);
+	PSO->BindParameter("g_sampler", _sampler);
+}
+
+RenderPassTest::~RenderPassTest()
+{
+	delete UniformBuffer;
+	delete _texture;
+	delete _sampler;
 }
 
 void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)

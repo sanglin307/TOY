@@ -19,6 +19,7 @@
 #include <array>
 #include <unordered_map>
 #include <bitset>
+#include <limits>
 
 //core
 #include "Types.h"

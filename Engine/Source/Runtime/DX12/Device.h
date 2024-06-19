@@ -15,19 +15,17 @@ public :
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
 	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) override;
 	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) override;
+	virtual Sampler* CreateSampler(const Sampler::Desc& desc) override;
 	virtual Fence* CreateFence(u64 initValue) override;
 
 	virtual RenderContext* BeginFrame(Swapchain* viewport) override;
 	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) override;
 
 	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
-
-	ComPtr<ID3D12RootSignature> CreateRootSignature(ComPtr<ID3DBlob> signature);
-
+ 
 private:
 	void ReportLiveObjects();
-	ComPtr<ID3DBlob> GenerateRootSignatureBlob(std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
-
+	 
     void InitPixelFormat_Platform();
 	
 	void TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders, D3D12_GRAPHICS_PIPELINE_STATE_DESC& dxPso);
@@ -49,16 +47,16 @@ private:
 	static D3D12_STENCIL_OP TranslateStencilOp(const StencilOp op);
 	static D3D12_RESOURCE_STATES TranslateResourceState(const ResourceState state);
 	static D3D_PRIMITIVE_TOPOLOGY TranslatePrimitiveTopology(const PrimitiveTopology topology);
+	static D3D12_FILTER TranslateSampleFilter(const SampleFilter filter);
+	static D3D12_TEXTURE_ADDRESS_MODE TranslateTextureAddressMode(const TextureAddressMode am);
 
-	ID3D12RootSignature* LoadRootSignature(u64 hash, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
-	ID3D12RootSignature* LoadRootSignature(u64 hash);
+	RootSignature* LoadRootSignature(const RootSignature::Desc& desc);
+	void CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders, RootSignature::Desc& desc);
+	ComPtr<ID3DBlob> GenerateRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc);
 
 	ComPtr<IDXGIFactory4> _Factory;
 	ComPtr<IDXGIAdapter1> _Adapter;
 	ComPtr<ID3D12Device5> _Device;
-
-	std::unordered_map<u64, ComPtr<ID3D12RootSignature>> _RootSignatureCache;
-	
  
 };
 

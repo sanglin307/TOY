@@ -10,6 +10,7 @@ enum class RenderPassType
 class RenderPass
 {
 public:
+	virtual ~RenderPass() {};
 	virtual void Init(RenderDevice* device) = 0;
 	virtual void Render(RenderDevice* device, RenderContext* ctx) = 0;
 	virtual void AddPrimitive(PrimitiveSceneInfo* primitive) = 0;
@@ -23,6 +24,7 @@ protected:
 class RenderPassTest final : public RenderPass
 {
 public:
+	virtual ~RenderPassTest();
 	virtual void Init(RenderDevice* device) override;
 	virtual void Render(RenderDevice* device, RenderContext* ctx) override;
 	virtual void AddPrimitive(PrimitiveSceneInfo* primitive) override;
@@ -39,4 +41,6 @@ private:
 	GraphicPipeline* PSO = nullptr;
 	RenderBuffer* UniformBuffer;
 	SceneConstantBuffer UniformData = {};
+	RenderTexture* _texture;
+	Sampler* _sampler;
 };

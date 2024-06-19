@@ -22,3 +22,8 @@ u64 HashStreamEnd(std::any handle)
 	XXH64_freeState(state);
 	return hash;
 }
+
+u64 Hash(const void* data, u64 size)
+{
+	return XXH64(data, size, 0);
+}

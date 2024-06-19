@@ -21,6 +21,7 @@ public:
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) = 0;
 	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) = 0;
 	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) = 0;
+	virtual Sampler* CreateSampler(const Sampler::Desc& desc) = 0;
 	virtual Fence* CreateFence(u64 initValue) = 0;
 
 	RHI_API void CreateInputLayout(const ShaderResource* shader, InputSlotMapping slotMapping, InputLayout& inputLayout);
@@ -57,8 +58,9 @@ protected:
 	std::list<DelayDeleteResource> _DelayDeleteResources;
 	ContextManager* _ContextManager;
 	DescriptorManager* _DescriptorManager;
-	RootSignature* _GlobalRootSignature;
 	std::unordered_map<u64, GraphicPipeline*> _PipelineCache;
 	std::unordered_map<std::string, GraphicPipeline*> _PipelineCacheByName;
 	std::unordered_map<u64, ShaderResource*> _ShaderCache;
+	std::unordered_map<u64, Sampler*> _SamplerCache;
+	std::unordered_map<u64, RootSignature*> _RootSignatureCache;
 };
