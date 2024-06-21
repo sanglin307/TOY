@@ -19,21 +19,39 @@ void RenderPassTest::Init(RenderDevice* device)
 	UniformBuffer = device->CreateBuffer(udesc);
 	PSO->BindParameter("SceneConstantBuffer", UniformBuffer);
 
-	Image* image = ImageReader::Instance().Load("GTA.png");
-	RenderTexture::Desc td = {
+	Image* image1 = ImageReader::Instance().Load("GTA.png");
+	RenderTexture::Desc td1 = {
 		.Name = "GTA.png",
-		.Width = image->Width,
-		.Height = image->Height,
+		.Width = image1->Width,
+		.Height = image1->Height,
 		.DepthOrArraySize = 1,
 		.MipLevels = 1,
-		.Format = image->Format,
+		.Format = image1->Format,
 		.Usage = (u32)ResourceUsage::ShaderResource,
 		.Dimension = ResourceDimension::Texture2D,
-		.Data = image->Data,
-		.Size = image->Size
+		.Data = image1->Data,
+		.Size = image1->Size
 	};
-	_texture = device->CreateTexture(td);
-	PSO->BindParameter("g_texture", _texture);
+	_texture1 = device->CreateTexture(td1);
+	PSO->BindParameter("texture1", _texture1);
+
+	Image* image2 = ImageReader::Instance().Load("Valorant.png");
+	RenderTexture::Desc td2 = {
+		.Name = "Valorant.png",
+		.Width = image2->Width,
+		.Height = image2->Height,
+		.DepthOrArraySize = 1,
+		.MipLevels = 1,
+		.Format = image2->Format,
+		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Dimension = ResourceDimension::Texture2D,
+		.Data = image2->Data,
+		.Size = image2->Size
+	};
+	_texture2 = device->CreateTexture(td2);
+	PSO->BindParameter("texture2", _texture2);
+
+	
 
 	Sampler::Desc sd;
 	_sampler = device->CreateSampler(sd);
@@ -43,7 +61,8 @@ void RenderPassTest::Init(RenderDevice* device)
 RenderPassTest::~RenderPassTest()
 {
 	delete UniformBuffer;
-	delete _texture;
+	delete _texture1;
+	delete _texture2;
 	delete _sampler;
 }
 

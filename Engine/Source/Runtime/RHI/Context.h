@@ -55,6 +55,7 @@ public:
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
 	virtual void TransitionState(ResourceState destState, RenderResource* res) = 0;
 	virtual void SetGraphicShaderParameter(const ShaderParameter* param) = 0;
+	virtual void SetGraphicTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params) = 0;
 	virtual void DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
 
 	RenderContext* ReadyForRecord();

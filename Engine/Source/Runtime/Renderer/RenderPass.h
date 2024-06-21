@@ -41,6 +41,7 @@ private:
 	GraphicPipeline* PSO = nullptr;
 	RenderBuffer* UniformBuffer;
 	SceneConstantBuffer UniformData = {};
-	RenderTexture* _texture;
+	RenderTexture* _texture1;
+	RenderTexture* _texture2;
 	Sampler* _sampler;
 };

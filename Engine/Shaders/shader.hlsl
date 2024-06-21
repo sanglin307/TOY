@@ -11,7 +11,8 @@ struct PSInput
 	float4 color : COLOR;
 };
 
-Texture2D g_texture;
+Texture2D texture1;
+Texture2D texture2;
 SamplerState g_sampler;
 
 PSInput VSMain(float3 position : POSITION, float2 uv :TEXCOORD, float3 color : COLOR)
@@ -27,7 +28,7 @@ PSInput VSMain(float3 position : POSITION, float2 uv :TEXCOORD, float3 color : C
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-    float4 color = g_texture.Sample(g_sampler, input.uv);
-    color = lerp(input.color, color,0.5);
-	return color;
+    float4 c1 = texture1.Sample(g_sampler, input.uv);
+    float4 c2 = texture2.Sample(g_sampler, input.uv);
+    return lerp(c1, c2, 0.5);
 }

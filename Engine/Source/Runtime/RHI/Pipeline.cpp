@@ -14,18 +14,18 @@ void GraphicPipeline::BindParameter(RenderContext* ctx)
 		if (!pair.second->Resource)
 			continue;
 
-		ctx->SetGraphicShaderParameter(pair.second);
+		ShaderBindType t = pair.second->BindType;
+		if (t == ShaderBindType::RootCBV || t == ShaderBindType::RootSRV || t == ShaderBindType::RootUAV)
+			ctx->SetGraphicShaderParameter(pair.second);
 	}
+
+	ctx->SetGraphicTableParameter(_RootSignature, _CBVs);
+	ctx->SetGraphicTableParameter(_RootSignature, _SRVs);
+	ctx->SetGraphicTableParameter(_RootSignature, _UAVs);
+	ctx->SetGraphicTableParameter(_RootSignature, _Samplers);
+
 }
 
-ShaderParameter* GraphicPipeline::GetParameter(const std::string& name)
-{
-	auto iter = _ShaderParameters.find(name);
-	if (iter == _ShaderParameters.end())
-		return nullptr;
-
-	return iter->second;
-}
 
 void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders)
 {
@@ -82,6 +82,7 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableCBV];
 						param->TableOffset = ParamNum[(u32)ShaderBindType::TableCBV];
 						ParamNum[(u32)ShaderBindType::TableCBV]++;
+						_CBVs.push_back(param);
 					}
 				}
 				else if ((res.Type == ShaderInputType::TBUFFER || res.Type == ShaderInputType::TEXTURE || res.Type == ShaderInputType::STRUCTURED ||
@@ -102,6 +103,7 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableSRV];
 						param->TableOffset = ParamNum[(u32)ShaderBindType::TableSRV];
 						ParamNum[(u32)ShaderBindType::TableSRV]++;
+						_SRVs.push_back(param);
 					}
 				}
 				else if ((res.Type == ShaderInputType::UAV_RWTYPED || res.Type == ShaderInputType::UAV_RWSTRUCTURED || res.Type == ShaderInputType::UAV_RWBYTEADDRESS ||
@@ -123,6 +125,7 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableUAV];
 						param->TableOffset = ParamNum[(u32)ShaderBindType::TableUAV];
 						ParamNum[(u32)ShaderBindType::TableUAV]++;
+						_UAVs.push_back(param);
 					}
 				}
 				else if (res.Type == ShaderInputType::SAMPLER)
@@ -132,6 +135,7 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 					param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableSampler];
 					param->TableOffset = ParamNum[(u32)ShaderBindType::TableSampler];
 					ParamNum[(u32)ShaderBindType::TableSampler]++;
+					_Samplers.push_back(param);
 				}
 			}
 		}

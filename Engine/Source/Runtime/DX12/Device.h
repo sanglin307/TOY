@@ -10,7 +10,7 @@ public :
     virtual CommandQueue* CreateCommandQueue(const CommandType type) override;
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) override;
-	virtual DescriptorHeap* CreateDescriptorHeap(DescriptorType type, bool gpuVisible) override;
+	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) override;
 	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& desc) override;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
 	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) override;
@@ -22,6 +22,8 @@ public :
 	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) override;
 
 	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
+
+	void CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESCRIPTOR_HANDLE src, D3D12_DESCRIPTOR_HEAP_TYPE  heapType);
  
 private:
 	void ReportLiveObjects();

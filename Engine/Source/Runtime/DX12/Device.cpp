@@ -237,7 +237,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
     };
 
-    DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetHeap(DescriptorType::RVT));
+    DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUHeap(DescriptorType::RVT));
     CommandQueue* queue = _ContextManager->GetDirectQueue();
 
     ComPtr<IDXGISwapChain1> swapChain;
@@ -257,12 +257,12 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
 
         std::vector<RenderTexture*> rtResources;
         rtResources.resize(info.FrameCount);
-        DescriptorAllocation rvtAlloc = rvtHeap->Allocate(info.FrameCount);
-        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = rvtHeap->CPUHandle(rvtAlloc);
         for (u32 n = 0; n < info.FrameCount; n++)
         {
             ComPtr<ID3D12Resource> res;
             check(SUCCEEDED(swapChain3->GetBuffer(n, IID_PPV_ARGS(&res))));
+            DescriptorAllocation da = rvtHeap->Allocate();
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = rvtHeap->CPUHandle(da);
             _Device->CreateRenderTargetView(res.Get(), nullptr, cpuHandle);
 
             RenderTexture::Desc desc = {
@@ -274,13 +274,12 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
             };
 
             DX12RenderTexture* dx12Resource = new DX12RenderTexture(this,desc, ResourceState::Present,res);
-            dx12Resource->SetRenderTargetView(rvtAlloc, cpuHandle);
+            dx12Resource->SetRenderTargetView(da, cpuHandle);
 
             rtResources[n] = dx12Resource;
-            cpuHandle.ptr += rvtHeap->GetStride();
         }
 
-        return new DX12Swapchain(info, rvtAlloc, rtResources, swapChain3);
+        return new DX12Swapchain(info, rtResources, swapChain3);
     }
 
 
@@ -401,6 +400,8 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             });
     }
 
+    DescriptorHeap* heap = _DescriptorManager->GetGPUHeap(DescriptorType::CBV_SRV_UAV);
+
     if (desc.TableCBVNum > 0)
     {
         ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
@@ -423,7 +424,8 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
 
         paramDesc.push_back(RootSignatureParamDesc{
            .Type = ShaderBindType::TableCBV,
-           .DescriptorNum = desc.TableCBVNum
+           .DescriptorNum = desc.TableCBVNum,
+           .Alloc = heap->AllocateBlock(desc.TableCBVNum)
             });
     }
 
@@ -449,7 +451,8 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
 
         paramDesc.push_back(RootSignatureParamDesc{
            .Type = ShaderBindType::TableSRV,
-           .DescriptorNum = desc.TableSRVNum
+           .DescriptorNum = desc.TableSRVNum,
+           .Alloc = heap->AllocateBlock(desc.TableSRVNum)
             });
     }
 
@@ -475,10 +478,12 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
 
         paramDesc.push_back(RootSignatureParamDesc{
            .Type = ShaderBindType::TableUAV,
-           .DescriptorNum = desc.TableUAVNum
+           .DescriptorNum = desc.TableUAVNum,
+           .Alloc = heap->AllocateBlock(desc.TableUAVNum)
             });
     }
 
+    heap = _DescriptorManager->GetGPUHeap(DescriptorType::Sampler);
     if (desc.TableSamplerNum > 0)
     {
         ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
@@ -501,7 +506,8 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
 
         paramDesc.push_back(RootSignatureParamDesc{
            .Type = ShaderBindType::TableSampler,
-           .DescriptorNum = desc.TableSamplerNum
+           .DescriptorNum = desc.TableSamplerNum,
+           .Alloc = heap->AllocateBlock(desc.TableSamplerNum)
             });
     }
 
@@ -1093,6 +1099,11 @@ DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
     return std::any_cast<DXGI_FORMAT>(_Formats[static_cast<u32>(format)].PlatformFormat);
 }
 
+void DX12Device::CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESCRIPTOR_HANDLE src, D3D12_DESCRIPTOR_HEAP_TYPE  heapType)
+{
+    _Device->CopyDescriptorsSimple(1, dest, src, heapType);
+}
+
 RootSignature* DX12Device::LoadRootSignature(const RootSignature::Desc& rd)
 {
     u64 hash = rd.HashResult();
@@ -1106,6 +1117,8 @@ RootSignature* DX12Device::LoadRootSignature(const RootSignature::Desc& rd)
     ComPtr<ID3DBlob> signature = GenerateRootSignatureBlob(rd,paramDesc);
     ComPtr<ID3D12RootSignature> rs;
     check(SUCCEEDED(_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rs))));
+    std::string rsName = std::format("RCBV_{}_RSRV_{}_RUAV_{}_TCBV_{}_TSRV_{}_TUAV_{}_TS_{}", rd.RootCBVNum, rd.RootSRVNum, rd.RootUAVNum, rd.TableCBVNum, rd.TableSRVNum, rd.TableUAVNum, rd.TableSamplerNum);
+    rs->SetName(PlatformUtils::UTF8ToUTF16(rsName).c_str());
     RootSignature* obj = new DX12RootSignature(rd,paramDesc,rs);
 
     _RootSignatureCache[hash] = obj;
@@ -1242,13 +1255,12 @@ Sampler* DX12Device::CreateSampler(const Sampler::Desc& desc)
         .MaxLOD = desc.MaxLOD
     };
 
-    DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetHeap(DescriptorType::Sampler));
-    DescriptorAllocation descriptor = heap->Allocate(1);
+    DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::Sampler));
+    DescriptorAllocation descriptor = heap->Allocate();
     D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(descriptor);
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = heap->GPUHandle(descriptor);
     _Device->CreateSampler(&samplerDesc, cpuHandle);
 
-    Sampler* s = new DX12Sampler(desc,descriptor, cpuHandle, gpuHandle);
+    Sampler* s = new DX12Sampler(desc,descriptor, cpuHandle);
     _SamplerCache[hash] = s;
 
     return s;

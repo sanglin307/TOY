@@ -123,13 +123,12 @@ enum class DescriptorType
     Max
 };
 
+class DescriptorHeap;
 struct DescriptorAllocation
 {
-    u32 Offset;
-    u32 Count;
+    i32 Offset = -1;
+    DescriptorHeap* Heap = nullptr;
 };
-
-
 
 class DescriptorHeap
 {
@@ -138,32 +137,37 @@ public:
     {
         DescriptorType Type;
         u32 Number;
-        u32 Stride;
         bool GPUVisible;
     };
 
     RHI_API DescriptorHeap();
     virtual ~DescriptorHeap() {};
     virtual std::any Handle() { return nullptr; }
-    RHI_API DescriptorAllocation Allocate(u32 num);
-    RHI_API void Free(DescriptorAllocation& pos);
-    u32 GetAvailableNum();
+    RHI_API DescriptorAllocation Allocate();
+    RHI_API DescriptorAllocation AllocateBlock(u32 count);
+    RHI_API void Free(const DescriptorAllocation& pos);
+    RHI_API void FreeBlock(const DescriptorAllocation& pos);
     u32 GetMaxNumber() { return _Config.Number; }
-    u32 GetStride() { return _Config.Stride; }
+    u32 GetStride() { return _Stride; }
   
 protected:
     Config _Config;
- 
-    static constexpr u32 cHeapDescriptorMax = 4000;
-    static constexpr u32 cSingleDescriptorNum = 2048;
+    u32 _Stride;
+    // for cpu stage resource.
+    // if num > cPreAllocateDescriptorMaxNum , increase it.
+    static constexpr u32 cPreAllocateDescriptorMaxNum = 8192;
+    std::bitset<cPreAllocateDescriptorMaxNum> _DescriptorBitSet;
+    u32 _DescriptorAllocatedNum = 0;
 
-    // for single descriptor allocation ,use bit set.
-    // for multiple descriptor allocation, use list.
-    std::bitset<cSingleDescriptorNum> _SingleDescriptorBitSet;
-    u32 _SingleDescriptorAllocatedNum = 0;
-    std::list<DescriptorAllocation> _AllocList;
-    u32 _MultipleDescriptorAllocatedNum = 0;
-    std::list<DescriptorAllocation> _FreeList;
+    // for gpu heap.
+    struct Block
+    {
+        u32 Offset;
+        u32 Count;
+    };
+
+    std::list<Block> _AllocBlocks;
+    std::list<Block> _FreeBlocks;
 };
 
 class RenderDevice;
@@ -173,13 +177,27 @@ public:
     RHI_API DescriptorManager(RenderDevice* device);
     RHI_API ~DescriptorManager();
 
-    DescriptorHeap* GetHeap(DescriptorType type)
+    DescriptorHeap* GetCPUHeap(DescriptorType type)
     {
-        return _Heaps[(u32)type];
+        check(type != DescriptorType::DSV);
+        check(type != DescriptorType::RVT);
+        return _CPUHeaps[(u32)type];
     }
- 
+
+    DescriptorHeap* GetGPUHeap(DescriptorType type)
+    {
+        return _GPUHeaps[(u32)type];
+    }
+
+    constexpr static u32 cCPUSRVDescriptorNum = 8000;
+    constexpr static u32 cCPUSamplerDescriptorNum = 500;
+    constexpr static u32 cGPUSRVDescriptorNum = 1000;
+    constexpr static u32 cGPUSamplerDescriptorNum = 100;
+    constexpr static u32 cGPURTVDSVDescriptorNum = 100;
+
 private:
-    DescriptorHeap* _Heaps[(u32)DescriptorType::Max];
+    DescriptorHeap* _CPUHeaps[(u32)DescriptorType::Max];
+    DescriptorHeap* _GPUHeaps[(u32)DescriptorType::Max];
     RenderDevice* _Device;
 };
 

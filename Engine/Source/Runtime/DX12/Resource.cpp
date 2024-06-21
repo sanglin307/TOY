@@ -9,14 +9,14 @@ std::any DX12DescriptorHeap::Handle()
 D3D12_CPU_DESCRIPTOR_HANDLE DX12DescriptorHeap::CPUHandle(DescriptorAllocation& pos)
 {
     D3D12_CPU_DESCRIPTOR_HANDLE base = _Handle->GetCPUDescriptorHandleForHeapStart();
-    base.ptr += pos.Offset * _Config.Stride;
+    base.ptr += pos.Offset * _Stride;
     return base;
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE DX12DescriptorHeap::GPUHandle(DescriptorAllocation& pos)
 {
     D3D12_GPU_DESCRIPTOR_HANDLE base = _Handle->GetGPUDescriptorHandleForHeapStart();
-    base.ptr += pos.Offset * _Config.Stride;
+    base.ptr += pos.Offset * _Stride;
     return base;
 }
 
@@ -55,32 +55,19 @@ D3D12_DESCRIPTOR_HEAP_TYPE TranslateDescriptorType(DescriptorType type)
     return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
 }
 
-DescriptorHeap* DX12Device::CreateDescriptorHeap(DescriptorType type, bool gpuVisible)
+DescriptorHeap* DX12Device::CreateDescriptorHeap(const DescriptorHeap::Config& c)
 {
     check(_Device);
-
-    D3D12_DESCRIPTOR_HEAP_TYPE heapType = TranslateDescriptorType(type);
-    if (heapType == D3D12_DESCRIPTOR_HEAP_TYPE_RTV || heapType == D3D12_DESCRIPTOR_HEAP_TYPE_DSV)
-    {
-        gpuVisible = false;
-    }
-
+ 
     ComPtr<ID3D12DescriptorHeap> heap;
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {
-        .Type = heapType,
-        .NumDescriptors = DescriptorHeap::cHeapDescriptorMax,
-        .Flags = gpuVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE
+        .Type = TranslateDescriptorType(c.Type),
+        .NumDescriptors = c.Number,
+        .Flags = c.GPUVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE
     };
     check(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
 
-    DescriptorHeap::Config hc = {
-        .Type = type,
-        .Number = DescriptorHeap::cHeapDescriptorMax,
-        .Stride = _Device->GetDescriptorHandleIncrementSize(heapType),
-        .GPUVisible = gpuVisible,
-    };
-
-    return new DX12DescriptorHeap(hc, heap);
+    return new DX12DescriptorHeap(c, _Device->GetDescriptorHandleIncrementSize(heapDesc.Type),heap);
 }
 
 RenderTexture* DX12Device::CreateTexture(const RenderTexture::Desc& desc)
@@ -169,12 +156,11 @@ RenderTexture* DX12Device::CreateTexture(const RenderTexture::Desc& desc)
              }
         };
 
-        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetHeap(DescriptorType::CBV_SRV_UAV));
-        DescriptorAllocation srvDescriptor = heap->Allocate(1);
+        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        DescriptorAllocation srvDescriptor = heap->Allocate();
         D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(srvDescriptor);
-        D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = heap->GPUHandle(srvDescriptor);
         _Device->CreateShaderResourceView(resource.Get(), &srvDesc, cpuHandle);
-        dstTexture->SetShaderResourcelView(srvDescriptor, cpuHandle,gpuHandle);
+        dstTexture->SetShaderResourcelView(srvDescriptor, cpuHandle);
     }
 
     return dstTexture;
@@ -227,16 +213,15 @@ RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
                  .SizeInBytes = (UINT)info.Size
             };
            
-            DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetHeap(DescriptorType::CBV_SRV_UAV));
-            DescriptorAllocation descriptor = heap->Allocate(1);
+            DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+            DescriptorAllocation descriptor = heap->Allocate();
             D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(descriptor);
-            D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = heap->GPUHandle(descriptor);
             _Device->CreateConstantBufferView(&cbvDesc, cpuHandle);
 
             D3D12_RANGE range = {};
             check(SUCCEEDED(resource->Map(0, &range, (void**)&uniformDataMap)));
             renderBuffer->_UniformDataMapPointer = uniformDataMap;
-            renderBuffer->SetConstBufferView(descriptor,cpuHandle,gpuHandle);
+            renderBuffer->SetConstBufferView(descriptor,cpuHandle);
         }
 
         return renderBuffer;
@@ -298,6 +283,3 @@ void DX12RenderBuffer::UploadData(u8* data, size_t size)
     std::memcpy(_UniformDataMapPointer, data, size);
 }
  
-DX12Sampler::~DX12Sampler()
-{
-}

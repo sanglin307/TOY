@@ -271,6 +271,7 @@ struct RootSignatureParamDesc
 {
 	ShaderBindType Type;
 	u32 DescriptorNum;
+	DescriptorAllocation Alloc;
 };
 
 class RootSignature
@@ -294,7 +295,13 @@ public:
 
 	constexpr static u32 cRootDescriptorSpace = 1;
 
-	virtual ~RootSignature() {};
+	virtual ~RootSignature()
+	{
+		for (u32 i = 0; i < _ParamsDesc.size(); i++)
+		{
+			_ParamsDesc[i].Alloc.Heap->FreeBlock(_ParamsDesc[i].Alloc);
+		}
+	};
 	virtual std::any Handle() { return nullptr; }
 
 	const std::vector<RootSignatureParamDesc>& GetParamDesc() const
@@ -374,7 +381,6 @@ public:
 
 	RHI_API void BindParameter(RenderContext* ctx);
 	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
-	RHI_API ShaderParameter* GetParameter(const std::string& name);
 	RHI_API RootSignature* GetRootSignature() const
 	{
 		return _RootSignature;
@@ -386,6 +392,12 @@ public:
 protected:
 	
 	std::unordered_map<std::string, ShaderParameter*> _ShaderParameters;
+	// shader parameter table data.
+	std::vector<ShaderParameter*> _CBVs;
+	std::vector<ShaderParameter*> _SRVs;
+	std::vector<ShaderParameter*> _UAVs;
+	std::vector<ShaderParameter*> _Samplers;
+
 	RootSignature* _RootSignature;
 };
 
