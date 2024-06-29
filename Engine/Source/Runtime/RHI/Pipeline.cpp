@@ -80,7 +80,7 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 						check(ParamNum[(u32)ShaderBindType::TableCBV] < desc.TableCBVNum);
 						param->BindType = ShaderBindType::TableCBV;
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableCBV];
-						param->TableOffset = ParamNum[(u32)ShaderBindType::TableCBV];
+						param->TableOffset = res.BindPoint;
 						ParamNum[(u32)ShaderBindType::TableCBV]++;
 						_CBVs.push_back(param);
 					}
@@ -101,7 +101,7 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 						check(ParamNum[(u32)ShaderBindType::TableSRV] < desc.TableSRVNum);
 						param->BindType = ShaderBindType::TableSRV;
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableSRV];
-						param->TableOffset = ParamNum[(u32)ShaderBindType::TableSRV];
+						param->TableOffset = res.BindPoint;
 						ParamNum[(u32)ShaderBindType::TableSRV]++;
 						_SRVs.push_back(param);
 					}
@@ -123,7 +123,7 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 						check(ParamNum[(u32)ShaderBindType::TableUAV] < desc.TableUAVNum);
 						param->BindType = ShaderBindType::TableUAV;
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableUAV];
-						param->TableOffset = ParamNum[(u32)ShaderBindType::TableUAV];
+						param->TableOffset = res.BindPoint;
 						ParamNum[(u32)ShaderBindType::TableUAV]++;
 						_UAVs.push_back(param);
 					}
@@ -133,7 +133,7 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 					check(ParamNum[(u32)ShaderBindType::TableSampler] < desc.TableSamplerNum);
 					param->BindType = ShaderBindType::TableSampler;
 					param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableSampler];
-					param->TableOffset = ParamNum[(u32)ShaderBindType::TableSampler];
+					param->TableOffset = res.BindPoint;
 					ParamNum[(u32)ShaderBindType::TableSampler]++;
 					_Samplers.push_back(param);
 				}

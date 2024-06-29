@@ -30,5 +30,5 @@ float4 PSMain(PSInput input) : SV_TARGET
 {
     float4 c1 = texture1.Sample(g_sampler, input.uv);
     float4 c2 = texture2.Sample(g_sampler, input.uv);
-    return lerp(c1, c2, 0.5);
+    return lerp(c1, c2, 0.8);
 }

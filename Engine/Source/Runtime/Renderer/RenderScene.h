@@ -2,13 +2,13 @@
 
 class SceneRenderer;
 
-struct PrimitiveSceneInfo
+struct RenderCluster
 {
-	~PrimitiveSceneInfo();
+	~RenderCluster();
 	InputLayout VertexLayout;
 	std::vector<MeshVertexBuffer>  VertexBuffers;
 	RenderBuffer* IndexBuffer = nullptr;
-	u64 PrimitiveId;
+	u32 PrimitiveId;
 };
 
 class RenderScene final: public IRenderScene
@@ -23,5 +23,5 @@ public:
 private:
 	GameWorld* _World;
 	SceneRenderer* _Renderer;
-	std::vector<PrimitiveSceneInfo*> _Primitives;
+	std::vector<RenderCluster*> _Clusters;
 };

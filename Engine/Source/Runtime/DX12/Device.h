@@ -13,8 +13,8 @@ public :
 	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) override;
 	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& desc) override;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
-	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) override;
-	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) override;
+	virtual RenderBuffer* CreateBuffer(const std::string& name, const RenderBuffer::Desc& info) override;
+	virtual RenderTexture* CreateTexture(const std::string& name,const RenderTexture::Desc& desc) override;
 	virtual Sampler* CreateSampler(const Sampler::Desc& desc) override;
 	virtual Fence* CreateFence(u64 initValue) override;
 
@@ -49,7 +49,7 @@ private:
 	static D3D12_STENCIL_OP TranslateStencilOp(const StencilOp op);
 	static D3D12_RESOURCE_STATES TranslateResourceState(const ResourceState state);
 	static D3D_PRIMITIVE_TOPOLOGY TranslatePrimitiveTopology(const PrimitiveTopology topology);
-	static D3D12_FILTER TranslateSampleFilter(const SampleFilter filter);
+	static D3D12_FILTER TranslateSampleFilter(const SampleFilterMode minfilter, const SampleFilterMode magfilter, const SampleFilterMode mipfilter);
 	static D3D12_TEXTURE_ADDRESS_MODE TranslateTextureAddressMode(const TextureAddressMode am);
 
 	RootSignature* LoadRootSignature(const RootSignature::Desc& desc);
@@ -59,6 +59,8 @@ private:
 	ComPtr<IDXGIFactory4> _Factory;
 	ComPtr<IDXGIAdapter1> _Adapter;
 	ComPtr<ID3D12Device5> _Device;
+
+	RootSignature* _CachedRootSignature = nullptr; // if cache one satisfy our need ,use it.
  
 };
 

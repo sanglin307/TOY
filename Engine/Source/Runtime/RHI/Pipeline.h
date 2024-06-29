@@ -299,6 +299,9 @@ public:
 	{
 		for (u32 i = 0; i < _ParamsDesc.size(); i++)
 		{
+			if (!_ParamsDesc[i].Alloc.Heap)
+				continue;
+
 			_ParamsDesc[i].Alloc.Heap->FreeBlock(_ParamsDesc[i].Alloc);
 		}
 	};
@@ -312,6 +315,27 @@ public:
 	const Desc& GetDesc() const
 	{
 		return _Info;
+	}
+
+	bool Satisfy(const RootSignature::Desc& desc)
+	{
+		if (desc.RootCBVNum > _Info.RootCBVNum)
+			return false;
+		if (desc.RootSRVNum > _Info.RootSRVNum)
+			return false;
+		if (desc.RootUAVNum > _Info.RootUAVNum)
+			return false;
+
+		if (desc.TableCBVNum > _Info.TableCBVNum)
+			return false;
+		if (desc.TableSRVNum > _Info.TableSRVNum)
+			return false;
+		if (desc.TableUAVNum > _Info.TableUAVNum)
+			return false;
+		if (desc.TableSamplerNum > _Info.TableSamplerNum)
+			return false;
+
+		return true;
 	}
  
 protected:

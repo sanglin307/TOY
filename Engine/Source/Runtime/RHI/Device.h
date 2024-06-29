@@ -19,8 +19,8 @@ public:
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) = 0;
 	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) = 0;
 	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) = 0;
-	virtual RenderBuffer* CreateBuffer(const RenderBuffer::Desc& desc) = 0;
-	virtual RenderTexture* CreateTexture(const RenderTexture::Desc& desc) = 0;
+	virtual RenderBuffer* CreateBuffer(const std::string& name, const RenderBuffer::Desc& info) = 0;
+	virtual RenderTexture* CreateTexture(const std::string& name, const RenderTexture::Desc& desc) = 0;
 	virtual Sampler* CreateSampler(const Sampler::Desc& desc) = 0;
 	virtual Fence* CreateFence(u64 initValue) = 0;
 

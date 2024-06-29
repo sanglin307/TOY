@@ -1,6 +1,6 @@
 #include "Private.h"
 
-PrimitiveSceneInfo::~PrimitiveSceneInfo()
+RenderCluster::~RenderCluster()
 {
 	for (auto v : VertexBuffers)
 	{
@@ -20,7 +20,7 @@ RenderScene::RenderScene(GameWorld* world,SceneRenderer* renderer)
 
 RenderScene::~RenderScene()
 {
-	for (PrimitiveSceneInfo* p : _Primitives)
+	for (RenderCluster* p : _Clusters)
 	{
 		delete p;
 	}
@@ -28,54 +28,79 @@ RenderScene::~RenderScene()
 
 void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 {
-	auto iter = std::find_if(_Primitives.begin(), _Primitives.end(), [primitive](const PrimitiveSceneInfo* info) -> bool {
-		return primitive->PrimitiveId == info->PrimitiveId;
+	auto iter = std::find_if(_Clusters.begin(), _Clusters.end(), [primitive](const RenderCluster* info) -> bool {
+		return primitive->GetPrimitiveId() == info->PrimitiveId;
 		});
 
-	check(iter == _Primitives.end());
-
-	PrimitiveSceneInfo* info = new PrimitiveSceneInfo;
-	info->PrimitiveId = primitive->PrimitiveId;
-
-	const std::array<VertexData,(u32)VertexAttribute::Max>& vertexData = primitive->MeshData->GetVertexData();
+	check(iter == _Clusters.end());
 
 	RenderDevice* device = _Renderer->GetDevice();
-	for (u32 i=0;i < vertexData.size(); i++)
+	if (primitive->GetType() == PrimitiveType::Mesh)
 	{
-		const VertexData& d = vertexData[i];
-		if (!d.Size)
-			continue;
+		RenderCluster* cluster = new RenderCluster;
+		cluster->PrimitiveId = primitive->GetPrimitiveId();
 
-		RenderBuffer::Desc desc = {
-			 .Size = d.Size,
-			 .Stride = d.GetStride(),
-			 .Name = std::format("VertexBuffer_{}_{}",primitive->PrimitiveId,i),
-			 .Usage = (u32)ResourceUsage::VertexBuffer,
-			 .CpuAccess = 0,
-			 .Alignment = true,
-			 .InitData = d.Data
-		};
+		Mesh* mesh = static_cast<Mesh*>(primitive);
+		const std::vector<MeshSegment*>& segments = mesh->GetSegments();
+		for (MeshSegment* s : segments)
+		{
+			const std::array<VertexData, (u32)VertexAttribute::Max>& vertexData = s->GetVertexData();
+			for (u32 i = 0; i < vertexData.size(); i++)
+			{
+				const VertexData& d = vertexData[i];
+				if (!d.Size)
+					continue;
 
-		info->VertexBuffers.push_back(MeshVertexBuffer{
-			.Attribute = (VertexAttribute)i,
-			.Buffer = device->CreateBuffer(desc)
-			});
+				RenderBuffer::Desc desc = {
+					 .Size = d.Size,
+					 .Stride = d.GetStride(),
+					 .Usage = (u32)ResourceUsage::VertexBuffer,
+					 .CpuAccess = 0,
+					 .Alignment = true,
+					 .InitData = d.Data
+				};
+
+				cluster->VertexBuffers.push_back(MeshVertexBuffer{
+					.Attribute = (VertexAttribute)i,
+					.Buffer = device->CreateBuffer(std::format("VertexBuffer_{}_{}",cluster->PrimitiveId,i),desc)
+					});
+			}
+
+			const VertexData& indexData = s->GetIndexData();
+			if (indexData.Size > 0)
+			{
+				RenderBuffer::Desc desc = {
+					 .Size = indexData.Size,
+					 .Stride = indexData.GetStride(),
+					 .Usage = (u32)ResourceUsage::IndexBuffer,
+					 .CpuAccess = 0,
+					 .Alignment = true,
+					 .InitData = indexData.Data
+				};
+
+				cluster->IndexBuffer = device->CreateBuffer(std::format("IndexBuffer_{}", cluster->PrimitiveId), desc);
+				_Clusters.push_back(cluster);
+				_Renderer->AddCluster(cluster);
+			}
+		}
 	}
-
-	_Primitives.push_back(info);
-	_Renderer->AddPrimitive(info);
+	else
+	{
+		check(0);
+	}
+	
 }
 
 void RenderScene::RemovePrimitive(PrimitiveComponent* primitive)
 {
-	auto iter = std::find_if(_Primitives.begin(), _Primitives.end(), [primitive](const PrimitiveSceneInfo* info) -> bool {
-		           return primitive->PrimitiveId == info->PrimitiveId;
+	auto iter = std::find_if(_Clusters.begin(), _Clusters.end(), [primitive](const RenderCluster* info) -> bool {
+		           return primitive->GetPrimitiveId() == info->PrimitiveId;
 		        });
-	check(iter != _Primitives.end());
+	check(iter != _Clusters.end());
 
-	_Renderer->RemovePrimitive(*iter);
+	_Renderer->RemoveCluster(*iter);
 
 	delete *iter;
-	_Primitives.erase(iter);
+	_Clusters.erase(iter);
 }
 

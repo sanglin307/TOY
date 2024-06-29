@@ -95,6 +95,17 @@ DX12Device::DX12Device()
     _ContextManager = new ContextManager(this);
     _DescriptorManager = new DescriptorManager(this);
 
+    RootSignature::Desc rsDesc = {
+        .RootCBVNum = 4,
+        .RootSRVNum = 6,
+        .RootUAVNum = 2,
+        .TableCBVNum = 100,
+        .TableSRVNum = 200,
+        .TableUAVNum = 100,
+        .TableSamplerNum = 100
+    };
+    _CachedRootSignature = LoadRootSignature(rsDesc);
+
 }
 
 void DX12Device::ReportLiveObjects()
@@ -291,6 +302,11 @@ void DX12Device::CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)Sha
 {
     desc = {};
     std::set<std::string> paramSet;
+    u32 maxCBVBindPoint = 0;
+    u32 maxSRVBindPoint = 0;
+    u32 maxUAVBindPoint = 0;
+    u32 maxSamplerBindPoint = 0;
+
     for (u32 i = 0; i < (u32)ShaderProfile::MAX; i++)
     {
         if (!shaders[i])
@@ -308,16 +324,20 @@ void DX12Device::CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)Sha
                 {
                     if (r.BindSpace == RootSignature::cRootDescriptorSpace)
                         desc.RootCBVNum++;
-                    else
-                        desc.TableCBVNum++;
+                    else if (r.BindPoint + r.BindCount > maxCBVBindPoint)
+                    {
+                        maxCBVBindPoint = r.BindPoint + r.BindCount;
+                    }
                 }
                 else if ((r.Type == ShaderInputType::TBUFFER || r.Type == ShaderInputType::TEXTURE || r.Type == ShaderInputType::STRUCTURED ||
                     r.Type == ShaderInputType::BYTEADDRESS))
                 {
                     if (r.BindSpace == RootSignature::cRootDescriptorSpace)
                         desc.RootSRVNum++;
-                    else
-                        desc.TableSRVNum++;
+                    else if (r.BindPoint + r.BindCount > maxSRVBindPoint)
+                    {
+                        maxSRVBindPoint = r.BindPoint + r.BindCount;
+                    }
                 }
                 else if ((r.Type == ShaderInputType::UAV_RWTYPED || r.Type == ShaderInputType::UAV_RWSTRUCTURED || r.Type == ShaderInputType::UAV_RWBYTEADDRESS ||
                     r.Type == ShaderInputType::UAV_RWSTRUCTURED_WITH_COUNTER || r.Type == ShaderInputType::UAV_FEEDBACKTEXTURE || r.Type == ShaderInputType::UAV_APPEND_STRUCTURED ||
@@ -325,22 +345,42 @@ void DX12Device::CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)Sha
                 {
                     if (r.BindSpace == RootSignature::cRootDescriptorSpace)
                         desc.RootUAVNum++;
-                    else
-                        desc.TableUAVNum++;
+                    else if (r.BindPoint + r.BindCount > maxUAVBindPoint)
+                    {
+                        maxUAVBindPoint = r.BindPoint + r.BindCount;
+                    }
                 }
                 else if (r.Type == ShaderInputType::SAMPLER)
                 {
-                    if (r.BindSpace != RootSignature::cRootDescriptorSpace)
-                        desc.TableSamplerNum++;
+                    if (r.BindSpace != RootSignature::cRootDescriptorSpace && r.BindPoint + r.BindCount > maxSamplerBindPoint)
+                    {
+                        maxSamplerBindPoint = r.BindPoint + r.BindCount;
+                    }
                 }
                 paramSet.insert(r.Name);
             }
         }
     }
+
+    desc.TableCBVNum = maxCBVBindPoint;
+    desc.TableSRVNum = maxSRVBindPoint;
+    desc.TableUAVNum = maxUAVBindPoint;
+    desc.TableSamplerNum = maxSamplerBindPoint;
+ 
 }
 
 ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc)
 {
+    // calculate root signature space limit
+    constexpr static u32 cRootSignatureSizeLimit = 64;   // dword, from dx12 document.
+    constexpr static u32 cRootTableSize = 1; // dword.
+    constexpr static u32 cRootDescriptorsSize = 2; // dword.
+    if ((desc.RootCBVNum + desc.RootSRVNum + desc.RootUAVNum) * cRootDescriptorsSize + 4 * cRootTableSize > cRootSignatureSizeLimit)
+    {
+        check(0);
+        return nullptr;
+    }
+
     std::vector<D3D12_DESCRIPTOR_RANGE1> ranges;
     ranges.reserve(4); // table cbv,srv,uav,sampler.
     std::vector<D3D12_ROOT_PARAMETER1> param;
@@ -409,7 +449,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             .NumDescriptors = desc.TableCBVNum,
             .BaseShaderRegister = 0,
             .RegisterSpace = 0,
-            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
+            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
             .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
 
@@ -436,7 +476,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             .NumDescriptors = desc.TableSRVNum,
             .BaseShaderRegister = 0,
             .RegisterSpace = 0,
-            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
+            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
             .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
 
@@ -463,7 +503,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
            .NumDescriptors = desc.TableUAVNum,
            .BaseShaderRegister = 0,
            .RegisterSpace = 0,
-           .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
+           .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
 
@@ -491,7 +531,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
            .NumDescriptors = desc.TableSamplerNum,
            .BaseShaderRegister = 0,
            .RegisterSpace = 0,
-           .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
+           .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
 
@@ -844,33 +884,30 @@ D3D12_TEXTURE_ADDRESS_MODE DX12Device::TranslateTextureAddressMode(const Texture
     return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 }
 
-D3D12_FILTER DX12Device::TranslateSampleFilter(const SampleFilter filter)
+D3D12_FILTER DX12Device::TranslateSampleFilter(const SampleFilterMode minfilter, const SampleFilterMode magfilter, const SampleFilterMode mipfilter)
 {
-    switch (filter)
-    {
-    case SampleFilter::Min_Mag_Mip_Point:
+    if (minfilter == SampleFilterMode::Point && magfilter == SampleFilterMode::Point && mipfilter == SampleFilterMode::Point)
         return D3D12_FILTER_MIN_MAG_MIP_POINT;
-    case SampleFilter::Min_Mag_Point_Mip_Linear:
-        return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-    case SampleFilter::Min_Point_Mag_Linear_Mip_Point:
-        return D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
-    case SampleFilter::Min_Point_Mag_Mip_Linear:
-        return D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR;
-    case SampleFilter::Min_Linear_Mag_Mip_Point:
+    else if (minfilter == SampleFilterMode::Linear && magfilter == SampleFilterMode::Point && mipfilter == SampleFilterMode::Point)
         return D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-    case SampleFilter::Min_Linear_Mag_Point_Mip_Linear:
+    else if (minfilter == SampleFilterMode::Point && magfilter == SampleFilterMode::Point && mipfilter == SampleFilterMode::Linear)
+        return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+    else if (minfilter == SampleFilterMode::Point && magfilter == SampleFilterMode::Linear && mipfilter == SampleFilterMode::Point)
+        return D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+    else if (minfilter == SampleFilterMode::Point && magfilter == SampleFilterMode::Linear && mipfilter == SampleFilterMode::Linear)
+        return D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+    else if (minfilter == SampleFilterMode::Linear && magfilter == SampleFilterMode::Point && mipfilter == SampleFilterMode::Linear)
         return D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
-    case SampleFilter::Min_Mag_Linear_Mip_Point:
+    else if (minfilter == SampleFilterMode::Linear && magfilter == SampleFilterMode::Linear && mipfilter == SampleFilterMode::Point)
         return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-    case SampleFilter::Min_Mag_Mip_Linear:
+    else if (minfilter == SampleFilterMode::Linear && magfilter == SampleFilterMode::Linear && mipfilter == SampleFilterMode::Linear)
         return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    case SampleFilter::Min_Mag_Anisotropic_Mip_Point:
+    else if (minfilter == SampleFilterMode::Anisotropic && magfilter == SampleFilterMode::Anisotropic && mipfilter != SampleFilterMode::Anisotropic)
         return D3D12_FILTER_MIN_MAG_ANISOTROPIC_MIP_POINT;
-    case SampleFilter::Anisotropic:
+    else if (minfilter == SampleFilterMode::Anisotropic && magfilter == SampleFilterMode::Anisotropic && mipfilter == SampleFilterMode::Anisotropic)
         return D3D12_FILTER_ANISOTROPIC;
-    default:
+    else
         check(0);
-    }
 
     return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
 }
@@ -1106,6 +1143,9 @@ void DX12Device::CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESC
 
 RootSignature* DX12Device::LoadRootSignature(const RootSignature::Desc& rd)
 {
+    if (_CachedRootSignature != nullptr && _CachedRootSignature->Satisfy(rd))
+        return _CachedRootSignature;
+
     u64 hash = rd.HashResult();
     auto iter = _RootSignatureCache.find(hash);
     if (iter != _RootSignatureCache.end())
@@ -1243,7 +1283,7 @@ Sampler* DX12Device::CreateSampler(const Sampler::Desc& desc)
         return iter->second;
 
     D3D12_SAMPLER_DESC samplerDesc = {
-        .Filter = TranslateSampleFilter(desc.Filter),
+        .Filter = TranslateSampleFilter(desc.MinFilter,desc.MagFilter,desc.MipFilter),
         .AddressU = TranslateTextureAddressMode(desc.AddressU),
         .AddressV = TranslateTextureAddressMode(desc.AddressV),
         .AddressW = TranslateTextureAddressMode(desc.AddressW),

@@ -3,9 +3,11 @@
 enum class VertexFormat
 {
 	Float32x4 = 0,
-	Float32x3 = 1,
-	Float32x2 = 2,
-	Float32 = 3,
+	Float32x3,
+	Float32x2,
+	Float32,
+	U16,
+	U32,
 };
 
 enum class VertexAttribute
@@ -14,8 +16,13 @@ enum class VertexAttribute
 	Normal,
 	UV0,
 	UV1,
+	UV2,
+	UV3,
+	UV4,
 	Tangent,
-	Color,
+	Color0,
+	Color1,
+	Color2,
 	Max
 };
 

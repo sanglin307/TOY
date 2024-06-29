@@ -272,6 +272,7 @@ public :
     virtual u32 GetUsage() = 0;
     virtual ~RenderResource() {};
     virtual std::any Handle() { return nullptr; }
+    virtual const std::string& GetName() const = 0;
 
     ResourceState State;
     RenderDevice* Device = nullptr;
@@ -291,7 +292,6 @@ public:
     {
         u64 Size;
         u32 Stride;
-        std::string Name;
         u32 Usage;
         u32 CpuAccess;
         bool Alignment;
@@ -304,51 +304,24 @@ public:
     virtual u32 GetUsage() override { return _Desc.Usage; }
     virtual void UploadData(u8* data, size_t size) = 0;
 
-protected:
-    Desc _Desc;
-};
-
-class RenderTexture : public RenderResource
-{
-public:
-    struct Desc
+    virtual const std::string& GetName() const override
     {
-        std::string Name;
-        u32 Width;
-        u32 Height;
-        u16 DepthOrArraySize;
-        u16 MipLevels;
-        PixelFormat Format;
-        u32 Usage;
-        ResourceDimension Dimension;
-        u16 SampleCount = 1;
-        u16 SampleQuality = 0;
-        u8* Data;
-        u64 Size;
-    };
-
-    virtual ResourceDimension GetDimension() override { return _Desc.Dimension; }
-    virtual u32 GetUsage() override { return _Desc.Usage; }
+        return _Name;
+    }
 
 protected:
     Desc _Desc;
+    std::string _Name;
 };
 
-enum class SampleFilter
+enum class SampleFilterMode : u8
 {
-    Min_Mag_Mip_Point = 0,
-    Min_Mag_Point_Mip_Linear,
-    Min_Point_Mag_Linear_Mip_Point,
-    Min_Point_Mag_Mip_Linear,
-    Min_Linear_Mag_Mip_Point,
-    Min_Linear_Mag_Point_Mip_Linear,
-    Min_Mag_Linear_Mip_Point,
-    Min_Mag_Mip_Linear,
-    Min_Mag_Anisotropic_Mip_Point,
+    Point = 0,
+    Linear,
     Anisotropic
 };
 
-enum class TextureAddressMode
+enum class TextureAddressMode : u8
 {
     Wrap,
     Mirror,
@@ -374,7 +347,10 @@ class Sampler : public RenderResource
 public:
     struct Desc
     {
-        SampleFilter Filter = SampleFilter::Min_Mag_Mip_Linear;
+        SampleFilterMode MinFilter = SampleFilterMode::Point;
+        SampleFilterMode MagFilter = SampleFilterMode::Point;
+        SampleFilterMode MipFilter = SampleFilterMode::Point;
+
         TextureAddressMode AddressU = TextureAddressMode::Wrap;
         TextureAddressMode AddressV = TextureAddressMode::Wrap;
         TextureAddressMode AddressW = TextureAddressMode::Wrap;
@@ -393,12 +369,54 @@ public:
     virtual ~Sampler() {};
     virtual ResourceDimension GetDimension() override { return ResourceDimension::Sampler; }
     virtual u32 GetUsage() override { return 0; }
-   
+    void SetName(const std::string& name)
+    {
+        _Name = name;
+    }
+
+    const std::string& GetName() const
+    {
+        return _Name;
+    }
 
 protected:
+    std::string _Name;
     Desc _Info;
 };
 
+class RenderTexture : public RenderResource
+{
+public:
+    struct Desc
+    {
+        u32 Width;
+        u32 Height;
+        u16 DepthOrArraySize;
+        u16 MipLevels;
+        PixelFormat Format;
+        u32 Usage;
+        ResourceDimension Dimension;
+        u16 SampleCount = 1;
+        u16 SampleQuality = 0;
+        u8* Data;
+        u64 Size;
+    };
+
+    virtual ResourceDimension GetDimension() override { return _Desc.Dimension; }
+    virtual u32 GetUsage() override { return _Desc.Usage; }
+
+    Sampler* OptionSampler = nullptr;
+
+    const std::string& GetName() const
+    {
+        return _Name;
+    }
+protected:
+    Desc _Desc;
+    std::string _Name;
+};
+
+ 
 
 class Swapchain
 {

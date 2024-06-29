@@ -11,17 +11,15 @@ void RenderPassTest::Init(RenderDevice* device)
 
 	RenderBuffer::Desc udesc = {
 		.Size = sizeof(SceneConstantBuffer),
-		.Name = "SceneConstantBuffer",
 		.Usage = (u32)ResourceUsage::UniformBuffer,
 		.CpuAccess = (u32)CpuAccessFlags::Write,
 		.Alignment = true
 	};
-	UniformBuffer = device->CreateBuffer(udesc);
+	UniformBuffer = device->CreateBuffer("SceneConstantBuffer",udesc);
 	PSO->BindParameter("SceneConstantBuffer", UniformBuffer);
 
-	Image* image1 = ImageReader::Instance().Load("GTA.png");
+	Image* image1 = ImageReader::Instance().LoadFromFile("GTA.png");
 	RenderTexture::Desc td1 = {
-		.Name = "GTA.png",
 		.Width = image1->Width,
 		.Height = image1->Height,
 		.DepthOrArraySize = 1,
@@ -32,12 +30,11 @@ void RenderPassTest::Init(RenderDevice* device)
 		.Data = image1->Data,
 		.Size = image1->Size
 	};
-	_texture1 = device->CreateTexture(td1);
+	_texture1 = device->CreateTexture("GTA.png",td1);
 	PSO->BindParameter("texture1", _texture1);
 
-	Image* image2 = ImageReader::Instance().Load("Valorant.png");
+	Image* image2 = ImageReader::Instance().LoadFromFile("Valorant.png");
 	RenderTexture::Desc td2 = {
-		.Name = "Valorant.png",
 		.Width = image2->Width,
 		.Height = image2->Height,
 		.DepthOrArraySize = 1,
@@ -48,7 +45,7 @@ void RenderPassTest::Init(RenderDevice* device)
 		.Data = image2->Data,
 		.Size = image2->Size
 	};
-	_texture2 = device->CreateTexture(td2);
+	_texture2 = device->CreateTexture("Valorant", td2);
 	PSO->BindParameter("texture2", _texture2);
 
 	
@@ -91,17 +88,17 @@ void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 	}
 }
 
-void RenderPassTest::AddPrimitive(PrimitiveSceneInfo* primitive)
+void RenderPassTest::AddCluster(RenderCluster* cluster)
 {
 	MeshCommand* command = new MeshCommand;
-	command->VertexBuffers = primitive->VertexBuffers;
-	command->IndexBuffer = primitive->IndexBuffer;
-	command->PrimitiveId = primitive->PrimitiveId;
+	command->VertexBuffers = cluster->VertexBuffers;
+	command->IndexBuffer = cluster->IndexBuffer;
+	command->PrimitiveId = cluster->PrimitiveId;
 	command->PSO = PSO;
 	_Commands.push_back(command);
 }
 
-void RenderPassTest::RemovePrimitive(PrimitiveSceneInfo* primitive)
+void RenderPassTest::RemoveCluster(RenderCluster* cluster)
 {
 
 }

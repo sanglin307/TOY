@@ -25,19 +25,19 @@ void SceneRenderer::BindScene(RenderScene* scene)
 	_Scene = scene;
 }
 
-void SceneRenderer::AddPrimitive(PrimitiveSceneInfo* primitive)
+void SceneRenderer::AddCluster(RenderCluster* cluster)
 {
 	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
 	{
-		_Passes[p]->AddPrimitive(primitive);
+		_Passes[p]->AddCluster(cluster);
 	}
 }
 
-void SceneRenderer::RemovePrimitive(PrimitiveSceneInfo* primitive)
+void SceneRenderer::RemoveCluster(RenderCluster* cluster)
 {
 	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
 	{
-		_Passes[p]->RemovePrimitive(primitive);
+		_Passes[p]->RemoveCluster(cluster);
 	}
 }
 

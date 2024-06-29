@@ -1,0 +1,8 @@
+﻿  Building Custom Rule E:/git/TOY/Engine/Source/Thirdparty/fastgltf-0.7.2/CMakeLists.txt
+cl : command line  warning D9025: overriding '/Ob2' with '/Ob3'
+  fastgltf.cpp
+  base64.cpp
+  io.cpp
+  simdjson.cpp
+  Generating Code...
+  fastgltf.vcxproj -> E:\git\TOY\Engine\Source\Thirdparty\fastgltf-0.7.2\vs\Release\fastgltf.lib

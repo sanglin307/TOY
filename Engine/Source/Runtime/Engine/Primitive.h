@@ -1,18 +1,18 @@
 #pragma once
 
-class PrimitiveComponent
+enum class PrimitiveType
+{
+	Mesh = 0,
+};
+
+class PrimitiveComponent : public Component
 {
 public:
-	~PrimitiveComponent()
+	virtual PrimitiveType GetType() = 0;
+	u32 GetPrimitiveId()
 	{
-		if (MeshData)
-			delete MeshData;
-
-		if (MaterialData)
-			delete MaterialData;
+		return _PrimitiveId;
 	}
-
-	Mesh* MeshData = nullptr;
-	Material* MaterialData = nullptr;
-	u64 PrimitiveId = 0;
+protected:
+	u32 _PrimitiveId = 0;
 };

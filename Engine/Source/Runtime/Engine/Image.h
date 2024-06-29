@@ -8,6 +8,7 @@ struct Image
 		if (!Data)
 			std::free(Data);
 	}
+	std::string Name;
 	u32 Width;
 	u32 Height;
 	u32 Channel;
@@ -20,7 +21,8 @@ class ImageReader
 {
 public:
 	ENGINE_API static ImageReader& Instance();
-	ENGINE_API Image* Load(const std::string& fileName);
+	ENGINE_API Image* LoadFromFile(const std::string& fileName);
+	ENGINE_API Image* LoadFromMemory(u8* data, u64 size);
 	void Init();
 	void Destroy();
 
@@ -32,5 +34,6 @@ private:
 	ImageReader& operator=(ImageReader&& rhs) = delete;
 
 private:
-	std::unordered_map<std::string, Image*> _ImageCache;
+	std::unordered_map<std::string, Image*> _ImageFileCache;
+	std::unordered_map<u64, Image*> _ImageDataCache;
 };

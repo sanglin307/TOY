@@ -1,0 +1,7 @@
+﻿  Building Custom Rule E:/git/TOY/Engine/Source/Thirdparty/fastgltf-0.7.2/CMakeLists.txt
+  fastgltf.cpp
+  base64.cpp
+  io.cpp
+  simdjson.cpp
+  Generating Code...
+  fastgltf.vcxproj -> E:\git\TOY\Engine\Source\Thirdparty\fastgltf-0.7.2\vs\Debug\fastgltf.lib

@@ -70,7 +70,7 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(const DescriptorHeap::Config& c
     return new DX12DescriptorHeap(c, _Device->GetDescriptorHandleIncrementSize(heapDesc.Type),heap);
 }
 
-RenderTexture* DX12Device::CreateTexture(const RenderTexture::Desc& desc)
+RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTexture::Desc& desc)
 {
     check(_Device);
     ComPtr<ID3D12Resource> resource;
@@ -108,7 +108,7 @@ RenderTexture* DX12Device::CreateTexture(const RenderTexture::Desc& desc)
                 .Type = D3D12_HEAP_TYPE_DEFAULT
     };
     check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
-    resource->SetName(PlatformUtils::UTF8ToUTF16(desc.Name).c_str());
+    resource->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
 
     const u64 uploadBufferSize = GetTextureRequiredIntermediateSize(resource.Get(), 0, 1);
     D3D12_RESOURCE_DESC tempDesc = {
@@ -166,7 +166,7 @@ RenderTexture* DX12Device::CreateTexture(const RenderTexture::Desc& desc)
     return dstTexture;
 }
 
-RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
+RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffer::Desc& info)
 {
     check(_Device);
 
@@ -193,7 +193,7 @@ RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
         };
 
         check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource))));
-        resource->SetName(PlatformUtils::UTF8ToUTF16(info.Name).c_str());
+        resource->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
 
         if (info.InitData != nullptr)
         {
@@ -232,7 +232,7 @@ RenderBuffer* DX12Device::CreateBuffer(const RenderBuffer::Desc& info)
                 .Type = D3D12_HEAP_TYPE_DEFAULT
         };
         check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource))));
-        resource->SetName(PlatformUtils::UTF8ToUTF16(info.Name).c_str());
+        resource->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
 
         if (info.InitData != nullptr)
         {

@@ -8,8 +8,8 @@ public:
 	void Render(Swapchain* viewport);
 	void BindScene(RenderScene* scene);
 
-	void AddPrimitive(PrimitiveSceneInfo* primitive);
-	void RemovePrimitive(PrimitiveSceneInfo* primitive);
+	void AddCluster(RenderCluster* cluster);
+	void RemoveCluster(RenderCluster* cluster);
 
 	RenderDevice* GetDevice() { return _Device; }
 private:

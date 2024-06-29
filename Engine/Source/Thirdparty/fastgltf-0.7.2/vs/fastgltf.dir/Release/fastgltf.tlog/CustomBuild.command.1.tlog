@@ -1,0 +1,10 @@
+^E:\GIT\TOY\ENGINE\SOURCE\THIRDPARTY\FASTGLTF-0.7.2\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/git/TOY/Engine/Source/Thirdparty/fastgltf-0.7.2 -BE:/git/TOY/Engine/Source/Thirdparty/fastgltf-0.7.2/vs --check-stamp-file E:/git/TOY/Engine/Source/Thirdparty/fastgltf-0.7.2/vs/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

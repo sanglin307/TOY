@@ -59,6 +59,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PSO", "PSO", "{78BF6180-D1A
 		Engine\Shaders\PSO\test.toml = Engine\Shaders\PSO\test.toml
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "USD", "Engine\Source\Plugins\USD\USD.vcxproj", "{FA82395F-24D2-48A2-914D-1E3D43411799}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -115,6 +117,14 @@ Global
 		{5407D91A-10F3-4144-816F-86294714D491}.Release|x64.Build.0 = Release|x64
 		{5407D91A-10F3-4144-816F-86294714D491}.Release|x86.ActiveCfg = Release|Win32
 		{5407D91A-10F3-4144-816F-86294714D491}.Release|x86.Build.0 = Release|Win32
+		{FA82395F-24D2-48A2-914D-1E3D43411799}.Debug|x64.ActiveCfg = Debug|x64
+		{FA82395F-24D2-48A2-914D-1E3D43411799}.Debug|x64.Build.0 = Debug|x64
+		{FA82395F-24D2-48A2-914D-1E3D43411799}.Debug|x86.ActiveCfg = Debug|Win32
+		{FA82395F-24D2-48A2-914D-1E3D43411799}.Debug|x86.Build.0 = Debug|Win32
+		{FA82395F-24D2-48A2-914D-1E3D43411799}.Release|x64.ActiveCfg = Release|x64
+		{FA82395F-24D2-48A2-914D-1E3D43411799}.Release|x64.Build.0 = Release|x64
+		{FA82395F-24D2-48A2-914D-1E3D43411799}.Release|x86.ActiveCfg = Release|Win32
+		{FA82395F-24D2-48A2-914D-1E3D43411799}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -131,6 +141,7 @@ Global
 		{5407D91A-10F3-4144-816F-86294714D491} = {EA4F9986-C920-495D-9FC0-4BC9F6282B96}
 		{B66BDD9B-4024-479E-BA28-FD92F484D383} = {E52C8821-E035-4F15-9E3E-047149F4FD9A}
 		{78BF6180-D1A5-4D4B-B849-6BAECE40121C} = {E6359BD8-1834-439D-87A0-4D9622E03538}
+		{FA82395F-24D2-48A2-914D-1E3D43411799} = {DE228176-294A-425A-9BEC-C2E76C9B9AA9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8D6D4F4A-2438-4BD9-8B56-64072D015675}

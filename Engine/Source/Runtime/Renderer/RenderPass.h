@@ -13,8 +13,8 @@ public:
 	virtual ~RenderPass() {};
 	virtual void Init(RenderDevice* device) = 0;
 	virtual void Render(RenderDevice* device, RenderContext* ctx) = 0;
-	virtual void AddPrimitive(PrimitiveSceneInfo* primitive) = 0;
-	virtual void RemovePrimitive(PrimitiveSceneInfo* primitive) = 0;
+	virtual void AddCluster(RenderCluster* cluster) = 0;
+	virtual void RemoveCluster(RenderCluster* cluster) = 0;
 
 protected:
 	RenderPassType _Type;
@@ -27,8 +27,8 @@ public:
 	virtual ~RenderPassTest();
 	virtual void Init(RenderDevice* device) override;
 	virtual void Render(RenderDevice* device, RenderContext* ctx) override;
-	virtual void AddPrimitive(PrimitiveSceneInfo* primitive) override;
-	virtual void RemovePrimitive(PrimitiveSceneInfo* primitive) override;
+	virtual void AddCluster(RenderCluster* cluster) override;
+	virtual void RemoveCluster(RenderCluster* cluster) override;
 
 	struct SceneConstantBuffer
 	{

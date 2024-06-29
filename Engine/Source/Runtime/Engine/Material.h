@@ -8,19 +8,33 @@ enum class MaterialBlend
 	Transparent,
 };
 
-class Material
+struct MaterialTexture
 {
-public:
+	u32 TextureCoordIndex = 0;
+	RenderTexture* Texture;
+};
 
+struct Material
+{
+	std::string             Name;
+    bool                    Unit;
+    bool                    DoubleSide;
 
-private:
-	glm::vec3   _BaseColor;
-	glm::vec3   _Emissive;
-	float          _Metalness;
-	float          _Roughness;
-	RenderTexture* _DiffuseTexture;
-	RenderTexture* _NormalTexture;
-	RenderTexture* _RoughnessMetalnessTexture;
-	RenderTexture* _EmissiveTexture;
-	MaterialBlend  _BlendMode;
+	glm::vec4               BaseColorFactor;
+	glm::vec3               EmissiveFactor;
+	float                   MetalnessFactor;
+	float                   RoughnessFactor;
+    float                   IOR;
+
+	MaterialTexture          BaseColorTexture;
+	MaterialTexture          NormalTexture;
+	MaterialTexture          RoughnessMetalnessTexture;
+	MaterialTexture          EmissiveTexture;
+
+    float                   AnisotropyStrength = 0.0f;
+    float                   AnisotropyRotation = 0.0f;
+	MaterialTexture          AnisotropyTexture;
+
+	MaterialBlend           BlendMode;
+    float                   AlphaCutoff;
 };
