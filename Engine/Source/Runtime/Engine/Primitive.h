@@ -13,6 +13,12 @@ public:
 	{
 		return _PrimitiveId;
 	}
+
+	virtual ComponentType GetComponentType() override
+	{
+		return ComponentType::Primitive;
+	}
+
 protected:
 	u32 _PrimitiveId = 0;
 };

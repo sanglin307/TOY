@@ -1,12 +1,18 @@
 #pragma once
 
+enum class CameraUpdateStrategy
+{
+	FirstPerson = 0,
+	SphericalTarget,
+};
+
 enum class CameraType
 {
 	Perspective = 0,
 	Orthographic
 };
 
-class Camera : public Component
+class Camera : public Component, public InputHandler
 {
 public:
 	struct Desc
@@ -32,6 +38,17 @@ public:
 	{
 		return _Name;
 	}
+
+	virtual ComponentType GetComponentType() override
+	{
+		return ComponentType::Camera;
+	}
+
+	virtual bool OnKey(const KeyEvent& key) override;
+	virtual bool OnMouse(const MouseEvent& mev) override;
+
+	virtual void Update(double delta) override;
+
 private:
 	std::string  _Name;
 	Desc _Desc;

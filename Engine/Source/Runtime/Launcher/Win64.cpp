@@ -222,10 +222,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     int argc;
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
-    std::set<std::string> cmdlineSet;
+    std::vector<std::string> cmdlineSet;
     for (i32 i = 1; i < argc; i++)
     {
-        cmdlineSet.insert(PlatformUtils::UTF16ToUTF8(argv[i]));
+        cmdlineSet.push_back(PlatformUtils::UTF16ToUTF8(argv[i]));
     }
     LocalFree(argv);
 

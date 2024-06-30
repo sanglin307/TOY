@@ -147,8 +147,8 @@ struct MouseEvent
 class InputHandler
 {
 public:
-    virtual bool OnKey(const KeyEvent& key) {};
-    virtual bool OnMouse(const MouseEvent& mev) {};
+    virtual bool OnKey(const KeyEvent& key) = 0;
+    virtual bool OnMouse(const MouseEvent& mev) = 0;
 };
 
 class InputManager
@@ -159,6 +159,9 @@ public:
 
     ENGINE_API void OnKey(const KeyEvent& key);
     ENGINE_API void OnMouse(const MouseEvent& mev);
+
+    ENGINE_API void AddHandler(InputHandler* handler);
+    ENGINE_API void RemoveHandler(InputHandler* handler);
 
 private:
     InputManager() = default;

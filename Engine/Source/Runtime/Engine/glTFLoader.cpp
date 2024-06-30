@@ -282,15 +282,20 @@ Material* loadMaterial(fastgltf::Asset& asset, fastgltf::Material& material, std
 		texSet.erase(textures[texIndex]);
 	}
 
-	if (material.anisotropy->anisotropyTexture.has_value())
+	if (material.anisotropy != nullptr)
 	{
-		mat->AnisotropyTexture.TextureCoordIndex = (u32)material.anisotropy->anisotropyTexture->texCoordIndex;
-		u32 texIndex = (u32)material.anisotropy->anisotropyTexture->textureIndex;
-		mat->AnisotropyTexture.Texture = textures[texIndex];
-		texSet.erase(textures[texIndex]);
+		if (material.anisotropy->anisotropyTexture.has_value())
+		{
+			mat->AnisotropyTexture.TextureCoordIndex = (u32)material.anisotropy->anisotropyTexture->texCoordIndex;
+			u32 texIndex = (u32)material.anisotropy->anisotropyTexture->textureIndex;
+			mat->AnisotropyTexture.Texture = textures[texIndex];
+			texSet.erase(textures[texIndex]);
+		}
+
+		mat->AnisotropyRotation = material.anisotropy->anisotropyRotation;
+		mat->AnisotropyStrength = material.anisotropy->anisotropyStrength;
 	}
-	mat->AnisotropyRotation = material.anisotropy->anisotropyRotation;
-	mat->AnisotropyStrength = material.anisotropy->anisotropyStrength;
+	
 
 	if (material.alphaMode == fastgltf::AlphaMode::Opaque)
 	{
@@ -433,7 +438,18 @@ Camera* loadCamera(fastgltf::Camera& camera)
 	return cam;
 }
 
-void glTFLoader::Load(std::string_view path, std::vector<Layer*> newLayers)
+void AddNodeChildren(size_t index, Node* parent,std::vector<Node*>& nodes, fastgltf::Asset& asset)
+{
+	Node* node = nodes[index];
+	fastgltf::Node& child = asset.nodes[index];
+	for (size_t c : child.children)
+	{
+		AddNodeChildren(c, node, nodes, asset);
+	}
+	parent->AddChild(node);
+}
+
+void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
 {
 	auto file = PathUtil::glTFs() / path;
 	if (!std::filesystem::exists(file))
@@ -559,18 +575,11 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*> newLayers)
 		lightSet.insert(l);
 	}
 
-	std::vector<Layer*> layers;
-	for (fastgltf::Scene& s : asset->scenes)
+	std::vector<Node*> nodes;
+	for (fastgltf::Node& node : asset->nodes)
 	{
-		if (s.nodeIndices.size() > 0)
-		{
-			Layer* layer = new Layer(s.name.c_str());
-			std::unordered_map<size_t,Node*> nodemap;
-			for (size_t index : s.nodeIndices)
-			{
-				const fastgltf::Node& node = asset->nodes[index];
-				Node* n = new Node(node.name.c_str());
-				std::visit(fastgltf::visitor{
+		Node* n = new Node(node.name.c_str());
+		std::visit(fastgltf::visitor{
 					[&](const fastgltf::math::fmat4x4& matrix) {
 						check(0); // Option::DecomposeNodeMatrices 
 					},
@@ -579,43 +588,44 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*> newLayers)
 						n->SetRotation(glm::quat(trs.rotation.w(), trs.rotation.x(), trs.rotation.y(), trs.rotation.z()));
 						n->SetTranslate(glm::vec3(trs.translation.x(), trs.translation.y(), trs.translation.z()));
 					}
-				}, node.transform);
-				
-				if (node.cameraIndex.has_value())
-				{
-					n->Attach(cameras[node.cameraIndex.value()]);
-					camSet.erase(cameras[node.cameraIndex.value()]);
-				}
+			}, node.transform);
 
-				if (node.lightIndex.has_value())
-				{
-					n->Attach(lights[node.lightIndex.value()]);
-					lightSet.erase(lights[node.lightIndex.value()]);
-				}
+		if (node.cameraIndex.has_value())
+		{
+			n->Attach(cameras[node.cameraIndex.value()]);
+			camSet.erase(cameras[node.cameraIndex.value()]);
+		}
 
-				if (node.meshIndex.has_value())
-				{
-					n->Attach(meshes[node.meshIndex.value()]);
-					meshSet.erase(meshes[node.meshIndex.value()]);
-				}
-				layer->AddNode(n);
-				nodemap[index] = n; 
-			}
+		if (node.lightIndex.has_value())
+		{
+			n->Attach(lights[node.lightIndex.value()]);
+			lightSet.erase(lights[node.lightIndex.value()]);
+		}
 
-			// node children.
+		if (node.meshIndex.has_value())
+		{
+			n->Attach(meshes[node.meshIndex.value()]);
+			meshSet.erase(meshes[node.meshIndex.value()]);
+		}
+		nodes.push_back(n);
+	}
+
+	for (fastgltf::Scene& s : asset->scenes)
+	{
+		if (s.nodeIndices.size() > 0)
+		{
+			Layer* layer = new Layer(s.name.c_str());
 			for (size_t index : s.nodeIndices)
 			{
-				const fastgltf::Node& node = asset->nodes[index];
-				auto pit = nodemap.find(index);
-				check(pit != nodemap.end());
-				for (size_t c : node.children)
+				Node* n = nodes[index];
+				fastgltf::Node& tfnode = asset->nodes[index];
+				for (size_t c : tfnode.children)
 				{
-					auto cit = nodemap.find(c);
-					check(cit != nodemap.end());
-					
-					pit->second->AddChild(cit->second);
+					AddNodeChildren(c, n, nodes, asset.get());
 				}
+				layer->AddNode(n);
 			}
+			newLayers.push_back(layer);
 		}
 	}
 

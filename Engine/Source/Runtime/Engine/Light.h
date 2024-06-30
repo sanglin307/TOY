@@ -31,6 +31,12 @@ public:
     {
         return _Name;
     }
+
+    virtual ComponentType GetComponentType() override
+    {
+        return ComponentType::Light;
+    }
+
 private:
     Desc _Desc;
     std::string _Name;

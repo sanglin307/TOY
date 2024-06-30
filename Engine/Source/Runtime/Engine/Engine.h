@@ -6,7 +6,7 @@ public:
 
 	ENGINE_API static GameEngine& Instance();
 
-	ENGINE_API void PreInit(const std::set<std::string>& cmds);
+	ENGINE_API void PreInit(const std::vector<std::string>& cmds);
 	ENGINE_API void Init(std::any hwnd);
 	ENGINE_API void Destroy();
 
@@ -29,7 +29,7 @@ private:
 	void InitConfig();
 
 private:
-	std::set<std::string> _Params;
+	std::vector<std::string> _Params;
 	FrameRate _FrameRate;
 	RenderConfig _RenderConfig;
 	GameViewport* _GameViewport;

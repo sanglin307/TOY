@@ -6,7 +6,7 @@ public:
 
 	static GameWorld& Instance();
 
-	void Init();
+	void Init(const std::string& scenefile);
 	void Destroy();
 
 	void Update(double delta);
@@ -21,4 +21,6 @@ private:
 private:
 	std::vector<Layer*> _Layers;
 	IRenderScene*  _RenderScene;
+
+	Camera* _DefaultCamera = nullptr;
 };

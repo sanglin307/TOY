@@ -4,7 +4,7 @@ class glTFLoader
 {
 public:
 	static glTFLoader& Instance();
-	void Load(std::string_view path, std::vector<Layer*> newLayers);
+	void Load(std::string_view path, std::vector<Layer*>& newLayers);
 
 private:
 	glTFLoader() = default;

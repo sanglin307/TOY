@@ -33,7 +33,7 @@ IRHIModule& GameEngine::GetRHI()
 	return *module;
 }
 
-void GameEngine::PreInit(const std::set<std::string>& cmds)
+void GameEngine::PreInit(const std::vector<std::string>& cmds)
 {
 	if (cmds.size() > 0)
 	{
@@ -59,7 +59,18 @@ void GameEngine::Init(std::any hwnd)
 	_GameViewport = new GameViewport(hwnd, _RenderConfig);
  
 	GetRenderer().Init();
-	GameWorld::Instance().Init();
+
+	std::string scenefile = "Box.glb";
+	if (_Params.size() > 0)
+	{
+		//check first param 
+		if (_Params[0].find(".") != std::string::npos)
+		{
+			scenefile = _Params[0];
+		}
+	}
+
+	GameWorld::Instance().Init(scenefile);
 }
 
 void GameEngine::Destroy()

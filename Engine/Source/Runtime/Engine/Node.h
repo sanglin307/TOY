@@ -3,6 +3,7 @@
 class Node
 {
 public:
+	~Node();
 	Node(const std::string& name);
 	void SetTranslate(const glm::vec3& translate);
 	void SetRotation(const glm::quat& rot);
@@ -23,10 +24,13 @@ public:
 		return _Scale;
 	}
 
+	Component* FindFirstComponent(ComponentType type);
+
 	void Attach(Component* c);
 	void AddChild(Node* node);
 	void SetParent(Node* node);
 
+	void Update(double delta);
 private:
 	std::string _Name;
 	std::vector<Component*> _Components;
