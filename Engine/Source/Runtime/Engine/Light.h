@@ -13,7 +13,7 @@ public:
     struct Desc
     {
         LightType Type;
-        glm::vec3 Color;
+        float3 Color;
 
         /** Point and spot lights use candela (lm/sr) while directional use lux (lm/m^2) */
         float Intensity;

@@ -53,6 +53,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{B66BDD
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utility", "Utility", "{86597E04-ECE1-4CF3-9EFA-E6BADC09A88A}"
+	ProjectSection(SolutionItems) = preProject
+		Engine\Source\Thirdparty\hlslpp\include\hlsl++.natvis = Engine\Source\Thirdparty\hlslpp\include\hlsl++.natvis
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PSO", "PSO", "{78BF6180-D1A5-4D4B-B849-6BAECE40121C}"
 	ProjectSection(SolutionItems) = preProject

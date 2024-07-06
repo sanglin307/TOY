@@ -54,6 +54,8 @@ public:
 		return _Name;
 	}
 
+
+
 private:
 	std::string _Name;
 	std::vector<MeshSegment*> _Segments;

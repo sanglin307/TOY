@@ -6,8 +6,10 @@
 #define ENGINE_API __declspec(dllexport)
 #endif
 
-#include "glm.hpp"
-#include "gtc/quaternion.hpp"
+#define HLSLPP_FEATURE_TRANSFORM
+#include "hlsl++.h"
+using namespace hlslpp;
+
 
 // module dependency.
 #include "../Core/Public.h"

@@ -5,24 +5,28 @@ class Node
 public:
 	~Node();
 	Node(const std::string& name);
-	void SetTranslate(const glm::vec3& translate);
-	void SetRotation(const glm::quat& rot);
-	void SetScale(const glm::vec3& scale);
+	void SetTranslate(const float3& translate);
+	void SetRotation(const quaternion& rot);
+	void SetScale(const float3& scale);
 
-	const glm::vec3& GetTranslate() const
+	const float3& GetTranslate() const
 	{
 		return _Translate;
 	}
 
-	const glm::quat& GetRotation() const
+	const quaternion& GetRotation() const
 	{
 		return _Rotation;
 	}
 
-	const glm::vec3& GetScale() const
+	const float3& GetScale() const
 	{
 		return _Scale;
 	}
+
+	void RegisteToScene();
+
+	float4x4& GetWorldMatrix();
 
 	Component* FindFirstComponent(ComponentType type);
 
@@ -32,11 +36,17 @@ public:
 
 	void Update(double delta);
 private:
+
+	void UpdateWorldMatrix();
+
 	std::string _Name;
 	std::vector<Component*> _Components;
-	glm::vec3 _Translate;
-	glm::quat _Rotation;
-	glm::vec3 _Scale;
+	float3 _Translate;
+	quaternion _Rotation;
+	float3 _Scale;
+	float4x4 _WorldMatrix;
+
+	bool _WorldMatrixInvalid = false;
 
 	Node* _Parent = nullptr;
 	std::vector<Node*> _Children;

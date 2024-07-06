@@ -7,6 +7,8 @@
 #define WIN32_LEAN_AND_MEAN   
 #endif
 
+#define NOMINMAX
+
 #include <windows.h>
 #include <windowsx.h>
 #include <WinUser.h>
@@ -24,9 +26,13 @@
 #include <ctime>
 #include <any>
 
+#define HLSLPP_FEATURE_TRANSFORM
+#include "hlsl++.h"
+
 // iner 
 #include "Types.h"
 #include "Log.h"
+#include "Math.h"
 #include "Hash.h"
 #include "Path.h"
 #include "Platform.h"

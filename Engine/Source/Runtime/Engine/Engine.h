@@ -12,12 +12,14 @@ public:
 
 	ENGINE_API void Update();
 
-	ENGINE_API void FrameSize(u32& Width, u32& Height);
 	ENGINE_API RenderConfig& GetRenderConfig() { return _RenderConfig; }
 
 	IRHIModule& GetRHI();
 	IRendererModule& GetRenderer();
-	
+	GameViewport* GetViewport()
+	{
+		return _GameViewport;
+	}
 
 private:
 	GameEngine() = default;

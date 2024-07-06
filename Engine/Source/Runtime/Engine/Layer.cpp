@@ -11,6 +11,14 @@ Layer::~Layer()
 		delete n;
 }
 
+void Layer::RegisteToScene()
+{
+	for (auto n : _Nodes)
+	{
+		n->RegisteToScene();
+	}
+}
+
 void Layer::AddNode(Node* node)
 {
 	_Nodes.push_back(node);

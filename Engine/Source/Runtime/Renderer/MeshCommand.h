@@ -12,6 +12,6 @@ struct MeshCommand
 	std::vector<MeshVertexBuffer>  VertexBuffers;
 	RenderBuffer* IndexBuffer = nullptr;
 
-	u64 PrimitiveId;
+	PrimitiveComponent* Component = nullptr;
 	GraphicPipeline* PSO = nullptr;
 };

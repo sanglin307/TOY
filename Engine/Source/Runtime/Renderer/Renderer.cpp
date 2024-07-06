@@ -38,9 +38,9 @@ void RendererModule::Init()
 	_SceneRender = new SceneRenderer(_Device);
 }
  
-void RendererModule::Render(Swapchain* sc)
+void RendererModule::Render(ViewInfo& view, Swapchain* sc)
 { 
-	_SceneRender->Render(sc);	 
+	_SceneRender->Render(view,sc);	 
 }
 
 void RendererModule::Destroy()

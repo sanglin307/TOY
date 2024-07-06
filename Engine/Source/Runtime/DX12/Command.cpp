@@ -165,13 +165,31 @@ void DX12CommandList::DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceC
     _Handle->DrawInstanced(vertexPerInstance, instanceCount, vertexOffset, instanceOffset);
 }
 
-void DX12CommandList::SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth, f32 maxDepth)
+void DX12CommandList::DrawIndexedInstanced(u32 vbNum, RenderBuffer** vbs, RenderBuffer* indexBuffer, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
+{
+    check(vbNum > 0);
+    std::vector<D3D12_VERTEX_BUFFER_VIEW> vbv;
+    for (u32 i = 0; i < vbNum; i++)
+    {
+        DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(vbs[i]);
+        vbv.push_back(buffer->GetVertexBufferView());
+    }
+    _Handle->IASetVertexBuffers(0, (UINT)vbv.size(), vbv.data());
+ 
+    DX12RenderBuffer* ib = static_cast<DX12RenderBuffer*>(indexBuffer);
+    D3D12_INDEX_BUFFER_VIEW ibv = ib->GetIndexBufferView();
+    _Handle->IASetIndexBuffer(&ibv);
+    u32 indexPerInstance = (u32)(ib->GetSize() / ib->GetStride());
+    _Handle->DrawIndexedInstanced(indexPerInstance, instanceCount, 0,vertexOffset, instanceOffset);
+}
+
+void DX12CommandList::SetViewport(u32 x, u32 y, u32 width, u32 height, float minDepth, float maxDepth)
 {
     D3D12_VIEWPORT vp = {
-       .TopLeftX = (f32)x,
-       .TopLeftY = (f32)y,
-       .Width = (f32)width,
-       .Height = (f32)height,
+       .TopLeftX = (float)x,
+       .TopLeftY = (float)y,
+       .Width = (float)width,
+       .Height = (float)height,
        .MinDepth = minDepth,
        .MaxDepth = maxDepth
     };
@@ -225,7 +243,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
 
 }
 
-void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const f32* colors)
+void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const float* colors)
 {
     DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(renderTarget);
     _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetViewCPUHandle(), colors, 0, nullptr);

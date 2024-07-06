@@ -4,7 +4,6 @@
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
 #include <fastgltf/tools.hpp>
-#include <fastgltf/glm_element_traits.hpp>
 
 glTFLoader& glTFLoader::Instance()
 {
@@ -69,14 +68,14 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 				check(0);
 			}
 			check(positionAccessor.type == fastgltf::AccessorType::Vec3);
-			glm::vec3* vertices = (glm::vec3*)std::malloc(positionAccessor.count * sizeof(glm::vec3));
-			fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, positionAccessor, [&](glm::vec3 pos, std::size_t idx) {
-				vertices[idx] = pos;
+			Vector3* vertices = (Vector3*)std::malloc(positionAccessor.count * sizeof(Vector3));
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, positionAccessor, [&](fastgltf::math::fvec3 pos, std::size_t idx) {
+				vertices[idx] = Vector3(pos.x(), pos.y(), pos.z());
 				});
 			VertexData data = {
 				.Format = VertexFormat::Float32x3,
 				.Data = (u8*)vertices,
-				.Size = positionAccessor.count * sizeof(glm::vec3)
+				.Size = positionAccessor.count * sizeof(Vector3)
 			};
 			segment->InsertAttribute(VertexAttribute::Position, data);
 			std::free(vertices);
@@ -95,15 +94,15 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 					check(0);
 				}
 				check(texCoordAccessor.type == fastgltf::AccessorType::Vec2);
-				glm::vec2* texData = (glm::vec2*)std::malloc(sizeof(glm::vec2) * texCoordAccessor.count);
-				fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, texCoordAccessor, [&](glm::vec2 uv, std::size_t idx) {
-					texData[idx] = uv;
+				Vector2* texData = (Vector2*)std::malloc(sizeof(Vector2) * texCoordAccessor.count);
+				fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(asset, texCoordAccessor, [&](fastgltf::math::fvec2 uv, std::size_t idx) {
+					texData[idx] = Vector2(uv.x(),uv.y());
 				});
 
 				VertexData data = {
 				.Format = VertexFormat::Float32x2,
 				.Data = (u8*)texData,
-				.Size = sizeof(glm::vec2) * texCoordAccessor.count
+				.Size = sizeof(Vector2) * texCoordAccessor.count
 				};
 				segment->InsertAttribute((VertexAttribute)((u32)VertexAttribute::UV0 + i), data);
 				std::free(texData);
@@ -123,30 +122,30 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 				}
 				if (colorAccessor.type == fastgltf::AccessorType::Vec3)
 				{
-					glm::vec3* colorData = (glm::vec3*)std::malloc(sizeof(glm::vec3) * colorAccessor.count);
-					fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, colorAccessor, [&](glm::vec3 color, std::size_t idx) {
-						colorData[idx] = color;
+					Vector3* colorData = (Vector3*)std::malloc(sizeof(Vector3) * colorAccessor.count);
+					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, colorAccessor, [&](fastgltf::math::fvec3 color, std::size_t idx) {
+						colorData[idx] = Vector3(color.x(),color.y(),color.z());
 						});
 
 					VertexData data = {
 					.Format = VertexFormat::Float32x3,
 					.Data = (u8*)colorData,
-					.Size = sizeof(glm::vec3) * colorAccessor.count
+					.Size = sizeof(Vector3) * colorAccessor.count
 					};
 					segment->InsertAttribute((VertexAttribute)((u32)VertexAttribute::Color0 + i), data);
 					std::free(colorData);
 				}
 				else if (colorAccessor.type == fastgltf::AccessorType::Vec4)
 				{
-					glm::vec4* colorData = (glm::vec4*)std::malloc(sizeof(glm::vec4) * colorAccessor.count);
-					fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, colorAccessor, [&](glm::vec4 color, std::size_t idx) {
-						colorData[idx] = color;
+					Vector4* colorData = (Vector4*)std::malloc(sizeof(Vector4) * colorAccessor.count);
+					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, colorAccessor, [&](fastgltf::math::fvec4 c, std::size_t idx) {
+						colorData[idx] = Vector4(c[0],c[1],c[2],c[3]);
 						});
 
 					VertexData data = {
 					.Format = VertexFormat::Float32x4,
 					.Data = (u8*)colorData,
-					.Size = sizeof(glm::vec4) * colorAccessor.count
+					.Size = sizeof(Vector4) * colorAccessor.count
 					};
 					segment->InsertAttribute((VertexAttribute)((u32)VertexAttribute::Color0 + i), data);
 					std::free(colorData);
@@ -163,14 +162,14 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 				check(0);
 			}
 			check(tangentAccessor.type == fastgltf::AccessorType::Vec4);
-			glm::vec4* data = (glm::vec4*)std::malloc(tangentAccessor.count * sizeof(glm::vec4));
-			fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&](glm::vec4 d, std::size_t idx) {
-				data[idx] = d;
+			Vector4* data = (Vector4*)std::malloc(tangentAccessor.count * sizeof(Vector4));
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, tangentAccessor, [&](fastgltf::math::fvec4 d, std::size_t idx) {
+				data[idx] = Vector4(d[0],d[1],d[2],d[3]);
 				});
 			VertexData tdata = {
 				.Format = VertexFormat::Float32x4,
 				.Data = (u8*)data,
-				.Size = tangentAccessor.count * sizeof(glm::vec4)
+				.Size = tangentAccessor.count * sizeof(Vector4)
 			};
 			segment->InsertAttribute(VertexAttribute::Tangent, tdata);
 			std::free(data);
@@ -185,14 +184,14 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 				check(0);
 			}
 			check(normalAccessor.type == fastgltf::AccessorType::Vec3);
-			glm::vec3* data = (glm::vec3*)std::malloc(normalAccessor.count * sizeof(glm::vec3));
-			fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, normalAccessor, [&](glm::vec3 d, std::size_t idx) {
-				data[idx] = d;
+			Vector3* data = (Vector3*)std::malloc(normalAccessor.count * sizeof(Vector3));
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, normalAccessor, [&](fastgltf::math::fvec3 d, std::size_t idx) {
+				data[idx] = Vector3(d[0],d[1],d[2]);
 				});
 			VertexData tdata = {
 				.Format = VertexFormat::Float32x3,
 				.Data = (u8*)data,
-				.Size = normalAccessor.count * sizeof(glm::vec3)
+				.Size = normalAccessor.count * sizeof(Vector3)
 			};
 			segment->InsertAttribute(VertexAttribute::Normal, tdata);
 			std::free(data);
@@ -245,8 +244,8 @@ Material* loadMaterial(fastgltf::Asset& asset, fastgltf::Material& material, std
 	mat->Unit = material.unlit;
 	mat->DoubleSide = material.doubleSided;
 
-	mat->BaseColorFactor = glm::vec4(material.pbrData.baseColorFactor[0], material.pbrData.baseColorFactor[1], material.pbrData.baseColorFactor[2], material.pbrData.baseColorFactor[3]);
-	mat->EmissiveFactor = glm::vec3(material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]);
+	mat->BaseColorFactor = float4(material.pbrData.baseColorFactor[0], material.pbrData.baseColorFactor[1], material.pbrData.baseColorFactor[2], material.pbrData.baseColorFactor[3]);
+	mat->EmissiveFactor = float3(material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]);
 	mat->MetalnessFactor = material.pbrData.metallicFactor;
 	mat->RoughnessFactor = material.pbrData.roughnessFactor;
 	mat->IOR = material.ior;
@@ -394,7 +393,7 @@ Sampler* loadSampler(RenderDevice* device,fastgltf::Sampler& sampler)
 Light* loadLight(fastgltf::Light& light)
 {
 	Light::Desc desc = {
-		.Color = glm::vec3(light.color[0],light.color[1],light.color[2]),
+		.Color = float3(light.color[0],light.color[1],light.color[2]),
 		.Intensity = light.intensity,
 		.Range = light.range.value_or(-1),
 		.InnerConeAngle = light.innerConeAngle.value_or(-1),
@@ -584,9 +583,9 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
 						check(0); // Option::DecomposeNodeMatrices 
 					},
 					[&](const fastgltf::TRS& trs) {
-						n->SetScale(glm::vec3(trs.scale.x(),trs.scale.y(),trs.scale.z()));
-						n->SetRotation(glm::quat(trs.rotation.w(), trs.rotation.x(), trs.rotation.y(), trs.rotation.z()));
-						n->SetTranslate(glm::vec3(trs.translation.x(), trs.translation.y(), trs.translation.z()));
+						n->SetScale(float3(trs.scale.x(),trs.scale.y(),trs.scale.z()));
+						n->SetRotation(quaternion(trs.rotation.w(), trs.rotation.x(), trs.rotation.y(), trs.rotation.z()));
+						n->SetTranslate(float3(trs.translation.x(), trs.translation.y(), trs.translation.z()));
 					}
 			}, node.transform);
 

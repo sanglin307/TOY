@@ -1,15 +1,17 @@
 #include "Private.h"
 
-void RenderPassTest::Init(RenderDevice* device)
+void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
 {
 	_Type = RenderPassType::Test;
+	_Device = device;
+	_Renderer = renderer;
 
 	GraphicPipeline::Desc desc = {
 		.Name = "TestPSO"
 	};
 	PSO = device->CreateGraphicPipeline(desc);
-
-	RenderBuffer::Desc udesc = {
+	PSO->BindParameter("ViewInfo", renderer->GetViewUniformBuffer());
+	/*RenderBuffer::Desc udesc = {
 		.Size = sizeof(SceneConstantBuffer),
 		.Usage = (u32)ResourceUsage::UniformBuffer,
 		.CpuAccess = (u32)CpuAccessFlags::Write,
@@ -52,21 +54,21 @@ void RenderPassTest::Init(RenderDevice* device)
 
 	Sampler::Desc sd;
 	_sampler = device->CreateSampler(sd);
-	PSO->BindParameter("g_sampler", _sampler);
+	PSO->BindParameter("g_sampler", _sampler);*/
 }
 
 RenderPassTest::~RenderPassTest()
 {
-	delete UniformBuffer;
+	/*delete UniformBuffer;
 	delete _texture1;
 	delete _texture2;
-	delete _sampler;
+	delete _sampler;*/
 }
 
 void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 {
 	//update 
-	const float translationSpeed = 0.005f;
+	/*const float translationSpeed = 0.005f;
 	const float offsetBounds = 1.25f;
 
 	UniformData.offset[0] += translationSpeed;
@@ -74,7 +76,7 @@ void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 	{
 		UniformData.offset[0] = -offsetBounds;
 	}
-	UniformBuffer->UploadData((u8*)&UniformData, sizeof(UniformData));
+	UniformBuffer->UploadData((u8*)&UniformData, sizeof(UniformData));*/
 
 	ctx->SetGraphicPipeline(PSO);
 	for (auto c : _Commands)
@@ -84,7 +86,15 @@ void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 		{
 			buffers.push_back(v.Buffer);
 		}
-		ctx->DrawInstanced((u32)buffers.size(), buffers.data());
+
+		if (c->IndexBuffer)
+		{
+			ctx->DrawIndexedInstanced((u32)buffers.size(), buffers.data(), c->IndexBuffer);
+		}
+		else
+		{
+			ctx->DrawInstanced((u32)buffers.size(), buffers.data());
+		}
 	}
 }
 
@@ -93,7 +103,7 @@ void RenderPassTest::AddCluster(RenderCluster* cluster)
 	MeshCommand* command = new MeshCommand;
 	command->VertexBuffers = cluster->VertexBuffers;
 	command->IndexBuffer = cluster->IndexBuffer;
-	command->PrimitiveId = cluster->PrimitiveId;
+	command->Component = cluster->Component;
 	command->PSO = PSO;
 	_Commands.push_back(command);
 }

@@ -152,7 +152,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
              .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
              .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
              .Texture2D = {
-                .MipLevels = desc.MipLevels
+                .MipLevels = 1
              }
         };
 
@@ -170,11 +170,17 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
 {
     check(_Device);
 
+    u64 bufferSize = info.Size;
+    if (info.Usage & (u32)ResourceUsage::UniformBuffer)
+    {
+        bufferSize = (bufferSize + 255) & ~255;
+    }
+
     ComPtr<ID3D12Resource> resource;
     D3D12_RESOURCE_DESC desc = {
         .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
         .Alignment = info.Alignment ? D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT : 0ul,
-        .Width = info.Size,
+        .Width = bufferSize,
         .Height = 1,
         .DepthOrArraySize = 1,
         .MipLevels = 1,
@@ -210,7 +216,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
         {
             D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {
                  .BufferLocation = resource->GetGPUVirtualAddress(),
-                 .SizeInBytes = (UINT)info.Size
+                 .SizeInBytes = (UINT)bufferSize
             };
            
             DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
@@ -273,6 +279,16 @@ D3D12_VERTEX_BUFFER_VIEW DX12RenderBuffer::GetVertexBufferView()
         .BufferLocation = _Handle->GetGPUVirtualAddress(),
         .SizeInBytes = (UINT)_Desc.Size,
         .StrideInBytes = _Desc.Stride
+    };
+}
+
+D3D12_INDEX_BUFFER_VIEW DX12RenderBuffer::GetIndexBufferView()
+{
+    check(_Desc.Usage & (u32)ResourceUsage::IndexBuffer);
+    return D3D12_INDEX_BUFFER_VIEW{
+         .BufferLocation = _Handle->GetGPUVirtualAddress(),
+         .SizeInBytes = (UINT)_Desc.Size,
+         .Format = _Desc.Stride == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT
     };
 }
 

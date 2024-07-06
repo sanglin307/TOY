@@ -19,19 +19,32 @@ Node::Node(const std::string& name)
 	_Name = name;
 }
 
-void Node::SetTranslate(const glm::vec3& translate)
+void Node::SetTranslate(const float3& translate)
 {
 	_Translate = translate;
+	_WorldMatrixInvalid = true;
 }
 
-void Node::SetRotation(const glm::quat& rot)
+void Node::SetRotation(const quaternion& rot)
 {
 	_Rotation = rot;
+	_WorldMatrixInvalid = true;
 }
 
-void Node::SetScale(const glm::vec3& scale)
+void Node::SetScale(const float3& scale)
 {
 	_Scale = scale;
+	_WorldMatrixInvalid = true;
+}
+
+float4x4& Node::GetWorldMatrix()
+{
+	if (_WorldMatrixInvalid)
+	{
+		UpdateWorldMatrix();
+	}
+
+	return _WorldMatrix;
 }
 
 void Node::AddChild(Node* node)
@@ -44,6 +57,15 @@ void Node::AddChild(Node* node)
 void Node::SetParent(Node* node)
 {
 	_Parent = node;
+}
+
+void Node::RegisteToScene()
+{
+	for (auto c : _Components)
+		c->RegisteToScene();
+
+	for (auto c : _Children)
+		c->RegisteToScene();
 }
 
 Component* Node::FindFirstComponent(ComponentType type)
@@ -66,8 +88,27 @@ void Node::Attach(Component* c)
 	c->Attach(this);
 }
 
+void Node::UpdateWorldMatrix()
+{
+	_WorldMatrixInvalid = false;
+	float4x4 parentMat = float4x4::identity();
+	if (_Parent)
+		parentMat = _Parent->GetWorldMatrix();
+
+	_WorldMatrix = float4x4::scale(_Scale) * float4x4(_Rotation) * float4x4::translation(_Translate) * parentMat;
+	for (auto n : _Children)
+	{
+		n->UpdateWorldMatrix();
+	}
+}
+
 void Node::Update(double delta)
 {
+	if (_WorldMatrixInvalid)
+	{
+		UpdateWorldMatrix();
+	}
+
 	// component first
 	for (auto c : _Components)
 	{

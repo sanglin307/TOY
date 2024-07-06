@@ -50,6 +50,17 @@ struct VertexData
 		{
 			return sizeof(float);
 		}
+		else if (Format == VertexFormat::U16)
+		{
+			return sizeof(u16);
+		}
+		else if (Format == VertexFormat::U32)
+		{
+			return sizeof(u32);
+		}
+		else
+			check(0);
+
 		return 0;
 	}
 };

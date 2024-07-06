@@ -49,10 +49,10 @@ public:
 	virtual void Close() override;
 
 	virtual void SetGraphicPipeline(GraphicPipeline* pipeline) override;
-	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, f32 minDepth = 0.f, f32 maxDepth = 1.f) override;
+	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, float minDepth = 0.f, float maxDepth = 1.f) override;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) override;
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) override;
-	virtual void ClearRenderTarget(RenderTexture* renderTarget, const f32* colors) override;
+	virtual void ClearRenderTarget(RenderTexture* renderTarget, const float* colors) override;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
 	virtual void TransitionState(ResourceState destState, RenderResource* res) override;
 
@@ -62,6 +62,7 @@ public:
 	virtual void SetGraphicShaderParameter(const ShaderParameter* param) override;
 	virtual void SetGraphicTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params) override;
 	virtual void DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
+	virtual void DrawIndexedInstanced(u32 vbNum, RenderBuffer** vbs, RenderBuffer* indexBuffer, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
 
 	void UpdateSubresource(RenderTexture* destResource, RenderBuffer* tempResource, u64 tempResOffset, u32 firstSubresource, u32 numSubresources, const D3D12_SUBRESOURCE_DATA* srcData);
 private:

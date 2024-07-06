@@ -6,6 +6,11 @@ GameWorld& GameWorld::Instance()
 	return inst;
 }
 
+void GameWorld::AddLayer(Layer* layer)
+{
+	layer->RegisteToScene();
+	_Layers.push_back(layer);
+}
 
 void GameWorld::Init(const std::string& scenefile)
 {
@@ -14,7 +19,9 @@ void GameWorld::Init(const std::string& scenefile)
 	std::vector<Layer*> newLayers;
 	glTFLoader::Instance().Load(scenefile,newLayers);
 	for (auto l : newLayers)
-		_Layers.push_back(l);
+	{
+		AddLayer(l);
+	}
 
 	// find first camera.
 	for (auto n : _Layers)
@@ -32,9 +39,9 @@ void GameWorld::Init(const std::string& scenefile)
 		Camera::Desc desc = {
 			.Type = CameraType::Perspective,
 			.AspectRatio = config.FrameWidth * 1.f / config.FrameHeight,
-			.YFov = 0.66f,
-			.ZFar = 0, // infinite
-			.ZNear = 0.1f
+			.YFov = 60 * Pi() / 180.f,
+			.ZFar = 0,
+			.ZNear = 1.f
 		};
 		_DefaultCamera = new Camera("DefaultCamera", desc);
 		Node* node = new Node("DefaultCameraNode");
@@ -42,12 +49,15 @@ void GameWorld::Init(const std::string& scenefile)
 		_Layers[0]->AddNode(node);
 	}
 
-	InputManager::Instance().AddHandler(_DefaultCamera);
+	_CameraController = new CameraController;
+	_CameraController->Attach(_DefaultCamera);
 }
 
 void GameWorld::Destroy()
 {	
 	GameEngine::Instance().GetRenderer().RemoveScene(_RenderScene);
+
+	delete _CameraController;
 
 	for (auto l : _Layers)
 	{
@@ -61,4 +71,6 @@ void GameWorld::Update(double delta)
 {
 	for (auto l : _Layers)
 		l->Update(delta);
+
+	_CameraController->Update(delta);
 }

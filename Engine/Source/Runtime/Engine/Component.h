@@ -19,9 +19,9 @@ public:
 		return ComponentType::Max;
 	}
 
+	virtual void RegisteToScene() {}
 
 	virtual void Update(double delta) {};
 protected:
 	Node* _Owner = nullptr;
-	bool  _Tickable = false;
 };

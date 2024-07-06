@@ -137,9 +137,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
             if (keyCode >= 0)
             {
                 KeyEvent keyEvent = { 
-                    .type = (HIWORD(lParam) & KF_UP) ? KeyEvent::ActionType::Released : KeyEvent::ActionType::Pressed,
-                    .key = static_cast<KeyType>(keyCode),
-                    .modifier = KeyMods(),                  
+                    .Type = (HIWORD(lParam) & KF_UP) ? KeyEvent::ActionType::Released : KeyEvent::ActionType::Pressed,
+                    .Key = static_cast<KeyType>(keyCode),
+                    .Modifier = KeyMods(),                  
                 };
                 InputManager::Instance().OnKey(keyEvent);
             }
@@ -169,11 +169,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
    
             MouseEvent mouseEvent = {
-                        .type = action,
-                        .key = keyType,
-                        .modifier = KeyMods(),
-                        .xPos = GET_X_LPARAM(lParam),
-                        .yPos = GET_Y_LPARAM(lParam),
+                        .Type = action,
+                        .Key = keyType,
+                        .Modifier = KeyMods(),
+                        .XPos = GET_X_LPARAM(lParam),
+                        .YPos = GET_Y_LPARAM(lParam),
             };
             InputManager::Instance().OnMouse(mouseEvent);
         }
@@ -181,29 +181,29 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
     case WM_MOUSEMOVE:
         {
             MouseEvent mouseEvent = {
-                            .type = MouseEvent::ActionType::Move,
-                            .key = KeyType::MousePosition,
-                            .modifier = KeyMods(),
-                            .xPos = GET_X_LPARAM(lParam),
-                            .yPos = GET_Y_LPARAM(lParam),
+                            .Type = MouseEvent::ActionType::Move,
+                            .Key = KeyType::MousePosition,
+                            .Modifier = KeyMods(),
+                            .XPos = GET_X_LPARAM(lParam),
+                            .YPos = GET_Y_LPARAM(lParam),
             };
             InputManager::Instance().OnMouse(mouseEvent);
         }
         return 0;
     case WM_MOUSEWHEEL:
         {
-            const f32 delta = GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
+            const float delta = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
             auto action = KeyType::MouseScrollUp;
             if (delta < 0)
                 action = KeyType::MouseScrollDown;
 
             MouseEvent mouseEvent = {
-                            .type = MouseEvent::ActionType::Pressed,
-                            .key = KeyType::MousePosition,
-                            .modifier = KeyMods(),
-                            .xPos = GET_X_LPARAM(lParam),
-                            .yPos = GET_Y_LPARAM(lParam),
-                            .delta = delta,
+                            .Type = MouseEvent::ActionType::Pressed,
+                            .Key = KeyType::MousePosition,
+                            .Modifier = KeyMods(),
+                            .XPos = GET_X_LPARAM(lParam),
+                            .YPos = GET_Y_LPARAM(lParam),
+                            .ScrollDelta = delta,
             };
             InputManager::Instance().OnMouse(mouseEvent);
         }
@@ -241,9 +241,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
     windowClass.lpszClassName = L"TOY";
     RegisterClassEx(&windowClass);
 
-    u32 Width, Height;
-    GameEngine::Instance().FrameSize(Width, Height);
-    RECT windowRect = { 0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height)};
+    RECT windowRect = { 0, 0, static_cast<LONG>(GameEngine::Instance().GetRenderConfig().FrameWidth), static_cast<LONG>(GameEngine::Instance().GetRenderConfig().FrameHeight)};
     AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
     HWND hwnd = CreateWindow(

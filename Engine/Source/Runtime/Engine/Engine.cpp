@@ -97,13 +97,10 @@ void GameEngine::Update()
 
 	GameWorld::Instance().Update(delta);
 
-	GetRenderer().Render(_GameViewport->GetRHI());
-}
-
-void GameEngine::FrameSize(u32& Width, u32& Height)
-{
-	Width = _RenderConfig.FrameWidth;
-	Height = _RenderConfig.FrameHeight;
+	ViewInfo view;
+	GameWorld::Instance().GetViewInfo(view);
+	view.FrameIndex = (u32)_FrameRate.GetFrameCount();
+	GetRenderer().Render(view, _GameViewport->GetRHI());
 }
 
 void GameEngine::InitConfig()

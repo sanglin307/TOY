@@ -20,8 +20,8 @@ struct Material
     bool                    Unit;
     bool                    DoubleSide;
 
-	glm::vec4               BaseColorFactor;
-	glm::vec3               EmissiveFactor;
+	float4                  BaseColorFactor;
+	float3                  EmissiveFactor;
 	float                   MetalnessFactor;
 	float                   RoughnessFactor;
     float                   IOR;

@@ -4,9 +4,9 @@
 #define RHI_API __declspec(dllexport)
 #endif
 
-#include "VertexFormat.h"
 #include "Reflection.h"
 #include "Resource.h"
+#include "VertexFormat.h"
 #include "Shader.h"
 #include "Pipeline.h"
 #include "Context.h"

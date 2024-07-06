@@ -12,7 +12,9 @@
 #include <WinUser.h>
 #include <shellapi.h>
 
-#include "glm.hpp"
+#define HLSLPP_FEATURE_TRANSFORM
+#include "hlsl++.h"
+using namespace hlslpp;
 
 #include "../Core/Public.h"
 #include "../RHI/Public.h"

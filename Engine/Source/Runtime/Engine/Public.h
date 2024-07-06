@@ -8,7 +8,6 @@
 #include "FrameRate.h"
 #include "Component.h"
 #include "Input.h"
-#include "Camera.h"
 #include "Light.h"
 #include "Image.h"
 #include "Viewport.h"
@@ -18,4 +17,3 @@
 #include "Mesh.h"
 #include "Layer.h"
 #include "glTFLoader.h"
-#include "World.h"

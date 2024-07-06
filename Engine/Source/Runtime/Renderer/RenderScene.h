@@ -8,7 +8,7 @@ struct RenderCluster
 	InputLayout VertexLayout;
 	std::vector<MeshVertexBuffer>  VertexBuffers;
 	RenderBuffer* IndexBuffer = nullptr;
-	u32 PrimitiveId;
+	PrimitiveComponent* Component;
 };
 
 class RenderScene final: public IRenderScene

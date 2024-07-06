@@ -129,8 +129,8 @@ struct RasterizerDesc
 	bool LineAA = false;
 	bool ConservativeMode = false;
 	i32 DepthBias = 0;
-	f32 DepthBiasClamp =0.f;
-	f32 SlopScaledDepthBias = 0.f;
+	float DepthBiasClamp =0.f;
+	float SlopScaledDepthBias = 0.f;
 	u32 SampleCount = 0;
 
 	void HashUpdate(std::any handle) const

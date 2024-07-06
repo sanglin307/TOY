@@ -121,9 +121,9 @@ struct KeyEvent
         Released,
     };
 
-    ActionType type;
-    KeyType key;
-    u32 modifier;
+    ActionType Type;
+    KeyType Key;
+    u32 Modifier;
 };
 
 struct MouseEvent
@@ -136,11 +136,11 @@ struct MouseEvent
         Move,
     };
 
-    ActionType type;
-    KeyType key;
-    u32 modifier;
-    i32 xPos, yPos;
-    f32 delta;
+    ActionType Type;
+    KeyType Key;
+    u32 Modifier;
+    i32 XPos, YPos;
+    float ScrollDelta;
 };
  
 
@@ -149,6 +149,7 @@ class InputHandler
 public:
     virtual bool OnKey(const KeyEvent& key) = 0;
     virtual bool OnMouse(const MouseEvent& mev) = 0;
+    virtual void Update(double delta) {};
 };
 
 class InputManager
@@ -163,8 +164,17 @@ public:
     ENGINE_API void AddHandler(InputHandler* handler);
     ENGINE_API void RemoveHandler(InputHandler* handler);
 
+    ENGINE_API bool IsKeyDown(KeyType key);
+
+    ENGINE_API int2 GetMousePostion()
+    {
+        return _MousePosition;
+    }
+
+ 
+
 private:
-    InputManager() = default;
+    InputManager();
     InputManager(const InputManager& rhs) = delete;
     InputManager(InputManager&& rhs) = delete;
     InputManager& operator=(const InputManager& rhs) = delete;
@@ -172,4 +182,6 @@ private:
 
 private:
     std::vector<InputHandler*> _Handlers;
+    std::bitset<(u32)KeyType::MaxNum> _PersistentKeyState;
+    int2  _MousePosition = {};
 };

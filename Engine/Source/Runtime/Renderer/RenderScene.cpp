@@ -29,7 +29,7 @@ RenderScene::~RenderScene()
 void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 {
 	auto iter = std::find_if(_Clusters.begin(), _Clusters.end(), [primitive](const RenderCluster* info) -> bool {
-		return primitive->GetPrimitiveId() == info->PrimitiveId;
+		return primitive == info->Component;
 		});
 
 	check(iter == _Clusters.end());
@@ -38,7 +38,7 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 	if (primitive->GetType() == PrimitiveType::Mesh)
 	{
 		RenderCluster* cluster = new RenderCluster;
-		cluster->PrimitiveId = primitive->GetPrimitiveId();
+		cluster->Component = primitive;
 
 		Mesh* mesh = static_cast<Mesh*>(primitive);
 		const std::vector<MeshSegment*>& segments = mesh->GetSegments();
@@ -62,7 +62,7 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 
 				cluster->VertexBuffers.push_back(MeshVertexBuffer{
 					.Attribute = (VertexAttribute)i,
-					.Buffer = device->CreateBuffer(std::format("VertexBuffer_{}_{}",cluster->PrimitiveId,i),desc)
+					.Buffer = device->CreateBuffer(std::format("VertexBuffer_{}_{}",(u64)(primitive),i),desc)
 					});
 			}
 
@@ -78,10 +78,11 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 					 .InitData = indexData.Data
 				};
 
-				cluster->IndexBuffer = device->CreateBuffer(std::format("IndexBuffer_{}", cluster->PrimitiveId), desc);
-				_Clusters.push_back(cluster);
-				_Renderer->AddCluster(cluster);
+				cluster->IndexBuffer = device->CreateBuffer(std::format("IndexBuffer_{}", (u64)(primitive)), desc);
 			}
+
+			_Clusters.push_back(cluster);
+			_Renderer->AddCluster(cluster);
 		}
 	}
 	else
@@ -93,14 +94,20 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 
 void RenderScene::RemovePrimitive(PrimitiveComponent* primitive)
 {
-	auto iter = std::find_if(_Clusters.begin(), _Clusters.end(), [primitive](const RenderCluster* info) -> bool {
-		           return primitive->GetPrimitiveId() == info->PrimitiveId;
-		        });
-	check(iter != _Clusters.end());
-
-	_Renderer->RemoveCluster(*iter);
-
-	delete *iter;
-	_Clusters.erase(iter);
+	auto iter = _Clusters.begin();
+	while (iter != _Clusters.end())
+	{
+		if ((*iter)->Component == primitive)
+		{
+			_Renderer->RemoveCluster(*iter);
+			delete *iter;
+			auto temp = iter++;
+			_Clusters.erase(temp);
+		}
+		else
+		{
+			iter++;
+		}
+	}
 }
 

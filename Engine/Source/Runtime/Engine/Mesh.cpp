@@ -39,6 +39,8 @@ void Mesh::AddSegment(MeshSegment* s)
 	_Segments.push_back(s);
 }
 
+
+
 Mesh::~Mesh()
 {
 	for (MeshSegment* s : _Segments)
