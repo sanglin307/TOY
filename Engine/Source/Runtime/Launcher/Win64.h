@@ -17,5 +17,8 @@
 using namespace hlslpp;
 
 #include "../Core/Public.h"
+
+#include "CommonStruct.h"
+
 #include "../RHI/Public.h"
 #include "../Engine/Public.h"

@@ -2,6 +2,7 @@
 
 enum class ShaderVariableType
 {
+    VOID_,
     BOOL,
     INT,
     FLOAT,
@@ -63,6 +64,8 @@ enum class ShaderVariableClass
     VECTOR,
     MATRIX_ROWS,
     MATRIX_COLUMNS,
+    OBJECT,
+    STRUCT,
     MAX
 };
 

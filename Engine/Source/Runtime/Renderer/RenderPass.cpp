@@ -10,7 +10,7 @@ void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
 		.Name = "TestPSO"
 	};
 	PSO = device->CreateGraphicPipeline(desc);
-	PSO->BindParameter("ViewInfo", renderer->GetViewUniformBuffer());
+	PSO->BindParameter("ViewCB", renderer->GetViewUniformBuffer());
 	/*RenderBuffer::Desc udesc = {
 		.Size = sizeof(SceneConstantBuffer),
 		.Usage = (u32)ResourceUsage::UniformBuffer,

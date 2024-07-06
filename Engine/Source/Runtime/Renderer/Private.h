@@ -10,7 +10,10 @@ using namespace hlslpp;
 
 #include "../Core/Public.h"
 #include "../RHI/Public.h"
+#include "CommonStruct.h"
+
 #include "../Engine/Public.h"
+ 
 
 #include "MeshCommand.h"
 #include "RenderScene.h"

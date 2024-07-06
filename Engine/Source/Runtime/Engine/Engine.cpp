@@ -3,6 +3,8 @@
 #define TOML_EXCEPTIONS 0
 #include "toml++/toml.hpp"
 
+#include "../RHI/Compiler.h"
+
 GameEngine& GameEngine::Instance()
 {
 	static GameEngine Inst;
@@ -54,6 +56,7 @@ void GameEngine::PreInit(const std::vector<std::string>& cmds)
 
 void GameEngine::Init(std::any hwnd)
 {
+	ShaderCompiler::Init();
 	GetRHI().Init();
 
 	_GameViewport = new GameViewport(hwnd, _RenderConfig);

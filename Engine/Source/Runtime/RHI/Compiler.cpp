@@ -18,6 +18,7 @@ struct ShaderVariableTypeMapInitializer
         check(sVariableTypeMap.size() == 0);
         if (sVariableTypeMap.size() == 0)
         {
+            sVariableTypeMap.insert(std::pair<D3D_SHADER_VARIABLE_TYPE, ShaderVariableType>(D3D_SVT_VOID, ShaderVariableType::VOID_));
 #define VARTYPE(T)  sVariableTypeMap.insert(std::pair<D3D_SHADER_VARIABLE_TYPE,ShaderVariableType>(D3D_SVT_##T,ShaderVariableType::T));
             VARTYPE(BOOL)
             VARTYPE(INT)
@@ -111,6 +112,10 @@ ShaderVariableClass TranslateVariableClass(D3D_SHADER_VARIABLE_CLASS c)
         return ShaderVariableClass::MATRIX_ROWS;
     case D3D_SVC_MATRIX_COLUMNS:
         return ShaderVariableClass::MATRIX_COLUMNS;
+    case D3D_SVC_OBJECT:
+        return ShaderVariableClass::OBJECT;
+    case D3D_SVC_STRUCT:
+        return ShaderVariableClass::STRUCT;
     default:
         check(0);  // todo.
         break;
@@ -288,18 +293,52 @@ ShaderReflection* GenerateReflection(ComPtr<ID3D12ShaderReflection> ref)
     return reflectData;
 }
 
-ShaderResource* ShaderCompiler::CompileHLSL(const ShaderCreateDesc& args)
-{
-    ComPtr<IDxcUtils> _DXCUtils;
-    ComPtr<IDxcCompiler3> _DXCCompiler;
-    ComPtr<IDxcIncludeHandler> _DXCIncludeHandler;
+ComPtr<IDxcUtils> _DXCUtils;
+ComPtr<IDxcCompiler3> _DXCCompiler;
+ComPtr<IDxcIncludeHandler> _DXCIncludeHandler;
 
+class CustomIncludeHandler : public IDxcIncludeHandler
+{
+public:
+    HRESULT STDMETHODCALLTYPE LoadSource(_In_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob** ppIncludeSource) override
+    {
+        ComPtr<IDxcBlobEncoding> pEncoding;
+        std::filesystem::path path = PathUtil::Shaders() / pFilename;
+        if (IncludedFiles.find(path.string()) != IncludedFiles.end())
+        {
+            // Return empty string blob if this file has been included before
+            static const char nullStr[] = " ";
+            _DXCUtils->CreateBlobFromPinned(nullStr, ARRAYSIZE(nullStr), DXC_CP_ACP, pEncoding.GetAddressOf());
+            *ppIncludeSource = pEncoding.Detach();
+            return S_OK;
+        }
+
+        HRESULT hr = _DXCUtils->LoadFile(path.wstring().c_str(), nullptr, pEncoding.GetAddressOf());
+        if (SUCCEEDED(hr))
+        {
+            IncludedFiles.insert(path.string());
+            *ppIncludeSource = pEncoding.Detach();
+        }
+        return hr;
+    }
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject) override { return E_NOINTERFACE; }
+    ULONG STDMETHODCALLTYPE AddRef(void) override { return 0; }
+    ULONG STDMETHODCALLTYPE Release(void) override { return 0; }
+
+    std::unordered_set<std::string> IncludedFiles;
+};
+
+void ShaderCompiler::Init()
+{
     check(SUCCEEDED(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&_DXCUtils))));
     check(SUCCEEDED(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&_DXCCompiler))));
 
     _DXCUtils->CreateDefaultIncludeHandler(&_DXCIncludeHandler);
+}
 
-
+ShaderResource* ShaderCompiler::CompileHLSL(const ShaderCreateDesc& args)
+{
     std::filesystem::path fileNamePath = PathUtil::Shaders() / args.Path;
 
     constexpr u32 ArgsBufferLength = 256;
@@ -353,7 +392,8 @@ ShaderResource* ShaderCompiler::CompileHLSL(const ShaderCreateDesc& args)
     };
 
     ComPtr<IDxcResult> dxcResults;
-    _DXCCompiler->Compile(&sourceBuffer, argsParam.data(), (u32)argsParam.size(), _DXCIncludeHandler.Get(), IID_PPV_ARGS(&dxcResults));
+    CustomIncludeHandler includeHandle;
+    _DXCCompiler->Compile(&sourceBuffer, argsParam.data(), (u32)argsParam.size(), &includeHandle, IID_PPV_ARGS(&dxcResults));
 
     ComPtr<IDxcBlobUtf8> dxcErrors;
     dxcResults->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&dxcErrors), nullptr);
@@ -398,7 +438,7 @@ ShaderResource* ShaderCompiler::CompileHLSL(const ShaderCreateDesc& args)
         std::filesystem::create_directory(path);
     }
 
-    std::filesystem::path folder = path / std::format("{}_{}", args.Path, shaderHash);
+    std::filesystem::path folder = path / std::format("{}_{}_{}", args.Path,args.Entry, shaderHash);
     if (!std::filesystem::exists(folder))
     {
         std::filesystem::create_directory(folder);

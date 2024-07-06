@@ -110,13 +110,13 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableModules>false</EnableModules>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/stb;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/stb;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Shaders/Interop</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin/Win64/;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/lib/Debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Core.lib;fastgltf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Core.lib;fastgltf.lib;RHI.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>

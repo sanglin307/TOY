@@ -15,6 +15,8 @@ using namespace hlslpp;
 #include "../Core/Public.h"
 #include "../RHI/Public.h"
 
+#include "CommonStruct.h"
+
 // inner dependency.
 #include "IRenderer.h"
 #include "FrameRate.h"

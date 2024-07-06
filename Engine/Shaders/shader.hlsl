@@ -1,14 +1,7 @@
-cbuffer ViewInfo
-{
-    float4x4 View;
-    float4x4 ViewInverse;
-    float4x4 Project;
-    float4x4 ProjectInverse;
-    float4x4 ViewProject;
-    float4x4 ViewProjectInverse;
-    float4x4 ViewLocation;
-    uint FrameIndex;
-};
+
+#include "Interop/CommonStruct.h"
+
+ConstantBuffer<ViewInfo> ViewCB;
 
 struct PSInput
 {
@@ -24,7 +17,7 @@ PSInput VSMain(float3 position : POSITION, float3 normal :NORMAL)
 {
 	PSInput result;
 
-    result.position = mul(ViewProject, float4(position, 1.0f));
+    result.position = mul(ViewCB.ViewProject, float4(position, 1.0f));
     result.normal = normal;
 
 	return result;
@@ -32,5 +25,7 @@ PSInput VSMain(float3 position : POSITION, float3 normal :NORMAL)
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-    return float4(input.position.xyz,1);
+    float3 color = (input.normal + 1) / 2;
+    //color.z = (ViewCB.FrameIndex % 10) / 10.f;
+    return float4(color,1);
 }
