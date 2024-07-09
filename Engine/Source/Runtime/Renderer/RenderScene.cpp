@@ -2,7 +2,7 @@
 
 RenderCluster::~RenderCluster()
 {
-	for (auto v : VertexBuffers)
+	for (auto v : VertexStreams)
 	{
 		delete v.Buffer;
 	}
@@ -60,9 +60,11 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 					 .InitData = d.Data
 				};
 
-				cluster->VertexBuffers.push_back(MeshVertexBuffer{
+				// TODO , use seperate buffer first.
+				cluster->VertexStreams.push_back(RenderCluster::Stream{
 					.Attribute = (VertexAttribute)i,
-					.Buffer = device->CreateBuffer(std::format("VertexBuffer_{}_{}",(u64)(primitive),i),desc)
+					.Buffer = device->CreateBuffer(std::format("VertexBuffer_{}_{}",(u64)(primitive),i),desc),
+					.ByteOffset = 0
 					});
 			}
 

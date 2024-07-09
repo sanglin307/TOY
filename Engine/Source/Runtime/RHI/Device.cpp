@@ -101,6 +101,31 @@ GraphicPipeline* RenderDevice::LoadGraphicPipeline(const GraphicPipeline::Desc& 
 	return nullptr;
 }
 
+VertexAttribute RenderDevice::TranslateSemanticToAttribute(const std::string& semanticName, u32 semanticIndex)
+{
+	if (semanticName == "POSITION")
+		return VertexAttribute::Position;
+
+	if (semanticName == "NORMAL")
+		return VertexAttribute::Normal;
+
+	if (semanticName == "TANGENT")
+		return VertexAttribute::Tangent;
+
+	if (semanticName == "UV")
+	{
+		return (VertexAttribute)((u32)VertexAttribute::UV0 + semanticIndex);
+	}
+
+	if (semanticName == "COLOR")
+	{
+		return (VertexAttribute)((u32)VertexAttribute::Color0 + semanticIndex);
+	}
+
+	check(0);
+	return VertexAttribute::Max;
+}
+
 void RenderDevice::InitPipelineCache()
 {
 	std::vector<GraphicPipeline::Desc> graphicPipelines;
@@ -412,6 +437,7 @@ InputSlotClass GetSlotClass(const std::string& semanticName,u32 semanticIndex)
     return InputSlotClass::PerVertex;
 }
 
+ 
 void RenderDevice::CreateInputLayout(const ShaderResource* shader, InputSlotMapping slotMapping, InputLayout& inputLayout)
 {
     check(shader->GetProfile() == ShaderProfile::Vertex);

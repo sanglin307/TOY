@@ -4,9 +4,15 @@ class SceneRenderer;
 
 struct RenderCluster
 {
+	struct Stream
+	{
+		VertexAttribute Attribute;
+		RenderBuffer* Buffer;
+		u64 ByteOffset;
+	};
+
 	~RenderCluster();
-	InputLayout VertexLayout;
-	std::vector<MeshVertexBuffer>  VertexBuffers;
+	std::vector<Stream>  VertexStreams;
 	RenderBuffer* IndexBuffer = nullptr;
 	PrimitiveComponent* Component;
 };

@@ -9,6 +9,7 @@
 #include "Reflection.h"
 #include "Resource.h"
 #include "Shader.h"
+#include "VertexFormat.h"
 #include "Compiler.h"
 #include "Pipeline.h"
 #include "Context.h"

@@ -17,6 +17,9 @@ public:
 	virtual void RemoveCluster(RenderCluster* cluster) = 0;
 
 protected:
+
+	void BindVertexStreams(GraphicPipeline* pso, RenderCluster* cluster, RenderContext* ctx);
+
 	RenderPassType _Type;
 	RenderDevice* _Device;
 	SceneRenderer* _Renderer;
@@ -33,7 +36,7 @@ public:
 	virtual void RemoveCluster(RenderCluster* cluster) override;
 
 private:
-	std::vector<MeshCommand*> _Commands;
+	std::set<RenderCluster*> _Clusters;
 	GraphicPipeline* PSO = nullptr;
 	RenderTexture* _texture1;
 	RenderTexture* _texture2;

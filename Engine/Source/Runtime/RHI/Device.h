@@ -36,6 +36,8 @@ public:
 	RHI_API GraphicPipeline* LoadGraphicPipeline(const std::string& name);
 	RHI_API ShaderResource* LoadShader(const ShaderCreateDesc& desc);
 
+	RHI_API VertexAttribute TranslateSemanticToAttribute(const std::string& semanticName, u32 semanticIndex);
+
 	void CommitCopyCommand() { _ContextManager->CommitCopyCommand(); }
 	void GpuWaitCopyFinish() { _ContextManager->GpuWaitCopyFinish(); }
 

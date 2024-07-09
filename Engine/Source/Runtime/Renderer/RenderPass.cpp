@@ -1,5 +1,41 @@
 #include "Private.h"
 
+void RenderPass::BindVertexStreams(GraphicPipeline* pso, RenderCluster* cluster, RenderContext* ctx)
+{
+	std::vector<RenderBuffer*> vbs;
+	std::vector<u64> vbOffset;
+	for (u32 i = 0; i < pso->Info.VertexLayout.Desc.size(); i++)
+	{
+		InputLayoutDesc& desc = pso->Info.VertexLayout.Desc[i];
+		VertexAttribute VA = _Device->TranslateSemanticToAttribute(desc.SemanticName, desc.SemanticIndex);
+		auto iter = std::find_if(cluster->VertexStreams.begin(), cluster->VertexStreams.end(), [&](RenderCluster::Stream& s) -> bool {
+			
+			if (s.Attribute == VA)
+				return true;
+			return false;
+		});
+		
+		if (iter != cluster->VertexStreams.end())
+		{
+			check(desc.SlotOffset == iter->ByteOffset);
+			vbs.push_back(iter->Buffer);
+			vbOffset.push_back(iter->ByteOffset);
+		}
+		else
+		{
+			vbs.push_back(DefaultResource::Instance().GetVertexBuffer(VA));
+			vbOffset.push_back(iter->ByteOffset);
+		}
+	}
+
+	ctx->SetVertexBuffers((u32)vbs.size(), vbs.data(), vbOffset.data());
+	
+	if (cluster->IndexBuffer)
+	{
+		ctx->SetIndexBuffer(cluster->IndexBuffer);
+	}
+}
+
 void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
 {
 	_Type = RenderPassType::Test;
@@ -79,36 +115,30 @@ void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 	UniformBuffer->UploadData((u8*)&UniformData, sizeof(UniformData));*/
 
 	ctx->SetGraphicPipeline(PSO);
-	for (auto c : _Commands)
+	for (auto c : _Clusters)
 	{
 		std::vector<RenderBuffer*> buffers;
-		for (auto v : c->VertexBuffers)
-		{
-			buffers.push_back(v.Buffer);
-		}
+		BindVertexStreams(PSO, c, ctx);
 
 		if (c->IndexBuffer)
 		{
-			ctx->DrawIndexedInstanced((u32)buffers.size(), buffers.data(), c->IndexBuffer);
+			u32 indexCount = u32(c->IndexBuffer->GetSize() / c->IndexBuffer->GetStride());
+			ctx->DrawIndexedInstanced(indexCount);
 		}
 		else
 		{
-			ctx->DrawInstanced((u32)buffers.size(), buffers.data());
+			u32 vertexCount = u32(c->VertexStreams[0].Buffer->GetSize() / c->VertexStreams[0].Buffer->GetStride());
+			ctx->DrawInstanced(vertexCount);
 		}
 	}
 }
 
 void RenderPassTest::AddCluster(RenderCluster* cluster)
 {
-	MeshCommand* command = new MeshCommand;
-	command->VertexBuffers = cluster->VertexBuffers;
-	command->IndexBuffer = cluster->IndexBuffer;
-	command->Component = cluster->Component;
-	command->PSO = PSO;
-	_Commands.push_back(command);
+	_Clusters.insert(cluster);
 }
 
 void RenderPassTest::RemoveCluster(RenderCluster* cluster)
 {
-
+	_Clusters.erase(cluster);
 }

@@ -136,7 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="MeshCommand.h" />
+    <ClInclude Include="DefaultResources.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Public.h" />
     <ClInclude Include="Renderer.h" />
@@ -145,6 +145,7 @@
     <ClInclude Include="SceneRendering.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DefaultResources.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="RenderScene.cpp" />

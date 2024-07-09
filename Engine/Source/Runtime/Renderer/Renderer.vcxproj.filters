@@ -27,13 +27,13 @@
     <ClInclude Include="Public.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MeshCommand.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RenderPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SceneRendering.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DefaultResources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -48,6 +48,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SceneRendering.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DefaultResources.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

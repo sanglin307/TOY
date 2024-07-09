@@ -61,8 +61,11 @@ public:
 
 	virtual void SetGraphicShaderParameter(const ShaderParameter* param) override;
 	virtual void SetGraphicTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params) override;
-	virtual void DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
-	virtual void DrawIndexedInstanced(u32 vbNum, RenderBuffer** vbs, RenderBuffer* indexBuffer, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
+	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
+	virtual void DrawIndexedInstanced(u32 indexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
+
+	virtual void SetVertexBuffers(u32 vbNum, RenderBuffer** vbs, u64* offsets) override;
+	virtual void SetIndexBuffer(RenderBuffer* indexBuffer) override;
 
 	void UpdateSubresource(RenderTexture* destResource, RenderBuffer* tempResource, u64 tempResOffset, u32 firstSubresource, u32 numSubresources, const D3D12_SUBRESOURCE_DATA* srcData);
 private:

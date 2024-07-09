@@ -150,7 +150,7 @@ void DX12CommandList::SetGraphicShaderParameter(const ShaderParameter* param)
 
 }
 
-void DX12CommandList::DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
+void DX12CommandList::SetVertexBuffers(u32 vbNum, RenderBuffer** vbs, u64* offsets)
 {
     check(vbNum > 0);
     std::vector<D3D12_VERTEX_BUFFER_VIEW> vbv;
@@ -160,27 +160,24 @@ void DX12CommandList::DrawInstanced(u32 vbNum, RenderBuffer** vbs, u32 instanceC
         vbv.push_back(buffer->GetVertexBufferView());
     }
 
-    u32 vertexPerInstance = (u32)(vbs[0]->GetSize() / vbs[0]->GetStride());
     _Handle->IASetVertexBuffers(0, (UINT)vbv.size(), vbv.data());
-    _Handle->DrawInstanced(vertexPerInstance, instanceCount, vertexOffset, instanceOffset);
 }
 
-void DX12CommandList::DrawIndexedInstanced(u32 vbNum, RenderBuffer** vbs, RenderBuffer* indexBuffer, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
+void DX12CommandList::SetIndexBuffer(RenderBuffer* indexBuffer)
 {
-    check(vbNum > 0);
-    std::vector<D3D12_VERTEX_BUFFER_VIEW> vbv;
-    for (u32 i = 0; i < vbNum; i++)
-    {
-        DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(vbs[i]);
-        vbv.push_back(buffer->GetVertexBufferView());
-    }
-    _Handle->IASetVertexBuffers(0, (UINT)vbv.size(), vbv.data());
- 
     DX12RenderBuffer* ib = static_cast<DX12RenderBuffer*>(indexBuffer);
     D3D12_INDEX_BUFFER_VIEW ibv = ib->GetIndexBufferView();
     _Handle->IASetIndexBuffer(&ibv);
-    u32 indexPerInstance = (u32)(ib->GetSize() / ib->GetStride());
-    _Handle->DrawIndexedInstanced(indexPerInstance, instanceCount, 0,vertexOffset, instanceOffset);
+}
+
+void DX12CommandList::DrawInstanced(u32 vertexCount, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
+{  
+    _Handle->DrawInstanced(vertexCount, instanceCount, vertexOffset, instanceOffset);
+}
+
+void DX12CommandList::DrawIndexedInstanced(u32 indexCount, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
+{
+    _Handle->DrawIndexedInstanced(indexCount, instanceCount, 0,vertexOffset, instanceOffset);
 }
 
 void DX12CommandList::SetViewport(u32 x, u32 y, u32 width, u32 height, float minDepth, float maxDepth)
