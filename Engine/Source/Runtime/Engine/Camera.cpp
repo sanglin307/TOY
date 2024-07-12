@@ -14,7 +14,7 @@ Camera::Camera(const std::string& name, const Desc& desc)
 
 void Camera::InitCameraTransform()
 {
-	_Position = float3(0, 0, -10);
+	_Position = float3(0, 0, -1);
 	_Rotation = quaternion(float3x3((float4x4::look_at(_Position, float3(0), float3(0, 1, 0)))));
 }
 
@@ -57,7 +57,6 @@ void CameraController::Update(double delta)
 	{
 		int2 mouseDelta = InputManager::Instance().GetMousePostion() - mousePrePos;
 		mousePrePos = InputManager::Instance().GetMousePostion();
-		//OutputDebugStringA(std::format("delta: {},{}\n", mouseDelta[0], mouseDelta[1]).c_str());
 		quaternion pitch = quaternion::rotation_euler_zxy(float3(mouseDelta[1] * delta * 0.2f, 0.f,0.f));
 		quaternion yaw = quaternion::rotation_euler_zxy(float3(0.f, mouseDelta[0] * delta * 0.2f, 0.f));
 		_Camera->_Rotation = mul(mul(pitch, _Camera->_Rotation),yaw);

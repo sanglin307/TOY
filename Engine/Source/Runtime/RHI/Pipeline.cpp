@@ -3,11 +3,14 @@
 void GraphicPipeline::BindParameter(const std::string& name, RenderResource* resource)
 {
 	auto iter = _ShaderParameters.find(name);
-	check(iter != _ShaderParameters.end());
+	//check(iter != _ShaderParameters.end());
+	if (iter == _ShaderParameters.end())
+		return;
+
 	iter->second->Resource = resource;
 }
 
-void GraphicPipeline::BindParameter(RenderContext* ctx)
+void GraphicPipeline::CommitParameter(RenderContext* ctx)
 {
 	for (auto pair : _ShaderParameters)
 	{
@@ -35,7 +38,6 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 	const RootSignature::Desc& desc = rs->GetDesc();
 	check(paramDesc.size() > 0);
 
-	u32 ParamNum[(u32)ShaderBindType::Max] = {};
 	u32 ParamOffset[(u32)ShaderBindType::Max] = {};
 	ShaderBindType t = paramDesc[0].Type;
 	ParamOffset[(u32)t] = 0;
@@ -69,40 +71,42 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 				{
 					if (res.BindSpace == RootSignature::cRootDescriptorSpace)
 					{
-						check(ParamNum[(u32)ShaderBindType::RootCBV] < desc.RootCBVNum);
+						check(res.BindPoint + res.BindCount <= desc.RootCBVNum);
 						param->BindType = ShaderBindType::RootCBV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootCBV] + ParamNum[(u32)ShaderBindType::RootCBV];
+						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootCBV] + res.BindPoint;
 						param->TableOffset = 0;
-						ParamNum[(u32)ShaderBindType::RootCBV]++;
+						param->DescriptorNum = 1;
 					}
-					else
+					else if (res.BindSpace == RootSignature::cDescriptorTableSpace)
 					{
-						check(ParamNum[(u32)ShaderBindType::TableCBV] < desc.TableCBVNum);
+						check(res.BindPoint + res.BindCount <= desc.TableCBVNum);
 						param->BindType = ShaderBindType::TableCBV;
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableCBV];
 						param->TableOffset = res.BindPoint;
-						ParamNum[(u32)ShaderBindType::TableCBV]++;
+						param->DescriptorNum = res.BindCount;
 						_CBVs.push_back(param);
 					}
+					else
+						check(0);
 				}
 				else if ((res.Type == ShaderInputType::TBUFFER || res.Type == ShaderInputType::TEXTURE || res.Type == ShaderInputType::STRUCTURED ||
 					res.Type == ShaderInputType::BYTEADDRESS))
 				{
 					if (res.BindSpace == RootSignature::cRootDescriptorSpace)
 					{
-						check(ParamNum[(u32)ShaderBindType::RootSRV] < desc.RootSRVNum);
+						check(res.BindPoint + res.BindCount <= desc.RootSRVNum);
 						param->BindType = ShaderBindType::RootSRV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootSRV] + ParamNum[(u32)ShaderBindType::RootSRV];
+						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootSRV] + res.BindPoint;
 						param->TableOffset = 0;
-						ParamNum[(u32)ShaderBindType::RootSRV]++;
+						param->DescriptorNum = 1;
 					}
-					else
+					else if (res.BindSpace == RootSignature::cDescriptorTableSpace)
 					{
-						check(ParamNum[(u32)ShaderBindType::TableSRV] < desc.TableSRVNum);
+						check(res.BindPoint + res.BindCount <= desc.TableSRVNum);
 						param->BindType = ShaderBindType::TableSRV;
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableSRV];
 						param->TableOffset = res.BindPoint;
-						ParamNum[(u32)ShaderBindType::TableSRV]++;
+						param->DescriptorNum = res.BindCount;
 						_SRVs.push_back(param);
 					}
 				}
@@ -112,29 +116,32 @@ void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderRes
 				{
 					if (res.BindSpace == RootSignature::cRootDescriptorSpace)
 					{
-						check(ParamNum[(u32)ShaderBindType::RootUAV] < desc.RootUAVNum);
+						check(res.BindPoint + res.BindCount <= desc.RootUAVNum);
 						param->BindType = ShaderBindType::RootUAV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootUAV] + ParamNum[(u32)ShaderBindType::RootUAV];
+						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootUAV] + res.BindPoint;
 						param->TableOffset = 0;
-						ParamNum[(u32)ShaderBindType::RootUAV]++;
+						param->DescriptorNum = 1;
 					}
-					else
+					else if (res.BindSpace == RootSignature::cDescriptorTableSpace)
 					{
-						check(ParamNum[(u32)ShaderBindType::TableUAV] < desc.TableUAVNum);
+						check(res.BindPoint + res.BindCount <= desc.TableUAVNum);
 						param->BindType = ShaderBindType::TableUAV;
 						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableUAV];
 						param->TableOffset = res.BindPoint;
-						ParamNum[(u32)ShaderBindType::TableUAV]++;
+						param->DescriptorNum = res.BindCount;
 						_UAVs.push_back(param);
 					}
+				    else
+					  check(0);
 				}
 				else if (res.Type == ShaderInputType::SAMPLER)
 				{
-					check(ParamNum[(u32)ShaderBindType::TableSampler] < desc.TableSamplerNum);
+					check(res.BindPoint + res.BindCount <= desc.TableSamplerNum);
+					check(res.BindSpace == RootSignature::cDescriptorTableSpace);
 					param->BindType = ShaderBindType::TableSampler;
 					param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableSampler];
 					param->TableOffset = res.BindPoint;
-					ParamNum[(u32)ShaderBindType::TableSampler]++;
+					param->DescriptorNum = res.BindCount;
 					_Samplers.push_back(param);
 				}
 			}

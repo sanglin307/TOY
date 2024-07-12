@@ -95,7 +95,7 @@ void Node::UpdateWorldMatrix()
 	if (_Parent)
 		parentMat = _Parent->GetWorldMatrix();
 
-	_WorldMatrix = float4x4::scale(_Scale) * float4x4(_Rotation) * float4x4::translation(_Translate) * parentMat;
+	_WorldMatrix = parentMat * float4x4::translation(_Translate) * float4x4(_Rotation) * float4x4::scale(_Scale);
 	for (auto n : _Children)
 	{
 		n->UpdateWorldMatrix();

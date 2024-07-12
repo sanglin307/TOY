@@ -22,6 +22,10 @@ public:
 	}
 
 	void SetMaterial(Material* mat);
+	Material* GetMaterial()
+	{
+		return _Material;
+	}
 
 private:
 	std::array<VertexData, (u32)VertexAttribute::Max> _Data = {};

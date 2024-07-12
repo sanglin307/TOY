@@ -1,41 +1,5 @@
 #include "Private.h"
 
-void RenderPass::BindVertexStreams(GraphicPipeline* pso, RenderCluster* cluster, RenderContext* ctx)
-{
-	std::vector<RenderBuffer*> vbs;
-	std::vector<u64> vbOffset;
-	for (u32 i = 0; i < pso->Info.VertexLayout.Desc.size(); i++)
-	{
-		InputLayoutDesc& desc = pso->Info.VertexLayout.Desc[i];
-		VertexAttribute VA = _Device->TranslateSemanticToAttribute(desc.SemanticName, desc.SemanticIndex);
-		auto iter = std::find_if(cluster->VertexStreams.begin(), cluster->VertexStreams.end(), [&](RenderCluster::Stream& s) -> bool {
-			
-			if (s.Attribute == VA)
-				return true;
-			return false;
-		});
-		
-		if (iter != cluster->VertexStreams.end())
-		{
-			check(desc.SlotOffset == iter->ByteOffset);
-			vbs.push_back(iter->Buffer);
-			vbOffset.push_back(iter->ByteOffset);
-		}
-		else
-		{
-			vbs.push_back(DefaultResource::Instance().GetVertexBuffer(VA));
-			vbOffset.push_back(iter->ByteOffset);
-		}
-	}
-
-	ctx->SetVertexBuffers((u32)vbs.size(), vbs.data(), vbOffset.data());
-	
-	if (cluster->IndexBuffer)
-	{
-		ctx->SetIndexBuffer(cluster->IndexBuffer);
-	}
-}
-
 void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
 {
 	_Type = RenderPassType::Test;
@@ -46,88 +10,66 @@ void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
 		.Name = "TestPSO"
 	};
 	PSO = device->CreateGraphicPipeline(desc);
-	PSO->BindParameter("ViewCB", renderer->GetViewUniformBuffer());
-	/*RenderBuffer::Desc udesc = {
-		.Size = sizeof(SceneConstantBuffer),
-		.Usage = (u32)ResourceUsage::UniformBuffer,
-		.CpuAccess = (u32)CpuAccessFlags::Write,
-		.Alignment = true
-	};
-	UniformBuffer = device->CreateBuffer("SceneConstantBuffer",udesc);
-	PSO->BindParameter("SceneConstantBuffer", UniformBuffer);
-
-	Image* image1 = ImageReader::Instance().LoadFromFile("GTA.png");
-	RenderTexture::Desc td1 = {
-		.Width = image1->Width,
-		.Height = image1->Height,
-		.DepthOrArraySize = 1,
-		.MipLevels = 1,
-		.Format = image1->Format,
-		.Usage = (u32)ResourceUsage::ShaderResource,
-		.Dimension = ResourceDimension::Texture2D,
-		.Data = image1->Data,
-		.Size = image1->Size
-	};
-	_texture1 = device->CreateTexture("GTA.png",td1);
-	PSO->BindParameter("texture1", _texture1);
-
-	Image* image2 = ImageReader::Instance().LoadFromFile("Valorant.png");
-	RenderTexture::Desc td2 = {
-		.Width = image2->Width,
-		.Height = image2->Height,
-		.DepthOrArraySize = 1,
-		.MipLevels = 1,
-		.Format = image2->Format,
-		.Usage = (u32)ResourceUsage::ShaderResource,
-		.Dimension = ResourceDimension::Texture2D,
-		.Data = image2->Data,
-		.Size = image2->Size
-	};
-	_texture2 = device->CreateTexture("Valorant", td2);
-	PSO->BindParameter("texture2", _texture2);
-
-	
 
 	Sampler::Desc sd;
-	_sampler = device->CreateSampler(sd);
-	PSO->BindParameter("g_sampler", _sampler);*/
+	_Sampler = device->CreateSampler(sd);
+	PSO->BindParameter("TestSampler", _Sampler);
+
+	RenderBuffer::Desc bd = {
+		.Size = sizeof(MaterialData),
+		.Stride = sizeof(MaterialData),
+		.Usage = (u32)ResourceUsage::UniformBuffer,
+		.CpuAccess = CpuAccessFlags::Write,
+		.Alignment = true
+	};
+	MaterialBuffer = device->CreateBuffer("MaterialBuffer", bd);
+	PSO->BindParameter("MaterialCB", MaterialBuffer);
 }
 
 RenderPassTest::~RenderPassTest()
 {
-	/*delete UniformBuffer;
-	delete _texture1;
-	delete _texture2;
-	delete _sampler;*/
+	for (auto iter : _Commands)
+	{
+		delete iter;
+	}
+
+	delete MaterialBuffer;
 }
 
 void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 {
-	//update 
-	/*const float translationSpeed = 0.005f;
-	const float offsetBounds = 1.25f;
-
-	UniformData.offset[0] += translationSpeed;
-	if (UniformData.offset[0] > offsetBounds)
-	{
-		UniformData.offset[0] = -offsetBounds;
-	}
-	UniformBuffer->UploadData((u8*)&UniformData, sizeof(UniformData));*/
-
+	ctx->SetRootSignature(PSO->GetRootSignature());
+	PSO->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+	ctx->SetPrimitiveTopology(PSO->Info.Topology);
 	ctx->SetGraphicPipeline(PSO);
-	for (auto c : _Clusters)
-	{
-		std::vector<RenderBuffer*> buffers;
-		BindVertexStreams(PSO, c, ctx);
 
+	for (auto c : _Commands)
+	{
+		MaterialBuffer->UploadData((u8*)&(c->Material), sizeof(c->Material));
+		if (c->Material.TextureMask & BaseColorTextureMask)
+			PSO->BindParameter("BaseColorTexture", c->BaseColor);
+
+		if (c->Material.TextureMask & NormalTextureMask)
+			PSO->BindParameter("NormalTexture", c->Normal);
+
+		if (c->Material.TextureMask & RoughnessMetalnessTextureMask)
+			PSO->BindParameter("RoughnessMetalnessTexture", c->RoughMetelness);
+
+		if (c->Material.TextureMask & EmissiveTextureMask)
+			PSO->BindParameter("EmissiveTexture", c->Emissive);
+
+		PSO->CommitParameter(ctx);
+
+		ctx->SetVertexBuffers((u32)c->VertexBuffers.size(), c->VertexBuffers.data());
 		if (c->IndexBuffer)
 		{
+			ctx->SetIndexBuffer(c->IndexBuffer);
 			u32 indexCount = u32(c->IndexBuffer->GetSize() / c->IndexBuffer->GetStride());
 			ctx->DrawIndexedInstanced(indexCount);
 		}
 		else
 		{
-			u32 vertexCount = u32(c->VertexStreams[0].Buffer->GetSize() / c->VertexStreams[0].Buffer->GetStride());
+			u32 vertexCount = u32(c->VertexBuffers[0]->GetSize() / c->VertexBuffers[0]->GetStride());
 			ctx->DrawInstanced(vertexCount);
 		}
 	}
@@ -135,10 +77,77 @@ void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 
 void RenderPassTest::AddCluster(RenderCluster* cluster)
 {
-	_Clusters.insert(cluster);
+	RenderCommand* command = new RenderCommand;
+	for (u32 i = 0; i < PSO->Info.VertexLayout.Desc.size(); i++)
+	{
+		InputLayoutDesc& desc = PSO->Info.VertexLayout.Desc[i];
+		VertexAttribute VA = _Device->TranslateSemanticToAttribute(desc.SemanticName, desc.SemanticIndex);
+		auto iter = std::find_if(cluster->VertexStreams.begin(), cluster->VertexStreams.end(), [&](RenderCluster::Stream& s) -> bool {
+
+			if (s.Attribute == VA)
+				return true;
+			return false;
+			});
+
+		if (iter != cluster->VertexStreams.end())
+		{
+			check(desc.SlotOffset == iter->ByteOffset);
+			command->VertexBuffers.push_back(iter->Buffer);
+		}
+		else
+		{
+			command->VertexBuffers.push_back(DefaultResource::Instance().GetVertexBuffer(VA));
+		}
+	}
+	command->IndexBuffer = cluster->IndexBuffer;
+	command->Component = cluster->Component;
+	command->Material.BaseColorFactor = cluster->Material->BaseColorFactor;
+	command->Material.EmissiveFactor = float4(cluster->Material->EmissiveFactor,1);
+	command->Material.MetalnessFactor = cluster->Material->MetalnessFactor;
+	command->Material.RoughnessFactor = cluster->Material->RoughnessFactor;
+	command->Material.AlphaCutoff = cluster->Material->AlphaCutoff;
+
+	command->Material.TextureMask = 0;
+	if (cluster->Material->BaseColorTexture.Texture)
+	{
+		command->Material.TextureMask |= BaseColorTextureMask;
+		command->BaseColor = cluster->Material->BaseColorTexture.Texture;
+	}
+
+	if (cluster->Material->EmissiveTexture.Texture)
+	{
+		command->Material.TextureMask |= EmissiveTextureMask;
+		command->Emissive = cluster->Material->EmissiveTexture.Texture;
+	}
+
+	if (cluster->Material->RoughnessMetalnessTexture.Texture)
+	{
+		command->Material.TextureMask |= RoughnessMetalnessTextureMask;
+		command->RoughMetelness = cluster->Material->RoughnessMetalnessTexture.Texture;
+	}
+
+	if (cluster->Material->NormalTexture.Texture)
+	{
+		command->Material.TextureMask |= NormalTextureMask;
+		command->Normal = cluster->Material->NormalTexture.Texture;
+	}
+
+	_Commands.push_back(command);
+
 }
 
 void RenderPassTest::RemoveCluster(RenderCluster* cluster)
 {
-	_Clusters.erase(cluster);
+	auto iter = _Commands.begin();
+	while (iter != _Commands.end())
+	{
+		if ((*iter)->Component == cluster->Component)
+		{
+			auto diter = iter++;
+			delete (*diter);
+			_Commands.erase(diter);
+		}
+		else
+			iter++;
+	}
 }

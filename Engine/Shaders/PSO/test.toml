@@ -1,3 +1,3 @@
 [TestPSO]
-vs = { path = "shader.hlsl" , entry = "VSMain", macro = [] }
-ps = { path = "shader.hlsl", entry = "PSMain", macro = [] }
+vs = { path = "Test.hlsl" , entry = "VSMain", macro = [] }
+ps = { path = "Test.hlsl", entry = "PSMain", macro = [] }

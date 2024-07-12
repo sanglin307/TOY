@@ -39,4 +39,9 @@ std::string WindowsUtils::DateNowString()
     return buf;
 }
 
+void WindowsUtils::OutputDebug(const std::string& str)
+{
+    OutputDebugStringA(str.c_str());
+}
+
 #endif

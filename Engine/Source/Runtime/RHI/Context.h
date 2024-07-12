@@ -58,8 +58,11 @@ public:
 	virtual void SetGraphicTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params) = 0;
 	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
 	virtual void DrawIndexedInstanced(u32 indexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
+	virtual void SetPrimitiveTopology(const PrimitiveTopology topology) = 0;
+	virtual void SetRootSignature(const RootSignature* rootsig) = 0;
+	virtual void SetDescriptorHeap() = 0;
 
-	virtual void SetVertexBuffers(u32 vbNum, RenderBuffer** vbs, u64* offsets) = 0;
+	virtual void SetVertexBuffers(u32 vbNum, RenderBuffer** vbs) = 0;
 	virtual void SetIndexBuffer(RenderBuffer* indexBuffer) = 0;
 
 	RenderContext* ReadyForRecord();
@@ -101,6 +104,7 @@ public:
 	RHI_API void AddCopyNum();
 	RHI_API void CommitCopyCommand();
 	RHI_API void GpuWaitCopyFinish();
+	RHI_API void CpuWaitCopyFinish();
 
 private:
 	static constexpr u32 CommandAllocatorNumber = 3;
@@ -120,6 +124,7 @@ private:
 	u64 _CopyQueueFenceValue = 0;
 	Fence* _CopyQueueFence;
 	bool _ContainCopyOp = false;
+	bool _NeedGpuWaitCopyFinish = false;
 
 	RenderDevice* _Device;
 	u64 _FenceValues[CommandAllocatorNumber];

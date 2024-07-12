@@ -64,7 +64,11 @@ public:
 	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
 	virtual void DrawIndexedInstanced(u32 indexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
 
-	virtual void SetVertexBuffers(u32 vbNum, RenderBuffer** vbs, u64* offsets) override;
+	virtual void SetPrimitiveTopology(const PrimitiveTopology topology) override;
+	virtual void SetRootSignature(const RootSignature* rootsig) override;
+	virtual void SetDescriptorHeap() override;
+
+	virtual void SetVertexBuffers(u32 vbNum, RenderBuffer** vbs) override;
 	virtual void SetIndexBuffer(RenderBuffer* indexBuffer) override;
 
 	void UpdateSubresource(RenderTexture* destResource, RenderBuffer* tempResource, u64 tempResOffset, u32 firstSubresource, u32 numSubresources, const D3D12_SUBRESOURCE_DATA* srcData);

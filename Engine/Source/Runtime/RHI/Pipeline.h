@@ -257,7 +257,8 @@ struct DepthStencilDesc
 
 enum class ShaderBindType
 {
-	RootCBV = 0,
+	RootConstant = 0,
+	RootCBV,
 	RootSRV,
 	RootUAV,
 	TableCBV,
@@ -279,6 +280,7 @@ class RootSignature
 public:
 	struct Desc
 	{
+		u32 RootConstant32Num;
 		u32 RootCBVNum;
 		u32 RootSRVNum;
 		u32 RootUAVNum;
@@ -293,7 +295,9 @@ public:
 		}
 	};
 
+	constexpr static u32 cDescriptorTableSpace = 0;
 	constexpr static u32 cRootDescriptorSpace = 1;
+	constexpr static u32 cRootConstantSpace = 2;
 
 	virtual ~RootSignature()
 	{
@@ -305,7 +309,7 @@ public:
 			_ParamsDesc[i].Alloc.Heap->FreeBlock(_ParamsDesc[i].Alloc);
 		}
 	};
-	virtual std::any Handle() { return nullptr; }
+	virtual std::any Handle() const { return nullptr; }
 
 	const std::vector<RootSignatureParamDesc>& GetParamDesc() const
 	{
@@ -349,7 +353,8 @@ struct ShaderParameter
 	ShaderBindType BindType;
 	u32 RootParamIndex;
 	u32 TableOffset;
-	RenderResource* Resource;
+	u32 DescriptorNum;
+	RenderResource* Resource = nullptr;
 };
 
 class RenderContext;
@@ -403,7 +408,7 @@ public:
 	virtual ~GraphicPipeline() {}
 	virtual std::any Handle() { return nullptr; }
 
-	RHI_API void BindParameter(RenderContext* ctx);
+	RHI_API void CommitParameter(RenderContext* ctx);
 	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
 	RHI_API RootSignature* GetRootSignature() const
 	{

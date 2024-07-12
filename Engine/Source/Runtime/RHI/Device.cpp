@@ -75,6 +75,7 @@ ShaderResource* RenderDevice::LoadShader(const ShaderCreateDesc& desc)
 		}
 	}
 
+	check(0);
 	return nullptr;
 }
 
@@ -112,7 +113,7 @@ VertexAttribute RenderDevice::TranslateSemanticToAttribute(const std::string& se
 	if (semanticName == "TANGENT")
 		return VertexAttribute::Tangent;
 
-	if (semanticName == "UV")
+	if (semanticName == "TEXCOORD")
 	{
 		return (VertexAttribute)((u32)VertexAttribute::UV0 + semanticIndex);
 	}
@@ -191,17 +192,28 @@ void RenderDevice::AddDelayDeleteResource(RenderResource* res, u32 delayFrame)
 
 void RenderDevice::CleanDelayDeleteResource()
 {
+	std::list<DelayDeleteResource> needDeleteRes;
 	auto iter = _DelayDeleteResources.begin();
 	while(iter != _DelayDeleteResources.end())
 	{
 		if (_FrameNum > iter->FrameNum + iter->DelayFrameNum)
 		{
-			delete iter->Resource;
+			needDeleteRes.push_back(*iter);
 			auto diter = iter++;
 			_DelayDeleteResources.erase(diter);
 		}
 		else
 			iter++;
+	}
+
+	if (needDeleteRes.size() > 0)
+	{
+		// we should wait copy queue finish, there are copy used temp resource in delay delete resource now.
+		_ContextManager->CpuWaitCopyFinish();
+		for (auto res : needDeleteRes)
+		{
+			delete res.Resource;
+		}
 	}
 }
 

@@ -13,7 +13,7 @@ void DefaultResource::Init(RenderDevice* device)
 		.Size = sizeof(float) * 3,
 		.Stride = 0,
 		.Usage = (u32)ResourceUsage::VertexBuffer,
-		.CpuAccess = 0,
+		.CpuAccess = CpuAccessFlags::None,
 		.Alignment = true,
 		.InitData = (u8*)&normalValue
 	};
@@ -25,7 +25,7 @@ void DefaultResource::Init(RenderDevice* device)
 		.Size = sizeof(float) * 3,
 		.Stride = 0,
 		.Usage = (u32)ResourceUsage::VertexBuffer,
-		.CpuAccess = 0,
+		.CpuAccess = CpuAccessFlags::None,
 		.Alignment = true,
 		.InitData = (u8*)&tangentValue
 	};
@@ -37,7 +37,7 @@ void DefaultResource::Init(RenderDevice* device)
 		.Size = sizeof(float) * 4,
 		.Stride = 0,
 		.Usage = (u32)ResourceUsage::VertexBuffer,
-		.CpuAccess = 0,
+		.CpuAccess = CpuAccessFlags::None,
 		.Alignment = true,
 		.InitData = (u8*)&colorValue
 	};
@@ -49,7 +49,7 @@ void DefaultResource::Init(RenderDevice* device)
 		.Size = sizeof(float) * 2,
 		.Stride = 0,
 		.Usage = (u32)ResourceUsage::VertexBuffer,
-		.CpuAccess = 0,
+		.CpuAccess = CpuAccessFlags::None,
 		.Alignment = true,
 		.InitData = (u8*)&uvValue
 	};

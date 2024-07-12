@@ -8,9 +8,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{EA4F9986-C920-495D-9FC0-4BC9F6282B96}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E6359BD8-1834-439D-87A0-4D9622E03538}"
-	ProjectSection(SolutionItems) = preProject
-		Engine\Shaders\shader.hlsl = Engine\Shaders\shader.hlsl
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{DE228176-294A-425A-9BEC-C2E76C9B9AA9}"
 EndProject
@@ -67,6 +64,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interop", "Interop", "{F6B1D3E3-F8A7-41DD-AEBA-A56EDAB2333E}"
 	ProjectSection(SolutionItems) = preProject
 		Engine\Shaders\Interop\CommonStruct.h = Engine\Shaders\Interop\CommonStruct.h
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sources", "Sources", "{333BC946-D5F7-4665-9E91-5AC3B52CE68B}"
+	ProjectSection(SolutionItems) = preProject
+		Engine\Shaders\GlobalResources.hlsl = Engine\Shaders\GlobalResources.hlsl
+		Engine\Shaders\Test.hlsl = Engine\Shaders\Test.hlsl
 	EndProjectSection
 EndProject
 Global
@@ -151,6 +154,7 @@ Global
 		{78BF6180-D1A5-4D4B-B849-6BAECE40121C} = {E6359BD8-1834-439D-87A0-4D9622E03538}
 		{FA82395F-24D2-48A2-914D-1E3D43411799} = {DE228176-294A-425A-9BEC-C2E76C9B9AA9}
 		{F6B1D3E3-F8A7-41DD-AEBA-A56EDAB2333E} = {E6359BD8-1834-439D-87A0-4D9622E03538}
+		{333BC946-D5F7-4665-9E91-5AC3B52CE68B} = {E6359BD8-1834-439D-87A0-4D9622E03538}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8D6D4F4A-2438-4BD9-8B56-64072D015675}

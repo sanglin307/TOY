@@ -293,7 +293,7 @@ public:
         u64 Size;
         u32 Stride;
         u32 Usage;
-        u32 CpuAccess;
+        CpuAccessFlags CpuAccess;
         bool Alignment;
         u8* InitData;
     };

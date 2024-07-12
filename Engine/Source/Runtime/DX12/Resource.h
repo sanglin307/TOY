@@ -111,8 +111,9 @@ public:
 	virtual void UploadData(u8* data, size_t size) override;
 
 private:
-	DX12RenderBuffer(RenderDevice* device, const RenderBuffer::Desc& desc,ResourceState state, ComPtr<ID3D12Resource> handle)
+	DX12RenderBuffer(const std::string& name, RenderDevice* device, const RenderBuffer::Desc& desc,ResourceState state, ComPtr<ID3D12Resource> handle)
 	{
+		_Name = name;
 		Device = device;
 		State = state;
 		_Desc = desc;
@@ -192,8 +193,9 @@ public:
 
 private:
 
-	DX12RenderTexture(RenderDevice* device, const Desc& desc, ResourceState state, ComPtr<ID3D12Resource> handle)
+	DX12RenderTexture(const std::string& name, RenderDevice* device, const Desc& desc, ResourceState state, ComPtr<ID3D12Resource> handle)
 	{
+		_Name = name;
 		Device = device;
 		_Desc = desc;
 		State = state;

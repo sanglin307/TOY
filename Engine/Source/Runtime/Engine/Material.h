@@ -11,7 +11,7 @@ enum class MaterialBlend
 struct MaterialTexture
 {
 	u32 TextureCoordIndex = 0;
-	RenderTexture* Texture;
+	RenderTexture* Texture = nullptr;
 };
 
 struct Material
@@ -31,9 +31,10 @@ struct Material
 	MaterialTexture          RoughnessMetalnessTexture;
 	MaterialTexture          EmissiveTexture;
 
+	MaterialTexture          AnisotropyTexture;
     float                   AnisotropyStrength = 0.0f;
     float                   AnisotropyRotation = 0.0f;
-	MaterialTexture          AnisotropyTexture;
+	
 
 	MaterialBlend           BlendMode;
     float                   AlphaCutoff;

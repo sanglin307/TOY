@@ -137,11 +137,11 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
     textureData.SlicePitch = textureData.RowPitch * desc.Height;
 
     DX12CommandList* ctx = static_cast<DX12CommandList*>(_ContextManager->GetCopyContext());
-    DX12RenderTexture* dstTexture = new DX12RenderTexture(this, desc, ResourceState::CopyDest, resource);
+    DX12RenderTexture* dstTexture = new DX12RenderTexture(name,this, desc, ResourceState::CopyDest, resource);
     RenderBuffer::Desc buffDesc = {
         .Size = uploadBufferSize
     };
-    RenderBuffer* srcBuffer = new DX12RenderBuffer(this, buffDesc, ResourceState::GenericRead, tempRes);
+    RenderBuffer* srcBuffer = new DX12RenderBuffer("Texture_TempCopy",this, buffDesc, ResourceState::GenericRead, tempRes);
     ctx->UpdateSubresource(dstTexture, srcBuffer, 0, 0, 1, &textureData);
     AddDelayDeleteResource(srcBuffer);
 
@@ -192,7 +192,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
         .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR
     };
 
-    if ( info.CpuAccess & (u32)CpuAccessFlags::ReadWrite )
+    if ( info.CpuAccess != CpuAccessFlags::None )
     {
         D3D12_HEAP_PROPERTIES heap = {
             .Type = D3D12_HEAP_TYPE_UPLOAD
@@ -210,7 +210,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
             resource->Unmap(0, nullptr);
         }
 
-        DX12RenderBuffer* renderBuffer = new DX12RenderBuffer(this, info, ResourceState::GenericRead, resource);
+        DX12RenderBuffer* renderBuffer = new DX12RenderBuffer(name,this, info, ResourceState::GenericRead, resource);
         u8* uniformDataMap = nullptr;
         if (info.Usage & (u32)ResourceUsage::UniformBuffer)
         {
@@ -255,15 +255,15 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
             tempRes->Unmap(0, nullptr);
             
             RenderContext* ctx = _ContextManager->GetCopyContext();
-            RenderBuffer* dstBuffer = new DX12RenderBuffer(this,info, ResourceState::Common, resource);
-            RenderBuffer* srcBuffer = new DX12RenderBuffer(this,info, ResourceState::GenericRead, tempRes);
+            RenderBuffer* dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
+            RenderBuffer* srcBuffer = new DX12RenderBuffer("Buffer_CopyTemp",this, info, ResourceState::GenericRead, tempRes);
             ctx->CopyResource(dstBuffer, srcBuffer);
             AddDelayDeleteResource(srcBuffer);
             return dstBuffer;
         }
         else
         {
-            return new DX12RenderBuffer(this,info, ResourceState::Common, resource);
+            return new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
         }
     }
 
@@ -295,7 +295,7 @@ D3D12_INDEX_BUFFER_VIEW DX12RenderBuffer::GetIndexBufferView()
 void DX12RenderBuffer::UploadData(u8* data, size_t size)
 {
     check(data != nullptr && size > 0);
-    check(_Desc.CpuAccess & (u32)CpuAccessFlags::Write);
+    check((u32)_Desc.CpuAccess & (u32)CpuAccessFlags::Write);
     std::memcpy(_UniformDataMapPointer, data, size);
 }
  

@@ -9,6 +9,7 @@ public:
 	static std::wstring UTF8ToUTF16(const std::string& utf8);
 	static std::string TimeNowString();
 	static std::string DateNowString();
+	static void OutputDebug(const std::string& str);
 	
 };
 

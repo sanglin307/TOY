@@ -96,11 +96,11 @@ DX12Device::DX12Device()
     _DescriptorManager = new DescriptorManager(this);
 
     RootSignature::Desc rsDesc = {
-        .RootCBVNum = 4,
-        .RootSRVNum = 6,
+        .RootCBVNum = 8,
+        .RootSRVNum = 4,
         .RootUAVNum = 2,
-        .TableCBVNum = 100,
-        .TableSRVNum = 200,
+        .TableCBVNum = 200,
+        .TableSRVNum = 400,
         .TableUAVNum = 100,
         .TableSamplerNum = 100
     };
@@ -284,7 +284,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
                  .Dimension = ResourceDimension::Texture2D
             };
 
-            DX12RenderTexture* dx12Resource = new DX12RenderTexture(this,desc, ResourceState::Present,res);
+            DX12RenderTexture* dx12Resource = new DX12RenderTexture("SwapChainTexture",this, desc, ResourceState::Present, res);
             dx12Resource->SetRenderTargetView(da, cpuHandle);
 
             rtResources[n] = dx12Resource;
@@ -301,12 +301,6 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
 void DX12Device::CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders,RootSignature::Desc& desc)
 {
     desc = {};
-    std::set<std::string> paramSet;
-    u32 maxCBVBindPoint = 0;
-    u32 maxSRVBindPoint = 0;
-    u32 maxUAVBindPoint = 0;
-    u32 maxSamplerBindPoint = 0;
-
     for (u32 i = 0; i < (u32)ShaderProfile::MAX; i++)
     {
         if (!shaders[i])
@@ -317,56 +311,83 @@ void DX12Device::CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)Sha
         {
             for (SRBoundResource& r : reflection->BoundResources)
             {
-                if (paramSet.contains(r.Name))
-                    continue;
-
                 if (r.Type == ShaderInputType::CBUFFER)
                 {
                     if (r.BindSpace == RootSignature::cRootDescriptorSpace)
-                        desc.RootCBVNum++;
-                    else if (r.BindPoint + r.BindCount > maxCBVBindPoint)
                     {
-                        maxCBVBindPoint = r.BindPoint + r.BindCount;
+                        if (r.BindPoint + r.BindCount > desc.RootCBVNum)
+                        {
+                            desc.RootCBVNum = r.BindPoint + r.BindCount;
+                        }
                     }
+                    else if (r.BindSpace == RootSignature::cDescriptorTableSpace)
+                    {
+                        if (r.BindPoint + r.BindCount > desc.TableCBVNum)
+                        {
+                            desc.TableCBVNum = r.BindPoint + r.BindCount;
+                        }
+                    }
+                    else
+                        check(0);
                 }
                 else if ((r.Type == ShaderInputType::TBUFFER || r.Type == ShaderInputType::TEXTURE || r.Type == ShaderInputType::STRUCTURED ||
                     r.Type == ShaderInputType::BYTEADDRESS))
                 {
                     if (r.BindSpace == RootSignature::cRootDescriptorSpace)
-                        desc.RootSRVNum++;
-                    else if (r.BindPoint + r.BindCount > maxSRVBindPoint)
                     {
-                        maxSRVBindPoint = r.BindPoint + r.BindCount;
+                        if (r.BindPoint + r.BindCount > desc.RootSRVNum)
+                        {
+                            desc.RootSRVNum = r.BindPoint + r.BindCount;
+                        }
                     }
+                    else if (r.BindSpace == RootSignature::cDescriptorTableSpace)
+                    {
+                        if (r.BindPoint + r.BindCount > desc.TableSRVNum)
+                        {
+                            desc.TableSRVNum = r.BindPoint + r.BindCount;
+                        }
+                    }
+                    else
+                        check(0);
                 }
                 else if ((r.Type == ShaderInputType::UAV_RWTYPED || r.Type == ShaderInputType::UAV_RWSTRUCTURED || r.Type == ShaderInputType::UAV_RWBYTEADDRESS ||
                     r.Type == ShaderInputType::UAV_RWSTRUCTURED_WITH_COUNTER || r.Type == ShaderInputType::UAV_FEEDBACKTEXTURE || r.Type == ShaderInputType::UAV_APPEND_STRUCTURED ||
                     r.Type == ShaderInputType::UAV_CONSUME_STRUCTURED))
                 {
                     if (r.BindSpace == RootSignature::cRootDescriptorSpace)
-                        desc.RootUAVNum++;
-                    else if (r.BindPoint + r.BindCount > maxUAVBindPoint)
                     {
-                        maxUAVBindPoint = r.BindPoint + r.BindCount;
+                        if (r.BindPoint + r.BindCount > desc.RootUAVNum)
+                        {
+                            desc.RootUAVNum = r.BindPoint + r.BindCount;
+                        }
                     }
+                    else if (r.BindSpace == RootSignature::cDescriptorTableSpace)
+                    {
+                        if (r.BindPoint + r.BindCount > desc.TableUAVNum)
+                        {
+                            desc.TableUAVNum = r.BindPoint + r.BindCount;
+                        }
+                    }
+                    else
+                        check(0);
                 }
                 else if (r.Type == ShaderInputType::SAMPLER)
                 {
-                    if (r.BindSpace != RootSignature::cRootDescriptorSpace && r.BindPoint + r.BindCount > maxSamplerBindPoint)
+                    if (r.BindSpace == RootSignature::cDescriptorTableSpace)
                     {
-                        maxSamplerBindPoint = r.BindPoint + r.BindCount;
+                        if (r.BindPoint + r.BindCount > desc.TableSamplerNum)
+                        {
+                            desc.TableSamplerNum = r.BindPoint + r.BindCount;
+                        }
                     }
+                    else
+                        check(0);
                 }
-                paramSet.insert(r.Name);
+                else
+                    check(0);
             }
         }
     }
-
-    desc.TableCBVNum = maxCBVBindPoint;
-    desc.TableSRVNum = maxSRVBindPoint;
-    desc.TableUAVNum = maxUAVBindPoint;
-    desc.TableSamplerNum = maxSamplerBindPoint;
- 
 }
 
 ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc)
@@ -375,7 +396,8 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
     constexpr static u32 cRootSignatureSizeLimit = 64;   // dword, from dx12 document.
     constexpr static u32 cRootTableSize = 1; // dword.
     constexpr static u32 cRootDescriptorsSize = 2; // dword.
-    if ((desc.RootCBVNum + desc.RootSRVNum + desc.RootUAVNum) * cRootDescriptorsSize + 4 * cRootTableSize > cRootSignatureSizeLimit)
+    constexpr static u32 cRootConstantSize = 1;
+    if (desc.RootConstant32Num * cRootConstantSize + (desc.RootCBVNum + desc.RootSRVNum + desc.RootUAVNum) * cRootDescriptorsSize + 4 * cRootTableSize > cRootSignatureSizeLimit)
     {
         check(0);
         return nullptr;
@@ -384,6 +406,21 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
     std::vector<D3D12_DESCRIPTOR_RANGE1> ranges;
     ranges.reserve(4); // table cbv,srv,uav,sampler.
     std::vector<D3D12_ROOT_PARAMETER1> param;
+
+    param.push_back(D3D12_ROOT_PARAMETER1{
+           .ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+           .Constants = {
+                .ShaderRegister = 0,
+                .RegisterSpace = RootSignature::cRootConstantSpace,
+                .Num32BitValues = desc.RootConstant32Num
+           },
+           .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
+
+    paramDesc.push_back(RootSignatureParamDesc{
+        .Type = ShaderBindType::RootConstant,
+        .DescriptorNum = desc.RootConstant32Num
+        });
 
     for (u32 i = 0; i < desc.RootCBVNum; i++)
     {
@@ -403,7 +440,6 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             });
     }
     
-
     for (u32 i = 0; i < desc.RootSRVNum; i++)
     {
         param.push_back(D3D12_ROOT_PARAMETER1{
@@ -448,7 +484,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
             .NumDescriptors = desc.TableCBVNum,
             .BaseShaderRegister = 0,
-            .RegisterSpace = 0,
+            .RegisterSpace = RootSignature::cDescriptorTableSpace,
             .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
             .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
@@ -475,7 +511,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
             .NumDescriptors = desc.TableSRVNum,
             .BaseShaderRegister = 0,
-            .RegisterSpace = 0,
+            .RegisterSpace = RootSignature::cDescriptorTableSpace,
             .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
             .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
@@ -502,7 +538,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
            .NumDescriptors = desc.TableUAVNum,
            .BaseShaderRegister = 0,
-           .RegisterSpace = 0,
+           .RegisterSpace = RootSignature::cDescriptorTableSpace,
            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
@@ -530,7 +566,7 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
            .NumDescriptors = desc.TableSamplerNum,
            .BaseShaderRegister = 0,
-           .RegisterSpace = 0,
+           .RegisterSpace = RootSignature::cDescriptorTableSpace,
            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });

@@ -88,7 +88,10 @@ void ContextManager::AddCopyNum()
 void ContextManager::CommitCopyCommand()
 {
 	if (!_ContainCopyOp)
+	{
+		_NeedGpuWaitCopyFinish = false;
 		return;
+	}
 
 	_CopyContext->Close();
 	RenderContext* ctxs[] = { _CopyContext };
@@ -96,12 +99,24 @@ void ContextManager::CommitCopyCommand()
 	_CopyCommandQueue->Signal(_CopyQueueFence, _CopyQueueFenceValue);
 
 	_ContainCopyOp = false;
+	_NeedGpuWaitCopyFinish = true;
+}
+
+void ContextManager::CpuWaitCopyFinish()
+{
+	if (_CopyQueueFence->GetCompletedValue() < _CopyQueueFenceValue)
+	{
+		_CopyQueueFence->CpuWait(_CopyQueueFenceValue);
+	}
 }
 
 void ContextManager::GpuWaitCopyFinish()
 {
-	check(!_ContainCopyOp);  // must finish commit.
-	_DirectCommandQueue->Wait(_CopyQueueFence, _CopyQueueFenceValue);
+	if (_NeedGpuWaitCopyFinish)
+	{
+		_DirectCommandQueue->Wait(_CopyQueueFence, _CopyQueueFenceValue);
+		_NeedGpuWaitCopyFinish = false;
+	}
 }
 
 ContextManager::~ContextManager()

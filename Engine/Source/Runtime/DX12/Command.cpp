@@ -31,28 +31,30 @@ void DX12CommandList::Close()
     _State = ContextState::Close;
 }
 
-void DX12CommandList::SetGraphicPipeline(GraphicPipeline* pipeline)
+void DX12CommandList::SetPrimitiveTopology(const PrimitiveTopology topology)
 {
-    // root signature
-    RootSignature* rootsig = pipeline->GetRootSignature();
+    _Handle->IASetPrimitiveTopology(DX12Device::TranslatePrimitiveTopology(topology));
+}
+
+void DX12CommandList::SetRootSignature(const RootSignature* rootsig)
+{
     ID3D12RootSignature* rs = std::any_cast<ID3D12RootSignature*>(rootsig->Handle());
     check(rs);
     _Handle->SetGraphicsRootSignature(rs);
+}
 
-    //descriptor heap
+void DX12CommandList::SetDescriptorHeap()
+{
     DescriptorHeap* desHeap = _Device->_DescriptorManager->GetGPUHeap(DescriptorType::CBV_SRV_UAV);
     DescriptorHeap* samplerHeap = _Device->_DescriptorManager->GetGPUHeap(DescriptorType::Sampler);
     ID3D12DescriptorHeap* ppHeap[] = { std::any_cast<ID3D12DescriptorHeap*>(desHeap->Handle()), std::any_cast<ID3D12DescriptorHeap*>(samplerHeap->Handle()) };
     _Handle->SetDescriptorHeaps(2, ppHeap);
+}
 
-    pipeline->BindParameter(this);
-
-    // topology
-    _Handle->IASetPrimitiveTopology(DX12Device::TranslatePrimitiveTopology(pipeline->Info.Topology));
-    // pso
+void DX12CommandList::SetGraphicPipeline(GraphicPipeline* pipeline)
+{
     ID3D12PipelineState* ps = std::any_cast<ID3D12PipelineState*>(pipeline->Handle());
     _Handle->SetPipelineState(ps);
- 
 }
 
 void DX12CommandList::SetGraphicTableParameter(const RootSignature* rs, const std::vector<ShaderParameter*>& params)
@@ -61,68 +63,71 @@ void DX12CommandList::SetGraphicTableParameter(const RootSignature* rs, const st
         return;
 
     const std::vector<RootSignatureParamDesc>& rsdesc = rs->GetParamDesc();
-    // copy descriptor first.
-    ShaderBindType t = params[0]->BindType;
+
     DescriptorAllocation alloc;
+    check(params[0]->BindType >= ShaderBindType::TableCBV);
     for (u32 i = 0; i < rsdesc.size(); i++)
     {
-        if (rsdesc[i].Type == t)
+        if (rsdesc[i].Type == params[0]->BindType)
         {
             alloc = rsdesc[i].Alloc;
             break;
         }
     }
+        
 
-    if (t == ShaderBindType::TableCBV || t == ShaderBindType::TableSRV || t == ShaderBindType::TableUAV)
+    if (params[0]->BindType == ShaderBindType::TableCBV || params[0]->BindType == ShaderBindType::TableSRV || params[0]->BindType == ShaderBindType::TableUAV)
     {
         DX12DescriptorHeap* dxHeap = static_cast<DX12DescriptorHeap*>(alloc.Heap);
         D3D12_CPU_DESCRIPTOR_HANDLE base = dxHeap->CPUHandle(alloc);
-        for (u32 i = 0; i < params.size(); i++)
+     
+        for (auto param : params)
         {
             D3D12_CPU_DESCRIPTOR_HANDLE dest = base;
-            dest.ptr += dxHeap->GetStride() * params[i]->TableOffset;
+            dest.ptr += dxHeap->GetStride() * param->TableOffset;
 
-            if (t == ShaderBindType::TableCBV)
+            if (param->BindType == ShaderBindType::TableCBV)
             {
-                DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(params[i]->Resource);
+                DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
                 _Device->CopyDescriptor(dest, buffer->GetConstBufferViewCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
             }
-            else if (t == ShaderBindType::TableSRV)
+            else if (param->BindType == ShaderBindType::TableSRV)
             {
-                if (params[i]->Resource->GetDimension() == ResourceDimension::Buffer)
+                if (param->Resource->GetDimension() == ResourceDimension::Buffer)
                 {
-                    DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(params[i]->Resource);
+                    DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
                     _Device->CopyDescriptor(dest, buffer->GetShaderResourceViewCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 }
                 else
                 {
-                    DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(params[i]->Resource);
+                    DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(param->Resource);
                     _Device->CopyDescriptor(dest, tex->GetShaderResourceViewCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 }
             }
-            else if (t == ShaderBindType::TableUAV)
+            else if (param->BindType == ShaderBindType::TableUAV)
             {
                 check(0); // TODO.
             }
-           
         }
 
-        _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));  
+        _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
     }
-    else if (t == ShaderBindType::TableSampler)
+    else if (params[0]->BindType == ShaderBindType::TableSampler)
     {
         DX12DescriptorHeap* dxHeap = static_cast<DX12DescriptorHeap*>(alloc.Heap);
         D3D12_CPU_DESCRIPTOR_HANDLE base = dxHeap->CPUHandle(alloc);
-        for (u32 i = 0; i < params.size(); i++)
+        
+        for (auto param : params)
         {
-            DX12Sampler* sampler = static_cast<DX12Sampler*>(params[i]->Resource);
+            DX12Sampler* sampler = static_cast<DX12Sampler*>(param->Resource);
             D3D12_CPU_DESCRIPTOR_HANDLE dest = base;
-            dest.ptr += dxHeap->GetStride() * params[i]->TableOffset;
+            dest.ptr += dxHeap->GetStride() * param->TableOffset;
             _Device->CopyDescriptor(dest, sampler->GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
         }
 
         _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
     }
+    
 }
 
 void DX12CommandList::SetGraphicShaderParameter(const ShaderParameter* param)
@@ -150,7 +155,7 @@ void DX12CommandList::SetGraphicShaderParameter(const ShaderParameter* param)
 
 }
 
-void DX12CommandList::SetVertexBuffers(u32 vbNum, RenderBuffer** vbs, u64* offsets)
+void DX12CommandList::SetVertexBuffers(u32 vbNum, RenderBuffer** vbs)
 {
     check(vbNum > 0);
     std::vector<D3D12_VERTEX_BUFFER_VIEW> vbv;

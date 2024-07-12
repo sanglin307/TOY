@@ -37,13 +37,13 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 	RenderDevice* device = _Renderer->GetDevice();
 	if (primitive->GetType() == PrimitiveType::Mesh)
 	{
-		RenderCluster* cluster = new RenderCluster;
-		cluster->Component = primitive;
-
 		Mesh* mesh = static_cast<Mesh*>(primitive);
 		const std::vector<MeshSegment*>& segments = mesh->GetSegments();
 		for (MeshSegment* s : segments)
 		{
+			RenderCluster* cluster = new RenderCluster;
+			cluster->Component = primitive;
+			cluster->Material = s->GetMaterial();
 			const std::array<VertexData, (u32)VertexAttribute::Max>& vertexData = s->GetVertexData();
 			for (u32 i = 0; i < vertexData.size(); i++)
 			{
@@ -55,7 +55,7 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 					 .Size = d.Size,
 					 .Stride = d.GetStride(),
 					 .Usage = (u32)ResourceUsage::VertexBuffer,
-					 .CpuAccess = 0,
+					 .CpuAccess = CpuAccessFlags::None,
 					 .Alignment = true,
 					 .InitData = d.Data
 				};
@@ -75,7 +75,7 @@ void RenderScene::AddPrimitive(PrimitiveComponent* primitive)
 					 .Size = indexData.Size,
 					 .Stride = indexData.GetStride(),
 					 .Usage = (u32)ResourceUsage::IndexBuffer,
-					 .CpuAccess = 0,
+					 .CpuAccess = CpuAccessFlags::None,
 					 .Alignment = true,
 					 .InitData = indexData.Data
 				};

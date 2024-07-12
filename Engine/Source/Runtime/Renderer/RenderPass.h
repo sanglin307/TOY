@@ -6,6 +6,17 @@ enum class RenderPassType
 	Max
 };
 
+struct RenderCommand
+{
+	PrimitiveComponent* Component = nullptr;
+	std::vector<RenderBuffer*> VertexBuffers;
+	RenderBuffer* IndexBuffer = nullptr;
+	MaterialData   Material;
+	RenderTexture* BaseColor = nullptr;
+	RenderTexture* Normal = nullptr;
+	RenderTexture* RoughMetelness = nullptr;
+	RenderTexture* Emissive = nullptr;
+};
 
 class RenderPass
 {
@@ -17,9 +28,6 @@ public:
 	virtual void RemoveCluster(RenderCluster* cluster) = 0;
 
 protected:
-
-	void BindVertexStreams(GraphicPipeline* pso, RenderCluster* cluster, RenderContext* ctx);
-
 	RenderPassType _Type;
 	RenderDevice* _Device;
 	SceneRenderer* _Renderer;
@@ -36,9 +44,8 @@ public:
 	virtual void RemoveCluster(RenderCluster* cluster) override;
 
 private:
-	std::set<RenderCluster*> _Clusters;
+	std::list<RenderCommand*> _Commands;
 	GraphicPipeline* PSO = nullptr;
-	RenderTexture* _texture1;
-	RenderTexture* _texture2;
-	Sampler* _sampler;
+	RenderBuffer* MaterialBuffer = nullptr;
+	Sampler* _Sampler;
 };

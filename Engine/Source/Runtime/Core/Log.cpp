@@ -77,9 +77,14 @@ void LogUtil::Log(const std::string& category, LogType type, const char* file, u
 		tt = "Error";
 
 	std::string logString = std::format("[{}] [{}] {} : file: {}, line:{}, {}\n", category, tt, PlatformUtils::TimeNowString(), file,line,log);
+
+	if (type == LogType::Error || type == LogType::Fatal)
+	{
+		PlatformUtils::OutputDebug(logString);
+	}
+
 	std::lock_guard<std::mutex> guard(_LogMutex);
 	_LogCache.push_back(std::move(logString));
-
 	if (type == LogType::Fatal)
 	{
 		Flush();

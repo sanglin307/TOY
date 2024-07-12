@@ -14,6 +14,7 @@ struct RenderCluster
 	~RenderCluster();
 	std::vector<Stream>  VertexStreams;
 	RenderBuffer* IndexBuffer = nullptr;
+	Material* Material = nullptr;
 	PrimitiveComponent* Component;
 };
 

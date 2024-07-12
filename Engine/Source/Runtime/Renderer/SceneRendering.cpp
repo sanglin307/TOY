@@ -17,7 +17,7 @@ SceneRenderer::SceneRenderer(RenderDevice* device)
 	RenderBuffer::Desc udesc = {
 		.Size = sizeof(ViewInfo),
 		.Usage = (u32)ResourceUsage::UniformBuffer,
-		.CpuAccess = (u32)CpuAccessFlags::Write,
+		.CpuAccess = CpuAccessFlags::Write,
 		.Alignment = true
 	};
 	_ViewUniformBuffer = device->CreateBuffer("ViewInfo", udesc);
@@ -59,6 +59,8 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 	_Device->CommitCopyCommand();
 	
 	_ViewUniformBuffer->UploadData((u8*)&view, sizeof(ViewInfo));
+
+	ctx->SetDescriptorHeap();
 
 	ctx->SetViewport(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
 	ctx->SetScissorRect(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
