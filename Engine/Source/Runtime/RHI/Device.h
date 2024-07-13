@@ -38,6 +38,8 @@ public:
 
 	RHI_API VertexAttribute TranslateSemanticToAttribute(const std::string& semanticName, u32 semanticIndex);
 
+	virtual void OnResize(Swapchain* swapchain, u32 width, u32 height) = 0;
+
 	void CommitCopyCommand() { _ContextManager->CommitCopyCommand(); }
 	void GpuWaitCopyFinish() { _ContextManager->GpuWaitCopyFinish(); }
 

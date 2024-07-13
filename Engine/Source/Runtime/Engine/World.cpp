@@ -38,7 +38,7 @@ void GameWorld::Init(const std::string& scenefile)
 		auto config = GameEngine::Instance().GetRenderConfig();
 		Camera::Desc desc = {
 			.Type = CameraType::Perspective,
-			.AspectRatio = config.FrameWidth * 1.f / config.FrameHeight,
+			.AspectRatio = config.AspectRatio,
 			.YFov = 60 * Pi() / 180.f,
 			.ZFar = 0,
 			.ZNear = 1.f

@@ -13,6 +13,7 @@ struct RenderConfig
     RenderAPI API;
     u32 FrameWidth;
     u32 FrameHeight;
+    float AspectRatio;
 
 };
 

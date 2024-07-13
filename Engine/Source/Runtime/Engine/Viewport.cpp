@@ -18,3 +18,13 @@ GameViewport::~GameViewport()
 {
 	delete _SwapchainRHI;
 }
+
+
+void GameViewport::OnResize(u32 width, u32 height)
+{
+	_ViewportSize.x = width;
+	_ViewportSize.y = height;
+
+	RenderDevice* device = GameEngine::Instance().GetRHI().GetDevice();
+	device->OnResize(_SwapchainRHI, width, height);
+}

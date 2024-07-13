@@ -21,6 +21,8 @@ public :
 	virtual RenderContext* BeginFrame(Swapchain* viewport) override;
 	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) override;
 
+	virtual void OnResize(Swapchain* swapchain, u32 width, u32 height) override;
+
 	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
 
 	void CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESCRIPTOR_HANDLE src, D3D12_DESCRIPTOR_HEAP_TYPE  heapType);

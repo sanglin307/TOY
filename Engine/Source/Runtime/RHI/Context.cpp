@@ -77,6 +77,11 @@ void ContextManager::WaitGPUIdle()
 
 	_DirectCommandQueue->Signal(_FrameFence, lastFenceValue);
 	_FrameFence->CpuWait(lastFenceValue);
+
+	for (u32 i = 0; i < CommandAllocatorNumber; i++)
+	{
+		_FenceValues[i] = lastFenceValue;
+	}
 }
 
 void ContextManager::AddCopyNum()

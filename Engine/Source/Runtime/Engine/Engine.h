@@ -21,6 +21,8 @@ public:
 		return _GameViewport;
 	}
 
+	ENGINE_API void OnViewportResize(u32 width, u32 height, bool minimized);
+
 private:
 	GameEngine() = default;
 	GameEngine(const GameEngine& rhs) = delete;
@@ -35,4 +37,5 @@ private:
 	FrameRate _FrameRate;
 	RenderConfig _RenderConfig;
 	GameViewport* _GameViewport;
+	bool _WindowsVisible;
 };

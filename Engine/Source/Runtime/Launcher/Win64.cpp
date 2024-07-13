@@ -208,6 +208,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
             InputManager::Instance().OnMouse(mouseEvent);
         }
         return 0;
+    case WM_SIZE:
+        {
+            RECT clientRect = {};
+            GetClientRect(hWnd, &clientRect);
+            GameEngine::Instance().OnViewportResize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, wParam == SIZE_MINIMIZED);
+        }
+        return 0;
 
     case WM_DESTROY:
         PostQuitMessage(0);

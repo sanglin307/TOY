@@ -112,6 +112,6 @@ PSInput VSMain(VertexInput vertex)
 float4 PSMain(PSInput input) : SV_TARGET
 {
     MaterialProperties surface = EvaluateMaterial(input);
-   // float3 color = lerp(surface.BaseColor, float3(1,1,1), 0.1);
-    return float4(surface.BaseColor, 1);
+    float3 color = surface.Normal;
+    return float4(color, 1);
 }

@@ -165,6 +165,48 @@ Fence* DX12Device::CreateFence(u64 initValue)
 
 }
 
+void DX12Device::OnResize(Swapchain* swapchain, u32 width, u32 height)
+{
+    WaitGPUIdle();
+
+    DX12Swapchain* sc = static_cast<DX12Swapchain*>(swapchain);
+    for (RenderResource* res : sc->_RenderTargets)
+    {
+        delete res;
+    }
+    sc->_RenderTargets.clear();
+    sc->_Info.Width = width;
+    sc->_Info.Height = height;
+
+    DXGI_SWAP_CHAIN_DESC1 desc = {};
+    sc->_Handle->GetDesc1(&desc);
+    check(SUCCEEDED(sc->_Handle->ResizeBuffers(sc->_Info.FrameCount, sc->_Info.Width, sc->_Info.Height, TranslatePixelFormat(sc->_Info.Format), desc.Flags)));
+
+    sc->_RenderTargets.resize(sc->_Info.FrameCount);
+    DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUHeap(DescriptorType::RVT));
+    for (u32 n = 0; n < sc->_Info.FrameCount; n++)
+    {
+        ComPtr<ID3D12Resource> res;
+        check(SUCCEEDED(sc->_Handle->GetBuffer(n, IID_PPV_ARGS(&res))));
+        DescriptorAllocation da = rvtHeap->Allocate();
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = rvtHeap->CPUHandle(da);
+        _Device->CreateRenderTargetView(res.Get(), nullptr, cpuHandle);
+
+        RenderTexture::Desc desc = {
+             .Width = width,
+             .Height = height,
+             .DepthOrArraySize = 1,
+             .Format = sc->_Info.Format,
+             .Dimension = ResourceDimension::Texture2D
+        };
+
+        DX12RenderTexture* dx12Resource = new DX12RenderTexture("SwapChainTexture", this, desc, ResourceState::Present, res);
+        dx12Resource->SetRenderTargetView(da, cpuHandle);
+
+        sc->_RenderTargets[n] = dx12Resource;
+    }
+}
+
 RenderContext* DX12Device::BeginFrame(Swapchain* sc)
 {
     _FrameNum++;

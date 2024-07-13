@@ -60,6 +60,7 @@ void GameEngine::Init(std::any hwnd)
 	GetRHI().Init();
 
 	_GameViewport = new GameViewport(hwnd, _RenderConfig);
+	_WindowsVisible = true;
  
 	GetRenderer().Init();
 
@@ -100,10 +101,13 @@ void GameEngine::Update()
 
 	GameWorld::Instance().Update(delta);
 
-	ViewInfo view;
-	GameWorld::Instance().GetViewInfo(view);
-	view.FrameIndex = (u32)_FrameRate.GetFrameCount();
-	GetRenderer().Render(view, _GameViewport->GetRHI());
+	if (_WindowsVisible)
+	{
+		ViewInfo view;
+		GameWorld::Instance().GetViewInfo(view);
+		view.FrameIndex = (u32)_FrameRate.GetFrameCount();
+		GetRenderer().Render(view, _GameViewport->GetRHI());
+	}
 }
 
 void GameEngine::InitConfig()
@@ -137,4 +141,20 @@ void GameEngine::InitConfig()
 		.FrameHeight = rconfig["FrameHeight"].value_or(900u)
 	};
 
+	_RenderConfig.AspectRatio = (float)_RenderConfig.FrameWidth / (float)_RenderConfig.FrameHeight;
+
+}
+
+void GameEngine::OnViewportResize(u32 width, u32 height, bool minimized)
+{
+	if (!minimized)
+	{
+		_RenderConfig.FrameHeight = height;
+		_RenderConfig.FrameWidth = width;
+		_RenderConfig.AspectRatio = (float)width / (float)height;
+		
+		_GameViewport->OnResize(width, height);
+	}
+
+	_WindowsVisible = !minimized;
 }
