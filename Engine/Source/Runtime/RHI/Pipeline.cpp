@@ -1,6 +1,6 @@
 #include "Private.h"
 
-void GraphicPipeline::BindParameter(const std::string& name, RenderResource* resource)
+void RenderPipeline::BindParameter(const std::string& name, RenderResource* resource)
 {
 	auto iter = _ShaderParameters.find(name);
 	//check(iter != _ShaderParameters.end());
@@ -10,7 +10,7 @@ void GraphicPipeline::BindParameter(const std::string& name, RenderResource* res
 	iter->second->Resource = resource;
 }
 
-void GraphicPipeline::CommitParameter(RenderContext* ctx)
+void RenderPipeline::CommitParameter(RenderContext* ctx)
 {
 	for (auto pair : _ShaderParameters)
 	{
@@ -19,18 +19,18 @@ void GraphicPipeline::CommitParameter(RenderContext* ctx)
 
 		ShaderBindType t = pair.second->BindType;
 		if (t == ShaderBindType::RootCBV || t == ShaderBindType::RootSRV || t == ShaderBindType::RootUAV)
-			ctx->SetGraphicShaderParameter(pair.second);
+			ctx->SetRootDescriptorParameter(pair.second, _Type);
 	}
 
-	ctx->SetGraphicTableParameter(_RootSignature, _CBVs);
-	ctx->SetGraphicTableParameter(_RootSignature, _SRVs);
-	ctx->SetGraphicTableParameter(_RootSignature, _UAVs);
-	ctx->SetGraphicTableParameter(_RootSignature, _Samplers);
+	ctx->SetRootDescriptorTableParameter(_RootSignature, _CBVs,_Type);
+	ctx->SetRootDescriptorTableParameter(_RootSignature, _SRVs,_Type);
+	ctx->SetRootDescriptorTableParameter(_RootSignature, _UAVs,_Type);
+	ctx->SetRootDescriptorTableParameter(_RootSignature, _Samplers,_Type);
 
 }
 
 
-void GraphicPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders)
+void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders)
 {
 	_RootSignature = rs;
 	check(_ShaderParameters.size() == 0);

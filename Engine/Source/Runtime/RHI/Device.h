@@ -18,7 +18,8 @@ public:
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) = 0;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) = 0;
 	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) = 0;
-	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) = 0;
+	virtual RenderPipeline* CreateGraphicPipeline(const std::string& name,const GraphicPipeline::Desc& desc) = 0;
+	virtual RenderPipeline* CreateComputePipeline(const std::string& name,const ComputePipeline::Desc& desc) = 0;
 	virtual RenderBuffer* CreateBuffer(const std::string& name, const RenderBuffer::Desc& info) = 0;
 	virtual RenderTexture* CreateTexture(const std::string& name, const RenderTexture::Desc& desc) = 0;
 	virtual Sampler* CreateSampler(const Sampler::Desc& desc) = 0;
@@ -30,10 +31,15 @@ public:
 	RHI_API u8 GetPixelComponentNum(PixelFormat format);
 	RHI_API u8 GetPixelSize(PixelFormat format);
 	RHI_API bool IsCompressedPixelFormat(PixelFormat format);
+	RHI_API bool IsDepthPixelFormat(PixelFormat format);
+	RHI_API bool IsStencilPixelFormat(PixelFormat format);
+	RHI_API PixelFormat GetDepthShaderResourceFormat(PixelFormat format, bool useAsDepth);
+	RHI_API PixelFormat GetDepthResourceFormat(PixelFormat format);
+	RHI_API PixelFormat GetFormatByName(const std::string& name);
 
 	RHI_API void InitPipelineCache();
-	RHI_API GraphicPipeline* LoadGraphicPipeline(const GraphicPipeline::Desc& desc);
-	RHI_API GraphicPipeline* LoadGraphicPipeline(const std::string& name);
+	RHI_API RenderPipeline* LoadPipeline(const u64 hash);
+	RHI_API RenderPipeline* LoadPipeline(const std::string& name);
 	RHI_API ShaderResource* LoadShader(const ShaderCreateDesc& desc);
 
 	RHI_API VertexAttribute TranslateSemanticToAttribute(const std::string& semanticName, u32 semanticIndex);
@@ -64,11 +70,12 @@ public:
 protected:
 	u64 _FrameNum = 0;
 	std::vector<PixelFormatInfo> _Formats;
+	std::unordered_map<std::string, PixelFormat> _FormatNameMap;
 	std::list<DelayDeleteResource> _DelayDeleteResources;
 	ContextManager* _ContextManager;
 	DescriptorManager* _DescriptorManager;
-	std::unordered_map<u64, GraphicPipeline*> _PipelineCache;
-	std::unordered_map<std::string, GraphicPipeline*> _PipelineCacheByName;
+	std::unordered_map<u64, RenderPipeline*> _PipelineCache;
+	std::unordered_map<std::string, RenderPipeline*> _PipelineCacheByName;
 	std::unordered_map<u64, ShaderResource*> _ShaderCache;
 	std::unordered_map<u64, Sampler*> _SamplerCache;
 	std::unordered_map<u64, RootSignature*> _RootSignatureCache;

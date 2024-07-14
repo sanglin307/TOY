@@ -77,35 +77,53 @@ public:
 			_SRVDescriptor.Heap->Free(_SRVDescriptor);
 		}
 
+		if (_Desc.Usage & (u32)ResourceUsage::UnorderedAccess && _UAVDescriptor.Offset >= 0)
+		{
+			_UAVDescriptor.Heap->Free(_UAVDescriptor);
+		}
+
 		_Handle.Reset(); 
 	}
 	virtual std::any Handle() override { return _Handle.Get(); }
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView();
 	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView();
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetConstBufferViewCPUHandle()
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCBVCPUHandle()
 	{
-		return _ConstBufferViewCPUHandle;
+		return _CBVCPUHandle;
 	}
 
-	void SetConstBufferView(DescriptorAllocation descriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+	void SetCBV(DescriptorAllocation descriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::UniformBuffer;
 		_CBVDescriptor = descriptor;
-		_ConstBufferViewCPUHandle = cpuHandle;
+		_CBVCPUHandle = cpuHandle;
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceViewCPUHandle()
+	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUHandle()
 	{
 		check(_Desc.Usage & (u32)ResourceUsage::ShaderResource);
-		return _ShaderResourceViewCPUHandle;
+		return _SRVCPUHandle;
 	}
 
-	void SetShaderResourcelView(DescriptorAllocation srvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+	void SetSRV(DescriptorAllocation srvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::ShaderResource;
-		_ShaderResourceViewCPUHandle = cpuHandle;
+		_SRVCPUHandle = cpuHandle;
 		_SRVDescriptor = srvDescriptor;
+	}
+
+	void SetUAV(DescriptorAllocation uavDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+	{
+		_Desc.Usage |= (u32)ResourceUsage::UnorderedAccess;
+		_UAVCPUHandle = cpuHandle;
+		_UAVDescriptor = uavDescriptor;
+	}
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetUAVCPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::UnorderedAccess);
+		return _UAVCPUHandle;
 	}
 
 	virtual void UploadData(u8* data, size_t size) override;
@@ -121,10 +139,13 @@ private:
 	}
 
 private:
-	D3D12_CPU_DESCRIPTOR_HANDLE _ShaderResourceViewCPUHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE _SRVCPUHandle;
 	DescriptorAllocation _SRVDescriptor;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE _ConstBufferViewCPUHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE _UAVCPUHandle;
+	DescriptorAllocation _UAVDescriptor;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE _CBVCPUHandle;
 	DescriptorAllocation _CBVDescriptor;
 	u8* _UniformDataMapPointer;
 
@@ -140,55 +161,87 @@ public:
 		if (_SRVDescriptor.Offset >= 0)
 			_SRVDescriptor.Heap->Free(_SRVDescriptor);
 
-		if (_RVTDescriptor.Offset >= 0)
-			_RVTDescriptor.Heap->Free(_RVTDescriptor);
+		if (_StencilSRVDescriptor.Offset >= 0)
+			_StencilSRVDescriptor.Heap->Free(_StencilSRVDescriptor);
+
+		if (_RTVDescriptor.Offset >= 0)
+			_RTVDescriptor.Heap->Free(_RTVDescriptor);
 
 		if (_DSVDescriptor.Offset >= 0)
 			_DSVDescriptor.Heap->Free(_DSVDescriptor);
+
+		if (_UAVDescriptor.Offset >= 0)
+			_UAVDescriptor.Heap->Free(_UAVDescriptor);
 
 		_Handle.Reset(); 
 	}
 
 	virtual std::any Handle() override { return _Handle.Get(); } 
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewCPUHandle() 
+	D3D12_CPU_DESCRIPTOR_HANDLE GetRTVCPUHandle() 
 	{
 		check(_Desc.Usage & (u32)ResourceUsage::RenderTarget);
-		return _RenderTargetViewCPUHandle;
+		return _RTVCPUHandle;
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewCPUHandle()
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCPUHandle()
 	{
 		check(_Desc.Usage & (u32)ResourceUsage::DepthStencil);
-		return _DepthStencilViewCPUHandle;
+		return _DSVCPUHandle;
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceViewCPUHandle()
+	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUHandle()
 	{
 		check(_Desc.Usage & (u32)ResourceUsage::ShaderResource);
-		return _ShaderResourceViewCPUHandle;
+		return _SRVCPUHandle;
 	}
 
-	void SetRenderTargetView(DescriptorAllocation rvtDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+	D3D12_CPU_DESCRIPTOR_HANDLE GetUAVCPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::UnorderedAccess);
+		return _UAVCPUHandle;
+	}
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetStencilSRVCPUHandle()
+	{
+		check(_Desc.Usage & (u32)ResourceUsage::ShaderResource);
+		return _StencilSRVCPUHandle;
+	}
+
+	void SetRTV(DescriptorAllocation rvtDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::RenderTarget;
-		_RenderTargetViewCPUHandle = cpuHandle;
-		_RVTDescriptor = rvtDescriptor;
+		_RTVCPUHandle = cpuHandle;
+		_RTVDescriptor = rvtDescriptor;
 	}
 
-	void SetDepthStencilView(DescriptorAllocation dsvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+	void SetDSV(DescriptorAllocation dsvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::DepthStencil;
-		_DepthStencilViewCPUHandle = cpuHandle;
+		_DSVCPUHandle = cpuHandle;
 		_DSVDescriptor = dsvDescriptor;
 	}
 
 
-	void SetShaderResourcelView(DescriptorAllocation srvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+	void SetSRV(DescriptorAllocation srvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
 	{
 		_Desc.Usage |= (u32)ResourceUsage::ShaderResource;
-		_ShaderResourceViewCPUHandle = cpuHandle;
+		_SRVCPUHandle = cpuHandle;
 		_SRVDescriptor = srvDescriptor;
+	}
+
+	void SetStencilSRV(DescriptorAllocation srvDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+	{
+		_Desc.Usage |= (u32)ResourceUsage::ShaderResource;
+		_StencilSRVCPUHandle = cpuHandle;
+		_StencilSRVDescriptor = srvDescriptor;
+	}
+
+	void SetUAV(DescriptorAllocation uavDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+	{
+		_Desc.Usage |= (u32)ResourceUsage::UnorderedAccess;
+		_UAVCPUHandle = cpuHandle;
+		_UAVDescriptor = uavDescriptor;
 	}
 
 private:
@@ -202,13 +255,20 @@ private:
 		_Handle = handle;
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE _ShaderResourceViewCPUHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE _SRVCPUHandle;
 	DescriptorAllocation _SRVDescriptor;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE _RenderTargetViewCPUHandle;
-	DescriptorAllocation _RVTDescriptor;
+	D3D12_CPU_DESCRIPTOR_HANDLE _UAVCPUHandle;
+	DescriptorAllocation _UAVDescriptor;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE _DepthStencilViewCPUHandle;
+	// only valid for stencil buffer.
+	D3D12_CPU_DESCRIPTOR_HANDLE _StencilSRVCPUHandle;
+	DescriptorAllocation _StencilSRVDescriptor;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE _RTVCPUHandle;
+	DescriptorAllocation _RTVDescriptor;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE _DSVCPUHandle;
 	DescriptorAllocation _DSVDescriptor;
 	ComPtr<ID3D12Resource> _Handle;
 };

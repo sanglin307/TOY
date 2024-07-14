@@ -12,7 +12,8 @@ public :
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) override;
 	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) override;
 	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& desc) override;
-	virtual GraphicPipeline* CreateGraphicPipeline(const GraphicPipeline::Desc& desc) override;
+	virtual RenderPipeline* CreateGraphicPipeline(const std::string& name,const GraphicPipeline::Desc& desc) override;
+	virtual RenderPipeline* CreateComputePipeline(const std::string& name,const ComputePipeline::Desc& desc) override;
 	virtual RenderBuffer* CreateBuffer(const std::string& name, const RenderBuffer::Desc& info) override;
 	virtual RenderTexture* CreateTexture(const std::string& name,const RenderTexture::Desc& desc) override;
 	virtual Sampler* CreateSampler(const Sampler::Desc& desc) override;

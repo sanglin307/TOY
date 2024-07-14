@@ -79,7 +79,7 @@ ShaderResource* RenderDevice::LoadShader(const ShaderCreateDesc& desc)
 	return nullptr;
 }
 
-GraphicPipeline* RenderDevice::LoadGraphicPipeline(const std::string& name)
+RenderPipeline* RenderDevice::LoadPipeline(const std::string& name)
 {
 	auto iter = _PipelineCacheByName.find(name);
 	if (iter != _PipelineCacheByName.end())
@@ -90,9 +90,8 @@ GraphicPipeline* RenderDevice::LoadGraphicPipeline(const std::string& name)
 	return nullptr;
 }
 
-GraphicPipeline* RenderDevice::LoadGraphicPipeline(const GraphicPipeline::Desc& desc)
+RenderPipeline* RenderDevice::LoadPipeline(const u64 hash)
 {
-	u64 hash = desc.HashResult();
 	auto iter = _PipelineCache.find(hash);
 	if (iter != _PipelineCache.end())
 	{
@@ -129,7 +128,8 @@ VertexAttribute RenderDevice::TranslateSemanticToAttribute(const std::string& se
 
 void RenderDevice::InitPipelineCache()
 {
-	std::vector<GraphicPipeline::Desc> graphicPipelines;
+	std::unordered_map<std::string, GraphicPipeline::Desc> graphicPipelines;
+	std::unordered_map<std::string, ComputePipeline::Desc> computePipelines;
 
 	// load all pso from PSO folder.
 	for (const auto& file : std::filesystem::directory_iterator(PathUtil::PSO()))
@@ -145,30 +145,58 @@ void RenderDevice::InitPipelineCache()
 		}
 
 		toml::table psotable = std::move(pso).table();
-		psotable.for_each([&graphicPipelines](const toml::key& key, toml::table& val)
+		psotable.for_each([&graphicPipelines,&computePipelines,this](const toml::key& key, toml::table& val)
 			{
 				GraphicPipeline::Desc pd;
-				pd.Name = key.str();
-				auto parse_shader = [&val](ShaderCreateDesc& desc, const char* node_name, ShaderProfile profile) {
+				ComputePipeline::Desc cd;
+
+				auto parse_shader = [&val](ShaderCreateDesc& desc, const char* node_name, ShaderProfile profile) -> bool {
 					auto s_node = val.get(node_name);
 					if (s_node != nullptr)
 					{
 						check(s_node->is_table());
 						const toml::table* vst = s_node->as_table();
-						desc.Path = vst->at("path").value_or("");
-						desc.Entry = vst->at("entry").value_or("");
+						desc.Path = vst->at("Path").value_or("");
+						desc.Entry = vst->at("Entry").value_or("");
 						desc.Profile = profile;
-						const toml::array& ma = *(vst->at("macro").as_array());
+						const toml::array& ma = *(vst->at("Macros").as_array());
 						ma.for_each([&desc](toml::value<std::string> e)
 							{
 								desc.Macros.push_back(e.get());
 							});
+						return true;
 					}
-					};
-				parse_shader(pd.VS, "vs", ShaderProfile::Vertex);
-				parse_shader(pd.PS, "ps", ShaderProfile::Pixel);
+					return false;
+				};
 
-				graphicPipelines.push_back(pd);
+				auto parse_rvts = [&val,this](std::vector<PixelFormat>& rvtFormat, const char* node_name) -> bool {
+					auto s_node = val.get(node_name);
+					if (s_node != nullptr)
+					{
+						rvtFormat.clear();
+						check(s_node->is_array());
+						const toml::array& va = *(s_node->as_array());
+						va.for_each([&rvtFormat,this](toml::value<std::string> e)
+							{
+								rvtFormat.push_back(this->GetFormatByName(e.get()));
+							});
+						return true;
+					}
+					return false;
+					};
+
+				std::string name = key.data();
+				if (parse_shader(pd.VS, "VS", ShaderProfile::Vertex))
+				{
+					parse_shader(pd.PS, "PS", ShaderProfile::Pixel);
+					parse_rvts(pd.RVTFormats, "RVTFormats");
+					graphicPipelines[name] = pd;
+				}
+
+				if (parse_shader(cd.CS, "CS", ShaderProfile::Compute))
+				{
+					computePipelines[name] = cd;
+				}
 			});
 	}
 
@@ -176,7 +204,15 @@ void RenderDevice::InitPipelineCache()
 	{
 		for (auto& gp : graphicPipelines)
 		{
-			CreateGraphicPipeline(gp);
+			CreateGraphicPipeline(gp.first,gp.second);
+		}
+	}
+
+	if (computePipelines.size() > 0)
+	{
+		for (auto& cp : computePipelines)
+		{
+			CreateComputePipeline(cp.first, cp.second);
 		}
 	}
 }
@@ -439,6 +475,85 @@ u8 RenderDevice::GetPixelSize(PixelFormat format)
 bool RenderDevice::IsCompressedPixelFormat(PixelFormat format)
 {
     return _Formats[(u32)format].CompressFormat;
+}
+
+bool RenderDevice::IsDepthPixelFormat(PixelFormat format)
+{
+	if (format == PixelFormat::D32_FLOAT_S8X24_UINT ||
+		format == PixelFormat::D32_FLOAT ||
+		format == PixelFormat::D24_UNORM_S8_UINT ||
+		format == PixelFormat::D16_UNORM)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool RenderDevice::IsStencilPixelFormat(PixelFormat format)
+{
+	if (format == PixelFormat::D32_FLOAT_S8X24_UINT ||
+		format == PixelFormat::D24_UNORM_S8_UINT)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+PixelFormat RenderDevice::GetDepthResourceFormat(PixelFormat format)
+{
+	if (format == PixelFormat::D32_FLOAT_S8X24_UINT)
+		return PixelFormat::R32G8X24_TYPELESS;
+	else if (format == PixelFormat::D32_FLOAT)
+		return PixelFormat::R32_TYPELESS;
+	else if (format == PixelFormat::D24_UNORM_S8_UINT)
+		return PixelFormat::R24G8_TYPELESS;
+	else if (format == PixelFormat::D16_UNORM)
+		return PixelFormat::R16_TYPELESS;
+	else
+		check(0);
+
+	return PixelFormat::UNKNOWN;
+}
+
+PixelFormat RenderDevice::GetFormatByName(const std::string& name)
+{
+	auto iter = _FormatNameMap.find(name);
+	if (iter != _FormatNameMap.end())
+		return iter->second;
+
+	return PixelFormat::UNKNOWN;
+}
+
+PixelFormat RenderDevice::GetDepthShaderResourceFormat(PixelFormat format, bool useAsDepth)
+{
+	if (format == PixelFormat::D32_FLOAT_S8X24_UINT)
+	{
+		if (useAsDepth)
+			return PixelFormat::R32_FLOAT_X8X24_TYPELESS;
+		else
+			return PixelFormat::X32_TYPELESS_G8X24_UINT;
+	}
+	else if (format == PixelFormat::D32_FLOAT)
+	{
+		return PixelFormat::R32_FLOAT;
+	}
+	else if (format == PixelFormat::D24_UNORM_S8_UINT)
+	{
+		if (useAsDepth)
+			return PixelFormat::R24_UNORM_X8_TYPELESS;
+		else
+			return PixelFormat::X24_TYPELESS_G8_UINT;
+	}
+	else if (format == PixelFormat::D16_UNORM)
+	{
+		return PixelFormat::R16_UNORM;
+	}
+	else
+		check(0);
+
+	return PixelFormat::UNKNOWN;
 }
 
 InputSlotClass GetSlotClass(const std::string& semanticName,u32 semanticIndex)

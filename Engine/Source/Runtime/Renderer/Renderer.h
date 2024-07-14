@@ -9,6 +9,7 @@ public:
     virtual void Render(ViewInfo& view, Swapchain* viewport) override;
     virtual IRenderScene* AllocateScene(GameWorld* world) override;
     virtual void RemoveScene(IRenderScene* scene) override;
+    virtual void OnResize(u32 width, u32 height) override;
 
 private:
     RenderScene*  _Scene;

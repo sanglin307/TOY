@@ -358,12 +358,56 @@ struct ShaderParameter
 };
 
 class RenderContext;
-class GraphicPipeline
+
+enum class PipelineType
+{
+	Graphic = 0,
+	Compute
+};
+
+class RenderPipeline
+{
+public:
+	RHI_API RootSignature* GetRootSignature() const
+	{
+		return _RootSignature;
+	}
+
+	const std::string& GetName() const
+	{
+		return _Name;
+	}
+
+	PipelineType GetType()
+	{
+		return _Type;
+	}
+
+	virtual std::any Handle() { return nullptr; }
+	virtual ~RenderPipeline() {};
+
+	RHI_API void CommitParameter(RenderContext* ctx);
+	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
+	RHI_API void AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
+
+protected:
+	RootSignature* _RootSignature;
+	std::string _Name;
+	PipelineType _Type;
+
+	std::unordered_map<std::string, ShaderParameter*> _ShaderParameters;
+	// shader parameter table data.
+	std::vector<ShaderParameter*> _CBVs;
+	std::vector<ShaderParameter*> _SRVs;
+	std::vector<ShaderParameter*> _UAVs;
+	std::vector<ShaderParameter*> _Samplers;
+};
+
+class GraphicPipeline : public RenderPipeline
 {
 public:
 	struct Desc
 	{
-		std::string Name;
 		InputLayout    VertexLayout;
 		ShaderCreateDesc VS;
 		ShaderCreateDesc PS;
@@ -379,7 +423,6 @@ public:
 
 		void HashUpdate(std::any handle) const
 		{
-			HashStreamUpdate(handle, Name.c_str(), Name.length());
 			VertexLayout.HashUpdate(handle);
 			VS.HashUpdate(handle);
 			PS.HashUpdate(handle);
@@ -404,30 +447,26 @@ public:
 			return HashStreamEnd(handle);
 		}
 	};
+ 
+	Desc  Info;
+ 
+};
 
-	virtual ~GraphicPipeline() {}
-	virtual std::any Handle() { return nullptr; }
-
-	RHI_API void CommitParameter(RenderContext* ctx);
-	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
-	RHI_API RootSignature* GetRootSignature() const
+class ComputePipeline : public RenderPipeline
+{
+public:
+	struct Desc
 	{
-		return _RootSignature;
-	}
+		ShaderCreateDesc CS;
 
-	RHI_API void AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
+		u64 HashResult() const
+		{
+			return CS.HashResult();
+		}
+	};
 
 	Desc  Info;
-protected:
-	
-	std::unordered_map<std::string, ShaderParameter*> _ShaderParameters;
-	// shader parameter table data.
-	std::vector<ShaderParameter*> _CBVs;
-	std::vector<ShaderParameter*> _SRVs;
-	std::vector<ShaderParameter*> _UAVs;
-	std::vector<ShaderParameter*> _Samplers;
-
-	RootSignature* _RootSignature;
+ 
 };
 
 

@@ -89,6 +89,19 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
         .Flags = D3D12_RESOURCE_FLAG_NONE
     };
 
+    D3D12_CLEAR_VALUE clearValueRT = {
+   .Format = texDesc.Format,
+   .Color = { 0.f,0.f,0.f,1.f}
+    };
+
+    D3D12_CLEAR_VALUE clearValueDS = {
+        .Format = texDesc.Format,
+        .DepthStencil = {
+           .Depth = 0,
+           .Stencil = 0
+        }
+    };
+
     if (desc.Usage & (u32)ResourceUsage::RenderTarget)
     {
         texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
@@ -97,6 +110,8 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
     if (desc.Usage & (u32)ResourceUsage::DepthStencil)
     {
         texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        check(IsDepthPixelFormat(desc.Format));
+        texDesc.Format = TranslatePixelFormat(GetDepthResourceFormat(desc.Format));
     }
 
     if (desc.Usage & (u32)ResourceUsage::UnorderedAccess)
@@ -107,60 +122,165 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
     D3D12_HEAP_PROPERTIES heap = {
                 .Type = D3D12_HEAP_TYPE_DEFAULT
     };
-    check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource))));
+
+    if (desc.Usage & (u32)ResourceUsage::RenderTarget)
+    {
+        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COMMON, &clearValueRT, IID_PPV_ARGS(&resource))));
+    }
+    else if (desc.Usage & (u32)ResourceUsage::DepthStencil)
+    {
+        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COMMON, &clearValueDS, IID_PPV_ARGS(&resource))));
+    }
+    else
+    {
+        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource))));
+    }
+
     resource->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
 
-    const u64 uploadBufferSize = GetTextureRequiredIntermediateSize(resource.Get(), 0, 1);
-    D3D12_RESOURCE_DESC tempDesc = {
-        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-        .Alignment = 0,
-        .Width = uploadBufferSize,
-        .Height = 1,
-        .DepthOrArraySize = 1,
-        .MipLevels = 1,
-        .Format = DXGI_FORMAT_UNKNOWN,
-        .SampleDesc {
-            .Count = 1,
-            .Quality = 0
-        },
-        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR
-    };
-    ComPtr<ID3D12Resource> tempRes;
-    D3D12_HEAP_PROPERTIES uploadHeap = {
-           .Type = D3D12_HEAP_TYPE_UPLOAD
-    };
-    check(SUCCEEDED(_Device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &tempDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&tempRes))));
-    D3D12_SUBRESOURCE_DATA textureData = {
-        .pData = desc.Data,
-        .RowPitch = desc.Width * GetPixelSize(desc.Format)
-    };
-    textureData.SlicePitch = textureData.RowPitch * desc.Height;
+    DX12RenderTexture* dstTexture = nullptr;
 
-    DX12CommandList* ctx = static_cast<DX12CommandList*>(_ContextManager->GetCopyContext());
-    DX12RenderTexture* dstTexture = new DX12RenderTexture(name,this, desc, ResourceState::CopyDest, resource);
-    RenderBuffer::Desc buffDesc = {
-        .Size = uploadBufferSize
-    };
-    RenderBuffer* srcBuffer = new DX12RenderBuffer("Texture_TempCopy",this, buffDesc, ResourceState::GenericRead, tempRes);
-    ctx->UpdateSubresource(dstTexture, srcBuffer, 0, 0, 1, &textureData);
-    AddDelayDeleteResource(srcBuffer);
+    if (desc.Data != nullptr)
+    {
+        const u64 uploadBufferSize = GetTextureRequiredIntermediateSize(resource.Get(), 0, 1);
+        D3D12_RESOURCE_DESC tempDesc = {
+            .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+            .Alignment = 0,
+            .Width = uploadBufferSize,
+            .Height = 1,
+            .DepthOrArraySize = 1,
+            .MipLevels = 1,
+            .Format = DXGI_FORMAT_UNKNOWN,
+            .SampleDesc {
+                .Count = 1,
+                .Quality = 0
+            },
+            .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR
+        };
+        ComPtr<ID3D12Resource> tempRes;
+        D3D12_HEAP_PROPERTIES uploadHeap = {
+               .Type = D3D12_HEAP_TYPE_UPLOAD
+        };
+        check(SUCCEEDED(_Device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &tempDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&tempRes))));
+        D3D12_SUBRESOURCE_DATA textureData = {
+            .pData = desc.Data,
+            .RowPitch = desc.Width * GetPixelSize(desc.Format)
+        };
+        textureData.SlicePitch = textureData.RowPitch * desc.Height;
+
+        DX12CommandList* ctx = static_cast<DX12CommandList*>(_ContextManager->GetCopyContext());
+        dstTexture = new DX12RenderTexture(name, this, desc, ResourceState::CopyDest, resource);
+        RenderBuffer::Desc buffDesc = {
+            .Size = uploadBufferSize
+        };
+        RenderBuffer* srcBuffer = new DX12RenderBuffer("Texture_TempCopy", this, buffDesc, ResourceState::GenericRead, tempRes);
+        ctx->UpdateSubresource(dstTexture, srcBuffer, 0, 0, 1, &textureData);
+        AddDelayDeleteResource(srcBuffer);
+    }
+    else
+    {
+        dstTexture = new DX12RenderTexture(name, this, desc, ResourceState::Common, resource);
+    }
 
     if (desc.Usage & (u32)ResourceUsage::ShaderResource)
     {
-        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        if (IsDepthPixelFormat(desc.Format))
+        {
+            // depth shader view.
+            texDesc.Format = TranslatePixelFormat(GetDepthShaderResourceFormat(desc.Format,true));
+            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+                 .Format = texDesc.Format,
+                 .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
+                 .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                 .Texture2D = {
+                    .MipLevels = 1,
+                    .PlaneSlice = 0
+                 }
+            };
+            DescriptorAllocation srvDescriptor = heap->Allocate();
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(srvDescriptor);
+            _Device->CreateShaderResourceView(resource.Get(), &srvDesc, cpuHandle);
+            dstTexture->SetSRV(srvDescriptor, cpuHandle);
+
+            // stencil shader view.
+            if (IsStencilPixelFormat(desc.Format))
+            {
+                texDesc.Format = TranslatePixelFormat(GetDepthShaderResourceFormat(desc.Format, false));
+                srvDesc = {
+                     .Format = texDesc.Format,
+                     .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
+                     .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                     .Texture2D = {
+                        .MipLevels = 1,
+                        .PlaneSlice = 1 // stencil plane is 1.
+                     }
+                };
+                srvDescriptor = heap->Allocate();
+                cpuHandle = heap->CPUHandle(srvDescriptor);
+                _Device->CreateShaderResourceView(resource.Get(), &srvDesc, cpuHandle);
+                dstTexture->SetStencilSRV(srvDescriptor, cpuHandle);
+            }
+        }
+        else
+        {
+            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+                 .Format = texDesc.Format,
+                 .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
+                 .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                 .Texture2D = {
+                    .MipLevels = 1
+                 }
+            };
+            DescriptorAllocation srvDescriptor = heap->Allocate();
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(srvDescriptor);
+            _Device->CreateShaderResourceView(resource.Get(), &srvDesc, cpuHandle);
+            dstTexture->SetSRV(srvDescriptor, cpuHandle);
+        }
+    }
+
+    if (desc.Usage & (u32)ResourceUsage::RenderTarget)
+    {
+        DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUHeap(DescriptorType::RVT));
+        DescriptorAllocation da = rvtHeap->Allocate();
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = rvtHeap->CPUHandle(da);
+        _Device->CreateRenderTargetView(resource.Get(), nullptr, cpuHandle);
+        dstTexture->SetRTV(da, cpuHandle);
+    }
+
+    if (desc.Usage & (u32)ResourceUsage::DepthStencil)
+    {
+        D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {
+                 .Format = TranslatePixelFormat(desc.Format),
+                 .ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
+                 .Flags = D3D12_DSV_FLAG_NONE,
+                 .Texture2D = {
+                    .MipSlice = 0,
+                  }
+        };
+        DX12DescriptorHeap* dsvHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUHeap(DescriptorType::DSV));
+        DescriptorAllocation da = dsvHeap->Allocate();
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = dsvHeap->CPUHandle(da);
+        _Device->CreateDepthStencilView(resource.Get(), &dsvDesc, cpuHandle);
+        dstTexture->SetDSV(da, cpuHandle);
+    }
+
+    if (desc.Usage & (u32)ResourceUsage::UnorderedAccess)
+    {
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
              .Format = texDesc.Format,
-             .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
-             .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+             .ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D,
              .Texture2D = {
-                .MipLevels = 1
-             }
+                 .MipSlice = 0,
+                 .PlaneSlice = 0
+             },
         };
 
-        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
-        DescriptorAllocation srvDescriptor = heap->Allocate();
-        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(srvDescriptor);
-        _Device->CreateShaderResourceView(resource.Get(), &srvDesc, cpuHandle);
-        dstTexture->SetShaderResourcelView(srvDescriptor, cpuHandle);
+        DX12DescriptorHeap* uavHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        DescriptorAllocation uav = uavHeap->Allocate();
+        D3D12_CPU_DESCRIPTOR_HANDLE uavHandle = uavHeap->CPUHandle(uav);
+        _Device->CreateUnorderedAccessView(resource.Get(), nullptr, &uavDesc, uavHandle);
+        dstTexture->SetUAV(uav, uavHandle);
     }
 
     return dstTexture;
@@ -192,6 +312,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
         .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR
     };
 
+    DX12RenderBuffer* dstBuffer = nullptr;
     if ( info.CpuAccess != CpuAccessFlags::None )
     {
         D3D12_HEAP_PROPERTIES heap = {
@@ -210,7 +331,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
             resource->Unmap(0, nullptr);
         }
 
-        DX12RenderBuffer* renderBuffer = new DX12RenderBuffer(name,this, info, ResourceState::GenericRead, resource);
+        dstBuffer = new DX12RenderBuffer(name,this, info, ResourceState::GenericRead, resource);
         u8* uniformDataMap = nullptr;
         if (info.Usage & (u32)ResourceUsage::UniformBuffer)
         {
@@ -226,11 +347,9 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
 
             D3D12_RANGE range = {};
             check(SUCCEEDED(resource->Map(0, &range, (void**)&uniformDataMap)));
-            renderBuffer->_UniformDataMapPointer = uniformDataMap;
-            renderBuffer->SetConstBufferView(descriptor,cpuHandle);
+            dstBuffer->_UniformDataMapPointer = uniformDataMap;
+            dstBuffer->SetCBV(descriptor,cpuHandle);
         }
-
-        return renderBuffer;
     }
     else
     {
@@ -255,19 +374,60 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
             tempRes->Unmap(0, nullptr);
             
             RenderContext* ctx = _ContextManager->GetCopyContext();
-            RenderBuffer* dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
+            dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
             RenderBuffer* srcBuffer = new DX12RenderBuffer("Buffer_CopyTemp",this, info, ResourceState::GenericRead, tempRes);
             ctx->CopyResource(dstBuffer, srcBuffer);
             AddDelayDeleteResource(srcBuffer);
-            return dstBuffer;
         }
         else
         {
-            return new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
+            dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
         }
     }
 
-    return nullptr;
+    if (info.Usage & (u32)ResourceUsage::ShaderResource)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+                 .Format = TranslatePixelFormat(info.Format),
+                 .ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
+                 .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                 .Buffer = {
+                    .FirstElement = 0,
+                    .NumElements = UINT(info.Size / info.Stride),
+                    .StructureByteStride = info.Stride,
+                    .Flags = D3D12_BUFFER_SRV_FLAG_NONE
+                 },
+        };
+
+        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        DescriptorAllocation srvDescriptor = heap->Allocate();
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(srvDescriptor);
+        _Device->CreateShaderResourceView(resource.Get(), &srvDesc, cpuHandle);
+        dstBuffer->SetSRV(srvDescriptor, cpuHandle);
+    }
+
+    if (info.Usage & (u32)ResourceUsage::UnorderedAccess)
+    {
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
+             .Format = TranslatePixelFormat(info.Format),
+             .ViewDimension = D3D12_UAV_DIMENSION_BUFFER,
+             .Buffer = {
+                  .FirstElement = 0,
+                  .NumElements = UINT(info.Size / info.Stride),
+                  .StructureByteStride = info.Stride,
+                  .CounterOffsetInBytes = 0,
+                  .Flags = D3D12_BUFFER_UAV_FLAG_NONE
+             },
+        };
+
+        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        DescriptorAllocation uavDescriptor = heap->Allocate();
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(uavDescriptor);
+        _Device->CreateUnorderedAccessView(resource.Get(), nullptr,&uavDesc, cpuHandle);
+        dstBuffer->SetUAV(uavDescriptor, cpuHandle);
+    }
+
+    return dstBuffer;
  
 }
 

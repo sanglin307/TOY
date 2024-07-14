@@ -105,6 +105,7 @@ void GameEngine::Update()
 	{
 		ViewInfo view;
 		GameWorld::Instance().GetViewInfo(view);
+		view.ViewportSize = _GameViewport->GetSize();
 		view.FrameIndex = (u32)_FrameRate.GetFrameCount();
 		GetRenderer().Render(view, _GameViewport->GetRHI());
 	}
@@ -154,6 +155,7 @@ void GameEngine::OnViewportResize(u32 width, u32 height, bool minimized)
 		_RenderConfig.AspectRatio = (float)width / (float)height;
 		
 		_GameViewport->OnResize(width, height);
+		GetRenderer().OnResize(width, height);
 	}
 
 	_WindowsVisible = !minimized;

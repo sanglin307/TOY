@@ -1,3 +1,7 @@
 [TestPSO]
-vs = { path = "Test.hlsl" , entry = "VSMain", macro = [] }
-ps = { path = "Test.hlsl", entry = "PSMain", macro = [] }
+VS = { Path = "Test.hlsl" , Entry = "VSMain", Macros = [] }
+PS = { Path = "Test.hlsl", Entry = "PSMain", Macros = [] }
+RVTFormats = ["R16G16B16A16_FLOAT"]
+
+[TonemapCS]
+CS = { Path = "Tonemap.hlsl" , Entry = "CSMain", Macros = [] }

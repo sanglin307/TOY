@@ -227,6 +227,13 @@ enum class ResourceState : u32
     Reserve = 0xFFFFFFFF   // used for reserve current state , don't change
 };
 
+enum class DepthStentilClearFlag
+{
+    Depth = 0x1,
+    Stencil = 0x2,
+    DepthStencil = Depth | Stencil
+}; 
+
 enum class ResourceUsage : u32
 {
     VertexBuffer = 1u << 0u,
@@ -293,6 +300,7 @@ public:
         u64 Size;
         u32 Stride;
         u32 Usage;
+        PixelFormat Format;
         CpuAccessFlags CpuAccess;
         bool Alignment;
         u8* InitData;
@@ -398,8 +406,8 @@ public:
         ResourceDimension Dimension;
         u16 SampleCount = 1;
         u16 SampleQuality = 0;
-        u8* Data;
-        u64 Size;
+        u8* Data = nullptr;
+        u64 Size = 0;
     };
 
     virtual ResourceDimension GetDimension() override { return _Desc.Dimension; }

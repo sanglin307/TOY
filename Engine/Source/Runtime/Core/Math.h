@@ -85,3 +85,4 @@ struct Vector4
 
 	float f[4];
 };
+

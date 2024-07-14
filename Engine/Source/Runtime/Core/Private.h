@@ -32,7 +32,6 @@
 // iner 
 #include "Types.h"
 #include "Log.h"
-#include "Math.h"
 #include "Hash.h"
 #include "Path.h"
 #include "Platform.h"

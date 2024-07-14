@@ -9,10 +9,69 @@ SceneRenderer::~SceneRenderer()
 		delete _Passes[p];
 	}
 }
+
+void SceneRenderer::InitSceneTextures()
+{
+	if (_SceneTextures.SceneColor)
+	{
+		delete _SceneTextures.SceneColor;
+	}
+
+	if (_SceneTextures.SceneDepth)
+	{
+		delete _SceneTextures.SceneDepth;
+	}
+
+	const RenderConfig& config = GameEngine::Instance().GetRenderConfig();
+	RenderTexture::Desc cds = {
+		.Width = config.FrameWidth,
+		.Height = config.FrameHeight,
+		.DepthOrArraySize = 1,
+		.MipLevels = 1,
+		.Format = PixelFormat::R16G16B16A16_FLOAT,
+		.Usage = (u32)ResourceUsage::RenderTarget | (u32)ResourceUsage::ShaderResource,
+		.Dimension = ResourceDimension::Texture2D
+	};
+	_SceneTextures.SceneColor = _Device->CreateTexture("SceneColor", cds);
+
+	RenderTexture::Desc dds = {
+		.Width = config.FrameWidth,
+		.Height = config.FrameHeight,
+		.DepthOrArraySize = 1,
+		.MipLevels = 1,
+		.Format = PixelFormat::D24_UNORM_S8_UINT,
+		.Usage = (u32)ResourceUsage::DepthStencil | (u32)ResourceUsage::ShaderResource,
+		.Dimension = ResourceDimension::Texture2D
+	};
+	_SceneTextures.SceneDepth = _Device->CreateTexture("SceneDepth", dds);
+
+
+	RenderTexture::Desc cods = {
+		.Width = config.FrameWidth,
+		.Height = config.FrameHeight,
+		.DepthOrArraySize = 1,
+		.MipLevels = 1,
+		.Format = PixelFormat::R8G8B8A8_UNORM,
+		.Usage = (u32)ResourceUsage::RenderTarget | (u32)ResourceUsage::ShaderResource | (u32)ResourceUsage::UnorderedAccess,
+		.Dimension = ResourceDimension::Texture2D
+	};
+	_SceneTextures.ColorOutput = _Device->CreateTexture("ColorOutput", cods);
+
+}
+
+void SceneRenderer::InitRenderPass()
+{
+	_Passes[(u32)RenderPassType::Test] = new RenderPassTest;
+
+	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
+	{
+		_Passes[p]->Init(_Device, this);
+	}
+}
+
 SceneRenderer::SceneRenderer(RenderDevice* device)
 {
 	_Device = device;
-	_RenderConfig = GameEngine::Instance().GetRenderConfig();
 
 	RenderBuffer::Desc udesc = {
 		.Size = sizeof(ViewInfo),
@@ -22,12 +81,8 @@ SceneRenderer::SceneRenderer(RenderDevice* device)
 	};
 	_ViewUniformBuffer = device->CreateBuffer("ViewInfo", udesc);
 
-	_Passes[(u32)RenderPassType::Test] = new RenderPassTest;
-
-	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
-	{
-		_Passes[p]->Init(device,this);
-	}
+	InitSceneTextures();
+	InitRenderPass();
 }
 
 void SceneRenderer::BindScene(RenderScene* scene)
@@ -62,19 +117,7 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 
 	ctx->SetDescriptorHeap();
 
-	ctx->SetViewport(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
-	ctx->SetScissorRect(0, 0, _RenderConfig.FrameWidth, _RenderConfig.FrameHeight);
-
-	RenderTexture* rts[] = { sc->GetCurrentBackBuffer() };
-	ctx->SetRenderTargets(1, rts, nullptr);
-
-	const float colors[] = { 0.f, 0.f, 0.f, 1.0f };
-	ctx->ClearRenderTarget(rts[0], colors);
-
-	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
-	{
-		_Passes[p]->Render(_Device, ctx);
-	}
+	_Passes[(u32)RenderPassType::Test]->Render(view, sc, ctx);
 
 
 	_Device->GpuWaitCopyFinish();

@@ -43,6 +43,11 @@ void RendererModule::Render(ViewInfo& view, Swapchain* sc)
 	_SceneRender->Render(view,sc);	 
 }
 
+void RendererModule::OnResize(u32 width, u32 height)
+{
+	_SceneRender->InitSceneTextures();
+}
+
 void RendererModule::Destroy()
 {
 	delete _SceneRender;

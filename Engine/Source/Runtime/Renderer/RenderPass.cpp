@@ -6,14 +6,12 @@ void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
 	_Device = device;
 	_Renderer = renderer;
 
-	GraphicPipeline::Desc desc = {
-		.Name = "TestPSO"
-	};
-	PSO = device->CreateGraphicPipeline(desc);
+	GraphicPipeline::Desc desc = {};
+	ScenePso = static_cast<GraphicPipeline*>(device->CreateGraphicPipeline("TestPSO",desc));
 
 	Sampler::Desc sd;
 	_Sampler = device->CreateSampler(sd);
-	PSO->BindParameter("TestSampler", _Sampler);
+	ScenePso->BindParameter("TestSampler", _Sampler);
 
 	RenderBuffer::Desc bd = {
 		.Size = sizeof(MaterialData),
@@ -23,7 +21,10 @@ void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
 		.Alignment = true
 	};
 	MaterialBuffer = device->CreateBuffer("MaterialBuffer", bd);
-	PSO->BindParameter("MaterialCB", MaterialBuffer);
+	ScenePso->BindParameter("MaterialCB", MaterialBuffer);
+
+	ComputePipeline::Desc cd = {};
+	TonemapPso = static_cast<ComputePipeline*>(device->CreateComputePipeline("TonemapCS", cd));
 }
 
 RenderPassTest::~RenderPassTest()
@@ -36,29 +37,40 @@ RenderPassTest::~RenderPassTest()
 	delete MaterialBuffer;
 }
 
-void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
+void RenderPassTest::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
 {
-	ctx->SetRootSignature(PSO->GetRootSignature());
-	PSO->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
-	ctx->SetPrimitiveTopology(PSO->Info.Topology);
-	ctx->SetGraphicPipeline(PSO);
+	ctx->SetViewport(0, 0, view.ViewportSize.x, view.ViewportSize.y);
+	ctx->SetScissorRect(0, 0, view.ViewportSize.x, view.ViewportSize.y);
+
+	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
+
+	RenderTexture* rts[] = { sceneTextures.SceneColor };
+	ctx->SetRenderTargets(1, rts, sceneTextures.SceneDepth);
+	Vector4 colors = { 0.f, 0.f, 0.f, 1.0f };
+	ctx->ClearRenderTarget(rts[0], colors);
+	ctx->ClearDepthStencil(sceneTextures.SceneDepth, DepthStentilClearFlag::DepthStencil, 0, 0);
+ 
+	ctx->SetRootSignature(ScenePso->GetRootSignature(),PipelineType::Graphic);
+	ScenePso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+	ctx->SetPrimitiveTopology(ScenePso->Info.Topology);
+	ctx->SetRenderPipeline(ScenePso);
 
 	for (auto c : _Commands)
 	{
 		MaterialBuffer->UploadData((u8*)&(c->Material), sizeof(c->Material));
 		if (c->Material.TextureMask & BaseColorTextureMask)
-			PSO->BindParameter("BaseColorTexture", c->BaseColor);
+			ScenePso->BindParameter("BaseColorTexture", c->BaseColor);
 
 		if (c->Material.TextureMask & NormalTextureMask)
-			PSO->BindParameter("NormalTexture", c->Normal);
+			ScenePso->BindParameter("NormalTexture", c->Normal);
 
 		if (c->Material.TextureMask & RoughnessMetalnessTextureMask)
-			PSO->BindParameter("RoughnessMetalnessTexture", c->RoughMetelness);
+			ScenePso->BindParameter("RoughnessMetalnessTexture", c->RoughMetelness);
 
 		if (c->Material.TextureMask & EmissiveTextureMask)
-			PSO->BindParameter("EmissiveTexture", c->Emissive);
+			ScenePso->BindParameter("EmissiveTexture", c->Emissive);
 
-		PSO->CommitParameter(ctx);
+		ScenePso->CommitParameter(ctx);
 
 		ctx->SetVertexBuffers((u32)c->VertexBuffers.size(), c->VertexBuffers.data());
 		if (c->IndexBuffer)
@@ -73,14 +85,28 @@ void RenderPassTest::Render(RenderDevice* device, RenderContext* ctx)
 			ctx->DrawInstanced(vertexCount);
 		}
 	}
+
+
+	/*RenderTexture* finalrt[] = { sc->GetCurrentBackBuffer() };
+	ctx->SetRenderTargets(1, finalrt, nullptr);
+	ctx->ClearRenderTarget(finalrt[0],colors );*/
+
+	ctx->SetRootSignature(TonemapPso->GetRootSignature(),PipelineType::Compute);
+	TonemapPso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+	TonemapPso->BindParameter("SceneColor", sceneTextures.SceneColor);
+	TonemapPso->BindParameter("ColorUAV", sceneTextures.ColorOutput);
+	TonemapPso->CommitParameter(ctx);
+	ctx->SetRenderPipeline(TonemapPso);
+	ctx->Dispatch(DivideRoundup(view.ViewportSize.x, 16), DivideRoundup(view.ViewportSize.y, 16), 1);
+
 }
 
 void RenderPassTest::AddCluster(RenderCluster* cluster)
 {
 	RenderCommand* command = new RenderCommand;
-	for (u32 i = 0; i < PSO->Info.VertexLayout.Desc.size(); i++)
+	for (u32 i = 0; i < ScenePso->Info.VertexLayout.Desc.size(); i++)
 	{
-		InputLayoutDesc& desc = PSO->Info.VertexLayout.Desc[i];
+		InputLayoutDesc& desc = ScenePso->Info.VertexLayout.Desc[i];
 		VertexAttribute VA = _Device->TranslateSemanticToAttribute(desc.SemanticName, desc.SemanticIndex);
 		auto iter = std::find_if(cluster->VertexStreams.begin(), cluster->VertexStreams.end(), [&](RenderCluster::Stream& s) -> bool {
 

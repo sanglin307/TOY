@@ -20,6 +20,7 @@ struct ViewInfo
     float4x4 ViewProjectInverse;
     float3   ViewLocation;
     PAD
+    uint2 ViewportSize;
     uint FrameIndex;
 };
 

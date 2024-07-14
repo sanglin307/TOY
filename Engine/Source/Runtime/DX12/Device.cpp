@@ -201,7 +201,7 @@ void DX12Device::OnResize(Swapchain* swapchain, u32 width, u32 height)
         };
 
         DX12RenderTexture* dx12Resource = new DX12RenderTexture("SwapChainTexture", this, desc, ResourceState::Present, res);
-        dx12Resource->SetRenderTargetView(da, cpuHandle);
+        dx12Resource->SetRTV(da, cpuHandle);
 
         sc->_RenderTargets[n] = dx12Resource;
     }
@@ -317,7 +317,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
             DescriptorAllocation da = rvtHeap->Allocate();
             D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = rvtHeap->CPUHandle(da);
             _Device->CreateRenderTargetView(res.Get(), nullptr, cpuHandle);
-
+ 
             RenderTexture::Desc desc = {
                  .Width = info.Width,
                  .Height = info.Height,
@@ -327,7 +327,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
             };
 
             DX12RenderTexture* dx12Resource = new DX12RenderTexture("SwapChainTexture",this, desc, ResourceState::Present, res);
-            dx12Resource->SetRenderTargetView(da, cpuHandle);
+            dx12Resource->SetRTV(da, cpuHandle);
 
             rtResources[n] = dx12Resource;
         }
@@ -1154,13 +1154,65 @@ void DX12Device::TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, std:
 
 }
 
-GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& desc)
+RenderPipeline* DX12Device::CreateComputePipeline(const std::string& name, const ComputePipeline::Desc& desc)
 {
     check(_Device);
 
-    if (desc.Name.size() > 0 && desc.VS.Path.size() == 0)  // no shaders, find it using name only.
+    if (name.size() > 0 && desc.CS.Path.size() == 0)  // no shaders, find it using name only.
     {
-        return LoadGraphicPipeline(desc.Name);
+        return LoadPipeline(name);
+    }
+
+    u64 hash = desc.HashResult();
+    RenderPipeline* cache = LoadPipeline(hash);
+    if (cache != nullptr)
+    {
+        return cache;
+    }
+
+    std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes = {};
+    shaderRes[(u32)ShaderProfile::Compute] = LoadShader(desc.CS);
+
+    // root signature
+    RootSignature::Desc rd;
+    CalculateRootSignatureDesc(shaderRes, rd);
+    RootSignature* rs = LoadRootSignature(rd);
+    check(rs);
+
+    ComPtr<ID3D12PipelineState> pso;
+    D3D12_COMPUTE_PIPELINE_STATE_DESC dxDesc = {
+        .pRootSignature = std::any_cast<ID3D12RootSignature*>(rs->Handle()),
+        .CS = {
+            .pShaderBytecode = shaderRes[(u32)ShaderProfile::Compute]->GetBlobData().Data,
+            .BytecodeLength = shaderRes[(u32)ShaderProfile::Compute]->GetBlobData().Size,
+         },
+        .Flags = D3D12_PIPELINE_STATE_FLAG_NONE
+    };
+ 
+    check(SUCCEEDED(_Device->CreateComputePipelineState(&dxDesc, IID_PPV_ARGS(&pso))));
+    pso->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
+
+    DX12ComputePipeline* pipeline = new DX12ComputePipeline(name, desc,pso);
+    pipeline->AllocateParameters(rs, shaderRes);
+
+    _PipelineCache[hash] = pipeline;
+
+    if (!name.empty() && _PipelineCacheByName.find(name) == _PipelineCacheByName.end())
+    {
+        _PipelineCacheByName[name] = pipeline;
+    }
+
+    check(pipeline);
+    return pipeline;
+}
+
+RenderPipeline* DX12Device::CreateGraphicPipeline(const std::string& name,const GraphicPipeline::Desc& desc)
+{
+    check(_Device);
+
+    if (name.size() > 0 && desc.VS.Path.size() == 0)  // no shaders, find it using name only.
+    {
+        return LoadPipeline(name);
     }
 
     std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes = {};
@@ -1171,7 +1223,8 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
         CreateInputLayout(shaderRes[(u32)ShaderProfile::Vertex], InputSlotMapping::Seperated, (InputLayout&)desc.VertexLayout);
     }
 
-    GraphicPipeline* cache = LoadGraphicPipeline(desc);
+    u64 hash = desc.HashResult();
+    RenderPipeline* cache = LoadPipeline(hash);
     if (cache != nullptr)
     {
         return cache;
@@ -1198,14 +1251,18 @@ GraphicPipeline* DX12Device::CreateGraphicPipeline(const GraphicPipeline::Desc& 
             .NumElements = (UINT)inputLayouts.size()
     };
     check(SUCCEEDED(_Device->CreateGraphicsPipelineState(&dxDesc, IID_PPV_ARGS(&pso))));
+    pso->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
 
-    GraphicPipeline* pipeline = new DX12GraphicPipeline(pso);
-    pipeline->Info = desc;
+    GraphicPipeline* pipeline = new DX12GraphicPipeline(name,desc,pso);
     pipeline->AllocateParameters(rs, shaderRes);
     
+    _PipelineCache[hash] = pipeline;
+    
+    if (!name.empty() && _PipelineCacheByName.find(name) == _PipelineCacheByName.end())
+    {
+        _PipelineCacheByName[name] = pipeline;
+    }
 
-    _PipelineCache[desc.HashResult()] = pipeline;
-    _PipelineCacheByName[desc.Name] = pipeline;
     return pipeline;
 }
 
@@ -1249,7 +1306,7 @@ void DX12Device::InitPixelFormat_Platform()
     check(_Formats.size() > 0);
     using enum PixelFormat;
     u32 index = 0;
-#define DXGIFORMAT(F)  _Formats[index].PlatformFormat = DXGI_FORMAT_##F; ++index; 
+#define DXGIFORMAT(F)  _Formats[index].PlatformFormat = DXGI_FORMAT_##F; ++index; _FormatNameMap[#F] = ##F;
     DXGIFORMAT(UNKNOWN)
         DXGIFORMAT(R32G32B32A32_TYPELESS)
         DXGIFORMAT(R32G32B32A32_FLOAT)

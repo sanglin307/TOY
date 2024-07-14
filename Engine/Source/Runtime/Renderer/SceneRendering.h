@@ -1,5 +1,12 @@
 #pragma once
 
+struct SceneTextures
+{
+	RenderTexture* SceneColor;
+	RenderTexture* SceneDepth;
+	RenderTexture* ColorOutput;
+};
+
 class SceneRenderer
 {
 public:
@@ -16,12 +23,22 @@ public:
 		return _ViewUniformBuffer;
 	}
 
+	const SceneTextures& GetSceneTextures() const
+	{
+		return _SceneTextures;
+	}
+
 	RenderDevice* GetDevice() { return _Device; }
 
+	void InitSceneTextures();
+
 private:
+
+	void InitRenderPass();
+
 	RenderDevice* _Device;
-	RenderConfig _RenderConfig;
 	RenderScene* _Scene;
-	RenderBuffer* _ViewUniformBuffer;
+	RenderBuffer* _ViewUniformBuffer = nullptr;
+	SceneTextures _SceneTextures = {};
 	std::array<RenderPass*, (u32)RenderPassType::Max> _Passes;
 };

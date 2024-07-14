@@ -36,11 +36,20 @@ void DX12CommandList::SetPrimitiveTopology(const PrimitiveTopology topology)
     _Handle->IASetPrimitiveTopology(DX12Device::TranslatePrimitiveTopology(topology));
 }
 
-void DX12CommandList::SetRootSignature(const RootSignature* rootsig)
+void DX12CommandList::SetRootSignature(const RootSignature* rootsig, PipelineType type)
 {
     ID3D12RootSignature* rs = std::any_cast<ID3D12RootSignature*>(rootsig->Handle());
     check(rs);
-    _Handle->SetGraphicsRootSignature(rs);
+    if (type == PipelineType::Graphic)
+    {
+        _Handle->SetGraphicsRootSignature(rs);
+    }
+    else if (type == PipelineType::Compute)
+    {
+        _Handle->SetComputeRootSignature(rs);
+    }
+    else
+        check(0);
 }
 
 void DX12CommandList::SetDescriptorHeap()
@@ -51,13 +60,13 @@ void DX12CommandList::SetDescriptorHeap()
     _Handle->SetDescriptorHeaps(2, ppHeap);
 }
 
-void DX12CommandList::SetGraphicPipeline(GraphicPipeline* pipeline)
+void DX12CommandList::SetRenderPipeline(RenderPipeline* pipeline)
 {
     ID3D12PipelineState* ps = std::any_cast<ID3D12PipelineState*>(pipeline->Handle());
     _Handle->SetPipelineState(ps);
 }
 
-void DX12CommandList::SetGraphicTableParameter(const RootSignature* rs, const std::vector<ShaderParameter*>& params)
+void DX12CommandList::SetRootDescriptorTableParameter(const RootSignature* rs, const std::vector<ShaderParameter*>& params, PipelineType type)
 {
     if (params.size() == 0)
         return;
@@ -89,28 +98,44 @@ void DX12CommandList::SetGraphicTableParameter(const RootSignature* rs, const st
             if (param->BindType == ShaderBindType::TableCBV)
             {
                 DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
-                _Device->CopyDescriptor(dest, buffer->GetConstBufferViewCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                _Device->CopyDescriptor(dest, buffer->GetCBVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
             }
             else if (param->BindType == ShaderBindType::TableSRV)
             {
                 if (param->Resource->GetDimension() == ResourceDimension::Buffer)
                 {
                     DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
-                    _Device->CopyDescriptor(dest, buffer->GetShaderResourceViewCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    _Device->CopyDescriptor(dest, buffer->GetSRVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 }
                 else
                 {
                     DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(param->Resource);
-                    _Device->CopyDescriptor(dest, tex->GetShaderResourceViewCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    _Device->CopyDescriptor(dest, tex->GetSRVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 }
             }
             else if (param->BindType == ShaderBindType::TableUAV)
             {
-                check(0); // TODO.
+                if (param->Resource->GetDimension() == ResourceDimension::Buffer)
+                {
+                    DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
+                    _Device->CopyDescriptor(dest, buffer->GetUAVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                }
+                else
+                {
+                    DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(param->Resource);
+                    _Device->CopyDescriptor(dest, tex->GetUAVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                }
             }
         }
 
-        _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
+        if (type == PipelineType::Graphic)
+        {
+            _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
+        }
+        else if (type == PipelineType::Compute)
+        {
+            _Handle->SetComputeRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
+        }
     }
     else if (params[0]->BindType == ShaderBindType::TableSampler)
     {
@@ -125,27 +150,55 @@ void DX12CommandList::SetGraphicTableParameter(const RootSignature* rs, const st
             _Device->CopyDescriptor(dest, sampler->GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
         }
 
-        _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
+        if (type == PipelineType::Graphic)
+        {
+            _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
+        }
+        else if (type == PipelineType::Compute)
+        {
+            _Handle->SetComputeRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
+        }
     }
     
 }
 
-void DX12CommandList::SetGraphicShaderParameter(const ShaderParameter* param)
+void DX12CommandList::SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type)
 {
     if (param->BindType == ShaderBindType::RootCBV)
     {
         ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
-        _Handle->SetGraphicsRootConstantBufferView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        if (type == PipelineType::Graphic)
+        {
+            _Handle->SetGraphicsRootConstantBufferView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        }
+        else if (type == PipelineType::Compute)
+        {
+            _Handle->SetComputeRootConstantBufferView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        }
     }
     else if (param->BindType == ShaderBindType::RootSRV)
     {
         ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
-        _Handle->SetGraphicsRootShaderResourceView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        if (type == PipelineType::Graphic)
+        {
+            _Handle->SetGraphicsRootShaderResourceView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        }
+        else if (type == PipelineType::Compute)
+        {
+            _Handle->SetComputeRootShaderResourceView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        }
     }
     else if (param->BindType == ShaderBindType::RootUAV)
     {
         ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
-        _Handle->SetGraphicsRootUnorderedAccessView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        if (type == PipelineType::Graphic)
+        {
+            _Handle->SetGraphicsRootUnorderedAccessView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        }
+        else if (type == PipelineType::Compute)
+        {
+            _Handle->SetComputeRootUnorderedAccessView(param->RootParamIndex, res->GetGPUVirtualAddress());
+        }
     }
     else
     {
@@ -154,6 +207,7 @@ void DX12CommandList::SetGraphicShaderParameter(const ShaderParameter* param)
     }
 
 }
+ 
 
 void DX12CommandList::SetVertexBuffers(u32 vbNum, RenderBuffer** vbs)
 {
@@ -178,6 +232,11 @@ void DX12CommandList::SetIndexBuffer(RenderBuffer* indexBuffer)
 void DX12CommandList::DrawInstanced(u32 vertexCount, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
 {  
     _Handle->DrawInstanced(vertexCount, instanceCount, vertexOffset, instanceOffset);
+}
+
+void DX12CommandList::Dispatch(u32 ThreadGroupCountX, u32 ThreadGroupCountY, u32 ThreadGroupCountZ)
+{
+    _Handle->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
 }
 
 void DX12CommandList::DrawIndexedInstanced(u32 indexCount, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
@@ -222,7 +281,7 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
         for (u32 i=0; i<rtNum; i++)
         {
             DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(rts[i]);
-            rtViews.push_back(dx12Res->GetRenderTargetViewCPUHandle());
+            rtViews.push_back(dx12Res->GetRTVCPUHandle());
         }
         TransitionState(ResourceState::RenderTarget, (RenderResource**)rts, rtNum);
     }
@@ -230,8 +289,9 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
     if (depthStencil)
     {
         DX12RenderTexture* dx12depth = static_cast<DX12RenderTexture*>(depthStencil);
-        dsView = dx12depth->GetDepthStencilViewCPUHandle();
+        dsView = dx12depth->GetDSVCPUHandle();
         pDepth = &dsView;
+        TransitionState(ResourceState::DepthWrite, dx12depth);
     }
 
     if (rtViews.size() > 0)
@@ -245,12 +305,38 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
 
 }
 
-void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const float* colors)
+void DX12CommandList::ClearUnorderedAccessView(RenderTexture* uavTexture, const float* values)
 {
-    DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(renderTarget);
-    _Handle->ClearRenderTargetView(dx12Res->GetRenderTargetViewCPUHandle(), colors, 0, nullptr);
+   // DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(uavTexture);
+   // _Handle->ClearUnorderedAccessViewFloat()
 }
 
+void DX12CommandList::ClearUnorderedAccessView(RenderTexture* uavTexture, const u32* values)
+{
+
+}
+
+void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const Vector4& colors)
+{
+    DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(renderTarget);
+    _Handle->ClearRenderTargetView(dx12Res->GetRTVCPUHandle(), (float*)&colors, 0, nullptr);
+}
+
+void DX12CommandList::ClearDepthStencil(RenderTexture* depthTarget, DepthStentilClearFlag flag, float depth, u8 stencil)
+{
+    DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(depthTarget);
+    D3D12_CLEAR_FLAGS f;
+    if (flag == DepthStentilClearFlag::Depth)
+        f = D3D12_CLEAR_FLAG_DEPTH;
+    else if (flag == DepthStentilClearFlag::Stencil)
+        f = D3D12_CLEAR_FLAG_STENCIL;
+    else if (flag == DepthStentilClearFlag::DepthStencil)
+        f = D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL;
+    else
+        check(0);
+
+    _Handle->ClearDepthStencilView(dx12Res->GetDSVCPUHandle(), f, depth, stencil, 0, nullptr);
+}
 
 void DX12CommandQueue::Excute(u32 ctxNum, RenderContext** ctx)
 {

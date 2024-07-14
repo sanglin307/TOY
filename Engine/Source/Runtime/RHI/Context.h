@@ -47,20 +47,25 @@ public:
 	virtual void Close(RenderTexture* presentResource) = 0;
 	virtual void Close() = 0;
 
-	virtual void SetGraphicPipeline(GraphicPipeline* pipeline) = 0;
+	virtual void SetRenderPipeline(RenderPipeline* pipeline) = 0;
 	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, float minDepth = 0.f, float maxDepth = 1.f) = 0;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) = 0;
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) = 0;
-	virtual void ClearRenderTarget(RenderTexture* renderTarget, const float* colors) = 0;
+	virtual void ClearRenderTarget(RenderTexture* renderTarget, const Vector4& colors) = 0;
+	virtual void ClearDepthStencil(RenderTexture* depthTarget, DepthStentilClearFlag flag, float depth, u8 stencil) = 0;
+	virtual void ClearUnorderedAccessView(RenderTexture* uavTexture, const float* values) = 0;
+	virtual void ClearUnorderedAccessView(RenderTexture* uavTexture, const u32* values) = 0;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
 	virtual void TransitionState(ResourceState destState, RenderResource* res) = 0;
-	virtual void SetGraphicShaderParameter(const ShaderParameter* param) = 0;
-	virtual void SetGraphicTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params) = 0;
+	virtual void SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type) = 0;
+	virtual void SetRootDescriptorTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params, PipelineType type) = 0;
 	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
 	virtual void DrawIndexedInstanced(u32 indexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
 	virtual void SetPrimitiveTopology(const PrimitiveTopology topology) = 0;
-	virtual void SetRootSignature(const RootSignature* rootsig) = 0;
+	virtual void SetRootSignature(const RootSignature* rootsig, PipelineType type) = 0;
 	virtual void SetDescriptorHeap() = 0;
+
+	virtual void Dispatch(u32 ThreadGroupCountX, u32 ThreadGroupCountY, u32 ThreadGroupCountZ) = 0;
 
 	virtual void SetVertexBuffers(u32 vbNum, RenderBuffer** vbs) = 0;
 	virtual void SetIndexBuffer(RenderBuffer* indexBuffer) = 0;
