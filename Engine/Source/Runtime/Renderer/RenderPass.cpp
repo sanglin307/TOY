@@ -45,11 +45,8 @@ void RenderPassTest::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
 	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
 
 	RenderTexture* rts[] = { sceneTextures.SceneColor };
-	ctx->SetRenderTargets(1, rts, sceneTextures.SceneDepth);
-	Vector4 colors = { 0.f, 0.f, 0.f, 1.0f };
-	ctx->ClearRenderTarget(rts[0], colors);
-	ctx->ClearDepthStencil(sceneTextures.SceneDepth, DepthStentilClearFlag::DepthStencil, 0, 0);
- 
+	ctx->SetRenderTargets(1, rts, RenderTargetColorFlags::Clear,sceneTextures.SceneDepth,RenderTargetDepthStencilFlags::Clear);
+
 	ctx->SetRootSignature(ScenePso->GetRootSignature(),PipelineType::Graphic);
 	ScenePso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
 	ctx->SetPrimitiveTopology(ScenePso->Info.Topology);
@@ -85,11 +82,6 @@ void RenderPassTest::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
 			ctx->DrawInstanced(vertexCount);
 		}
 	}
-
-
-	/*RenderTexture* finalrt[] = { sc->GetCurrentBackBuffer() };
-	ctx->SetRenderTargets(1, finalrt, nullptr);
-	ctx->ClearRenderTarget(finalrt[0],colors );*/
 
 	ctx->SetRootSignature(TonemapPso->GetRootSignature(),PipelineType::Compute);
 	TonemapPso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());

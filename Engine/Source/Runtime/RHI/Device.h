@@ -54,7 +54,7 @@ public:
 		_ContextManager = manager;
 	}
 
-	RHI_API void AddDelayDeleteResource(RenderResource* res, u32 delayFrame = 1);
+	RHI_API void AddDelayDeleteResource(RenderResource* res, u64 copyFenceValue);
 	RHI_API void CleanDelayDeleteResource();
 
 	DescriptorHeap* GetCPUDescriptorHeap(DescriptorType type)

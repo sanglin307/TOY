@@ -126,6 +126,7 @@ void DX12Device::WaitGPUIdle()
 
 DX12Device::~DX12Device()
 {
+ 
     for (auto iter = _RootSignatureCache.begin(); iter != _RootSignatureCache.end(); iter++)
     {
         delete iter->second;
@@ -140,6 +141,9 @@ DX12Device::~DX12Device()
     {
         delete iter->second;
     }
+
+
+    RenderResourcePool::Instance().Destroy();
 
     delete _DescriptorManager;
     delete _ContextManager;
@@ -209,12 +213,17 @@ void DX12Device::OnResize(Swapchain* swapchain, u32 width, u32 height)
 
 RenderContext* DX12Device::BeginFrame(Swapchain* sc)
 {
+    CommitCopyCommand();
+
     _FrameNum++;
     return _ContextManager->GetDirectContext(sc->GetCurrentFrameIndex());
 }
 
 void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
 {
+    // wait copy queue finish when excute direct queue.
+    GpuWaitCopyFinish();
+
     RenderTexture* rt = sc->GetCurrentBackBuffer();
     ctx->Close(rt);
 
@@ -229,6 +238,9 @@ void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
     u32 nextFrameIndex = sc->GetCurrentFrameIndex();
 
     _ContextManager->SwitchToNextFrame(lastframeIndex, nextFrameIndex);
+
+    // delete copy related temp resources.
+    CleanDelayDeleteResource();
 
 }
 

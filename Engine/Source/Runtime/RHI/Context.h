@@ -50,13 +50,12 @@ public:
 	virtual void SetRenderPipeline(RenderPipeline* pipeline) = 0;
 	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, float minDepth = 0.f, float maxDepth = 1.f) = 0;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) = 0;
-	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) = 0;
+	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTargetColorFlags colorFlags, RenderTexture* depthStencil, RenderTargetDepthStencilFlags dsFlags) = 0;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const Vector4& colors) = 0;
 	virtual void ClearDepthStencil(RenderTexture* depthTarget, DepthStentilClearFlag flag, float depth, u8 stencil) = 0;
 	virtual void ClearUnorderedAccessView(RenderTexture* uavTexture, const float* values) = 0;
 	virtual void ClearUnorderedAccessView(RenderTexture* uavTexture, const u32* values) = 0;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
-	virtual void TransitionState(ResourceState destState, RenderResource* res) = 0;
 	virtual void SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type) = 0;
 	virtual void SetRootDescriptorTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params, PipelineType type) = 0;
 	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
@@ -70,7 +69,7 @@ public:
 	virtual void SetVertexBuffers(u32 vbNum, RenderBuffer** vbs) = 0;
 	virtual void SetIndexBuffer(RenderBuffer* indexBuffer) = 0;
 
-	RenderContext* ReadyForRecord();
+	RenderContext* Open();
 
 protected:
 
@@ -105,11 +104,10 @@ public:
 	RHI_API CommandQueue* GetDirectQueue() { return _DirectCommandQueue; }
 	RHI_API void SwitchToNextFrame(u32 lastFrameIndex, u32 nextFrameIndex);
 
-	RHI_API RenderContext* GetCopyContext();
-	RHI_API void AddCopyNum();
+	RHI_API RenderContext* GetCopyContext(u64& copyFenceValue);
 	RHI_API void CommitCopyCommand();
 	RHI_API void GpuWaitCopyFinish();
-	RHI_API void CpuWaitCopyFinish();
+	RHI_API void CpuWaitCopyFinish(u64 copyFenceValue = 0);
 
 private:
 	static constexpr u32 CommandAllocatorNumber = 3;
@@ -118,6 +116,8 @@ private:
 	std::vector<CommandAllocator*> _DirectCommandAllocators;
 	std::vector<RenderContext*> _DirectContexts;
 	Fence* _FrameFence;
+	u64 _FenceValues[CommandAllocatorNumber];
+
 
 	CommandQueue* _ComputeCommandQueue;
 	CommandAllocator* _ComputeCommandAllocator;
@@ -126,11 +126,11 @@ private:
 	CommandQueue* _CopyCommandQueue;
 	CommandAllocator* _CopyCommandAllocator;
 	RenderContext* _CopyContext;
-	u64 _CopyQueueFenceValue = 0;
+	u64 _PrepareCopyFenceValue = 0;
+	u64 _ComittedCopyFenceValue = 0;
+	u64 _FinishedCopyFenceValue = 0;
 	Fence* _CopyQueueFence;
-	bool _ContainCopyOp = false;
-	bool _NeedGpuWaitCopyFinish = false;
 
 	RenderDevice* _Device;
-	u64 _FenceValues[CommandAllocatorNumber];
+	
 };

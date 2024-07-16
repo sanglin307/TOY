@@ -51,15 +51,16 @@ public:
 	virtual void SetRenderPipeline(RenderPipeline* pipeline) override;
 	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, float minDepth = 0.f, float maxDepth = 1.f) override;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) override;
-	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil) override;
+	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTargetColorFlags colorFlags, RenderTexture* depthStencil, RenderTargetDepthStencilFlags dsFlags) override;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const Vector4& colors) override;
 	virtual void ClearDepthStencil(RenderTexture* depthTarget, DepthStentilClearFlag flag, float depth, u8 stencil) override;
 	virtual void ClearUnorderedAccessView(RenderTexture* uavTexture, const float* values) override;
 	virtual void ClearUnorderedAccessView(RenderTexture* uavTexture, const u32* values) override;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
-	virtual void TransitionState(ResourceState destState, RenderResource* res) override;
 
-	void TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource);
+	void TransitionStencilState(ResourceState destState, RenderResource* res);
+	void TransitionState(ResourceState destState, RenderResource* res);
+	void TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource, u32 subResource = 0);
 	void TransitionState(ResourceState destState, RenderResource** resources, u32 number);
 
 	virtual void SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type) override;

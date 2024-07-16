@@ -270,7 +270,7 @@ void DX12CommandList::SetScissorRect(u32 left, u32 top, u32 right, u32 bottom)
     _Handle->RSSetScissorRects(1, &rect);
 }
 
-void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTexture* depthStencil)
+void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTargetColorFlags colorFlags, RenderTexture* depthStencil, RenderTargetDepthStencilFlags dsFlags)
 {
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtViews;
     D3D12_CPU_DESCRIPTOR_HANDLE dsView{};
@@ -291,9 +291,33 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
         DX12RenderTexture* dx12depth = static_cast<DX12RenderTexture*>(depthStencil);
         dsView = dx12depth->GetDSVCPUHandle();
         pDepth = &dsView;
-        TransitionState(ResourceState::DepthWrite, dx12depth);
-    }
 
+        if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::Clear)
+        {
+            if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::ClearDepth)
+            {
+                TransitionState(ResourceState::DepthWrite, dx12depth);
+            }
+
+            if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::ClearStencil)
+            {
+                TransitionStencilState(ResourceState::DepthWrite, dx12depth);
+            }
+        }
+        else if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::ReadOnly)
+        {
+            if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::ReadOnlyDepth)
+            {
+                TransitionState(ResourceState::DepthRead, dx12depth);
+            }
+
+            if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::ReadOnlyStencil)
+            {
+                TransitionStencilState(ResourceState::DepthRead, dx12depth);
+            }
+        }
+    }
+ 
     if (rtViews.size() > 0)
     {
         _Handle->OMSetRenderTargets((UINT)rtViews.size(), rtViews.data(), false, pDepth);
@@ -303,6 +327,34 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTex
         _Handle->OMSetRenderTargets(0, nullptr, false, pDepth);
     }
 
+    //clear
+    if (rtNum > 0 && rts && colorFlags == RenderTargetColorFlags::Clear)
+    {
+        Vector4 colors = { 0.f, 0.f, 0.f, 1.0f };
+        for (u32 i = 0; i < rtNum; i++)
+        {
+            ClearRenderTarget(rts[i], colors);
+        }    
+    }
+
+    if (depthStencil && ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::Clear))
+    {
+        u8 clearFlag = 0;
+        if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::Clear)
+        {
+            if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::ClearDepth)
+            {
+                clearFlag |= (u8)DepthStentilClearFlag::Depth;
+            }
+
+            if ((u8)dsFlags & (u8)RenderTargetDepthStencilFlags::ClearStencil)
+            {
+                clearFlag |= (u8)DepthStentilClearFlag::Stencil;
+            }
+
+            ClearDepthStencil(depthStencil, (DepthStentilClearFlag)clearFlag, 0, 0);
+        }
+    }
 }
 
 void DX12CommandList::ClearUnorderedAccessView(RenderTexture* uavTexture, const float* values)
@@ -430,7 +482,6 @@ void DX12CommandList::UpdateSubresource(RenderTexture* destResource, RenderBuffe
     }
 
     std::free(tempMem);
-    _Manager->AddCopyNum();
 }
 
 
@@ -451,18 +502,16 @@ void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRe
     ID3D12Resource* srcResource = std::any_cast<ID3D12Resource*>(srcRes->Handle());
     ID3D12Resource* dstResource = std::any_cast<ID3D12Resource*>(dstRes->Handle());
     _Handle->CopyResource(dstResource, srcResource);
-    _Manager->AddCopyNum();
-
 }
 
-void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource)
+void DX12CommandList::TransitionState(D3D12_RESOURCE_STATES destState, D3D12_RESOURCE_STATES srcState, ID3D12Resource* resource, u32 subResource)
 {
     D3D12_RESOURCE_BARRIER barrier = {
                 .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
                 .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
                 .Transition = {
                     .pResource = resource,
-                    .Subresource = 0,
+                    .Subresource = subResource,
                     .StateBefore = srcState,
                     .StateAfter = destState
                 }
@@ -504,5 +553,14 @@ void DX12CommandList::TransitionState(ResourceState destState, RenderResource* r
     {
         TransitionState(DX12Device::TranslateResourceState(destState), DX12Device::TranslateResourceState(res->State), std::any_cast<ID3D12Resource*>(res->Handle()));
         res->State = destState;
+    }
+}
+
+void DX12CommandList::TransitionStencilState(ResourceState destState, RenderResource* res)
+{
+    if (res->StencilState != destState)
+    {
+        TransitionState(DX12Device::TranslateResourceState(destState), DX12Device::TranslateResourceState(res->StencilState), std::any_cast<ID3D12Resource*>(res->Handle()),1);
+        res->StencilState = destState;
     }
 }

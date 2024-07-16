@@ -217,11 +217,11 @@ void RenderDevice::InitPipelineCache()
 	}
 }
 
-void RenderDevice::AddDelayDeleteResource(RenderResource* res, u32 delayFrame)
+void RenderDevice::AddDelayDeleteResource(RenderResource* res, u64 copyFenceValue)
 {
 	_DelayDeleteResources.push_back(DelayDeleteResource{
 		.FrameNum = _FrameNum,
-		.DelayFrameNum = delayFrame,
+		.CopyFenceValue = copyFenceValue,
 		.Resource = res
 		});
 }
@@ -230,10 +230,14 @@ void RenderDevice::CleanDelayDeleteResource()
 {
 	std::list<DelayDeleteResource> needDeleteRes;
 	auto iter = _DelayDeleteResources.begin();
+	u64 maxCopyFenceValue = 0;
 	while(iter != _DelayDeleteResources.end())
 	{
-		if (_FrameNum > iter->FrameNum + iter->DelayFrameNum)
+		if (_FrameNum > iter->FrameNum + 1)  // delay 1 frame
 		{
+			if (iter->CopyFenceValue > maxCopyFenceValue)
+				maxCopyFenceValue = iter->CopyFenceValue;
+
 			needDeleteRes.push_back(*iter);
 			auto diter = iter++;
 			_DelayDeleteResources.erase(diter);
@@ -244,8 +248,7 @@ void RenderDevice::CleanDelayDeleteResource()
 
 	if (needDeleteRes.size() > 0)
 	{
-		// we should wait copy queue finish, there are copy used temp resource in delay delete resource now.
-		_ContextManager->CpuWaitCopyFinish();
+		_ContextManager->CpuWaitCopyFinish(maxCopyFenceValue);
 		for (auto res : needDeleteRes)
 		{
 			delete res.Resource;

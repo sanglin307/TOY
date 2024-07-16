@@ -227,7 +227,7 @@ enum class ResourceState : u32
     Reserve = 0xFFFFFFFF   // used for reserve current state , don't change
 };
 
-enum class DepthStentilClearFlag
+enum class DepthStentilClearFlag : u8
 {
     Depth = 0x1,
     Stencil = 0x2,
@@ -263,7 +263,7 @@ enum class ResourceDimension
     Sampler
 };
 
-enum class CpuAccessFlags : u32
+enum class CpuAccessFlags : u8
 {
     None = 0,
     Read = 1u << 0u,
@@ -271,24 +271,43 @@ enum class CpuAccessFlags : u32
     ReadWrite = Read | Write
 };
 
+enum class RenderTargetColorFlags : u8
+{
+    None,
+    Clear = 1 << 0,
+};
+
+enum class RenderTargetDepthStencilFlags : u8
+{
+    None,
+    ClearDepth = 1 << 0,
+    ClearStencil = 1 << 1,
+    ReadOnlyDepth = 1 << 2,
+    ReadOnlyStencil = 1 << 3,
+
+    ReadOnly = ReadOnlyDepth | ReadOnlyStencil,
+    Clear = ClearDepth | ClearStencil,
+};
 
 class RenderResource
 {
 public :
+    RHI_API RenderResource();
+    RHI_API virtual ~RenderResource();
     virtual ResourceDimension GetDimension() = 0;
     virtual u32 GetUsage() = 0;
-    virtual ~RenderResource() {};
     virtual std::any Handle() { return nullptr; }
     virtual const std::string& GetName() const = 0;
 
     ResourceState State;
+    ResourceState StencilState; 
     RenderDevice* Device = nullptr;
 };
 
 struct DelayDeleteResource
 {
     u64 FrameNum;
-    u32 DelayFrameNum;
+    u64 CopyFenceValue = 0;
     RenderResource* Resource;
 };
 
@@ -374,6 +393,7 @@ public:
             return Hash(this, sizeof(Desc));
         }
     };
+
     virtual ~Sampler() {};
     virtual ResourceDimension GetDimension() override { return ResourceDimension::Sampler; }
     virtual u32 GetUsage() override { return 0; }
@@ -451,4 +471,19 @@ public:
 
 protected:
     Desc _Info;
+};
+
+
+class RenderResourcePool
+{
+public:
+    RHI_API static RenderResourcePool& Instance();
+
+    RHI_API void Registe(RenderResource* resource);
+    RHI_API void UnRegiste(RenderResource* resource);
+
+    RHI_API void Destroy();
+private:
+    std::set<RenderResource*> _ResourceSet;
+    bool        _DestroyProcess = false;
 };

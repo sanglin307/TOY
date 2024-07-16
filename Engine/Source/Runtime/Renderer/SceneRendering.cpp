@@ -39,7 +39,7 @@ void SceneRenderer::InitSceneTextures()
 		.Height = config.FrameHeight,
 		.DepthOrArraySize = 1,
 		.MipLevels = 1,
-		.Format = PixelFormat::D24_UNORM_S8_UINT,
+		.Format = PixelFormat::D32_FLOAT_S8X24_UINT,
 		.Usage = (u32)ResourceUsage::DepthStencil | (u32)ResourceUsage::ShaderResource,
 		.Dimension = ResourceDimension::Texture2D
 	};
@@ -109,20 +109,14 @@ void SceneRenderer::RemoveCluster(RenderCluster* cluster)
 void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 {
 	RenderContext* ctx = _Device->BeginFrame(sc);
-
-	//resource init and copy op
-	_Device->CommitCopyCommand();
 	
 	_ViewUniformBuffer->UploadData((u8*)&view, sizeof(ViewInfo));
 
 	ctx->SetDescriptorHeap();
-
 	_Passes[(u32)RenderPassType::Test]->Render(view, sc, ctx);
+	ctx->CopyResource(sc->GetCurrentBackBuffer(), _SceneTextures.ColorOutput);
 
-
-	_Device->GpuWaitCopyFinish();
 	_Device->EndFrame(ctx, sc);
-	_Device->CleanDelayDeleteResource();
 }
 
  

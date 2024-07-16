@@ -8,7 +8,7 @@ RenderContext::RenderContext(CommandType type, CommandAllocator* allocator, Cont
 {
 }
 
-RenderContext* RenderContext::ReadyForRecord()
+RenderContext* RenderContext::Open()
 {
 	if (_State == ContextState::Open)
 		return this;
@@ -38,17 +38,18 @@ ContextManager::ContextManager(RenderDevice* device)
 	_CopyCommandAllocator = device->CreateCommandAllocator(CommandType::Copy);
 	_CopyCommandQueue = device->CreateCommandQueue(CommandType::Copy);
 	_CopyContext = device->CreateCommandContext(_CopyCommandAllocator, CommandType::Copy);
-	_CopyQueueFence = device->CreateFence(_CopyQueueFenceValue);
+	_CopyQueueFence = device->CreateFence(_PrepareCopyFenceValue);
 }
 
 RenderContext* ContextManager::GetDirectContext(u32 index) 
 { 
-	return _DirectContexts[index]->ReadyForRecord();
+	return _DirectContexts[index]->Open();
 }
 
-RenderContext* ContextManager::GetCopyContext()
+RenderContext* ContextManager::GetCopyContext(u64& copyFenceValue)
 { 
-	return _CopyContext->ReadyForRecord(); 
+	copyFenceValue = ++_PrepareCopyFenceValue;
+	return _CopyContext->Open();
 }
 
 void ContextManager::SwitchToNextFrame(u32 lastFrameIndex, u32 nextFrameIndex)
@@ -84,43 +85,40 @@ void ContextManager::WaitGPUIdle()
 	}
 }
 
-void ContextManager::AddCopyNum()
-{
-	_CopyQueueFenceValue++;
-	_ContainCopyOp = true;
-}
-
 void ContextManager::CommitCopyCommand()
 {
-	if (!_ContainCopyOp)
+	check(_PrepareCopyFenceValue >= _ComittedCopyFenceValue);
+	if (_PrepareCopyFenceValue == _ComittedCopyFenceValue)
 	{
-		_NeedGpuWaitCopyFinish = false;
 		return;
 	}
 
 	_CopyContext->Close();
 	RenderContext* ctxs[] = { _CopyContext };
 	_CopyCommandQueue->Excute(1, ctxs);
-	_CopyCommandQueue->Signal(_CopyQueueFence, _CopyQueueFenceValue);
+	_CopyCommandQueue->Signal(_CopyQueueFence, _PrepareCopyFenceValue);
 
-	_ContainCopyOp = false;
-	_NeedGpuWaitCopyFinish = true;
+	_ComittedCopyFenceValue = _PrepareCopyFenceValue;
 }
 
-void ContextManager::CpuWaitCopyFinish()
+void ContextManager::CpuWaitCopyFinish(u64 copyFenceValue)
 {
-	if (_CopyQueueFence->GetCompletedValue() < _CopyQueueFenceValue)
+	if (!copyFenceValue)
+		copyFenceValue = _ComittedCopyFenceValue;  // wait all finish.
+
+	if (_CopyQueueFence->GetCompletedValue() < copyFenceValue)
 	{
-		_CopyQueueFence->CpuWait(_CopyQueueFenceValue);
+		_CopyQueueFence->CpuWait(copyFenceValue);
 	}
+
+	_FinishedCopyFenceValue = copyFenceValue;
 }
 
 void ContextManager::GpuWaitCopyFinish()
 {
-	if (_NeedGpuWaitCopyFinish)
+	if (_ComittedCopyFenceValue > _FinishedCopyFenceValue)
 	{
-		_DirectCommandQueue->Wait(_CopyQueueFence, _CopyQueueFenceValue);
-		_NeedGpuWaitCopyFinish = false;
+		_DirectCommandQueue->Wait(_CopyQueueFence, _ComittedCopyFenceValue);
 	}
 }
 
