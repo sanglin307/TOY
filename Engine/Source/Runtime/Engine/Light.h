@@ -1,6 +1,6 @@
 #pragma once
 
-enum class LightType
+enum class LightType : u8
 {
     Directional = 0,
     Spot,

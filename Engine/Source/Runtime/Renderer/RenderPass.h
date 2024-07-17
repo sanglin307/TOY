@@ -9,7 +9,7 @@ constexpr inline u32 DivideRoundup(u32 nominator, u32 denominator)
 
 enum class RenderPassType
 {
-	Test = 0,
+	Forward = 0,
 	Max
 };
 
@@ -41,10 +41,10 @@ protected:
 };
 
 
-class RenderPassTest final : public RenderPass
+class RenderPassForward final : public RenderPass
 {
 public:
-	virtual ~RenderPassTest();
+	virtual ~RenderPassForward();
 	virtual void Init(RenderDevice* device, SceneRenderer* renderer) override;
 	virtual void Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx) override;
 	virtual void AddCluster(RenderCluster* cluster) override;

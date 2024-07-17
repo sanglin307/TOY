@@ -219,7 +219,7 @@ struct DepthStencilDesc
 {
 	bool DepthEnable = false;
 	DepthWriteMask DepthWriteMask = DepthWriteMask::All;
-	ComparisonFunc DepthFunc = ComparisonFunc::Less;
+	ComparisonFunc DepthFunc = ComparisonFunc::GreaterEqual;
 
 	bool StencilEnable = false;
 	u8 StencilReadMask = 0xff;
@@ -388,6 +388,8 @@ public:
 
 	RHI_API void CommitParameter(RenderContext* ctx);
 	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
+	RHI_API void ClearUAV(RenderContext* ctx, const std::string& name, const Vector4f& value);
+	RHI_API void ClearUAV(RenderContext* ctx, const std::string& name, const Vector4u& value);
 	RHI_API void AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
 
 protected:

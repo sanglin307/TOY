@@ -10,6 +10,54 @@ void RenderPipeline::BindParameter(const std::string& name, RenderResource* reso
 	iter->second->Resource = resource;
 }
 
+void RenderPipeline::ClearUAV(RenderContext* ctx, const std::string& name, const Vector4f& value)
+{
+	auto iter = _ShaderParameters.find(name);
+	if (iter == _ShaderParameters.end())
+	{
+		check(0);
+		return;
+	}
+
+	const std::vector<RootSignatureParamDesc>& rsdesc = _RootSignature->GetParamDesc();
+
+	DescriptorAllocation alloc;
+	for (u32 i = 0; i < rsdesc.size(); i++)
+	{
+		if (rsdesc[i].Type == iter->second->BindType)
+		{
+			alloc = rsdesc[i].Alloc;
+			break;
+		}
+	}
+
+	ctx->ClearUnorderedAccessView(alloc, iter->second->TableOffset, iter->second->Resource, value.f);
+}
+
+void RenderPipeline::ClearUAV(RenderContext* ctx, const std::string& name, const Vector4u& value)
+{
+	auto iter = _ShaderParameters.find(name);
+	if (iter == _ShaderParameters.end())
+	{
+		check(0);
+		return;
+	}
+
+	const std::vector<RootSignatureParamDesc>& rsdesc = _RootSignature->GetParamDesc();
+
+	DescriptorAllocation alloc;
+	for (u32 i = 0; i < rsdesc.size(); i++)
+	{
+		if (rsdesc[i].Type == iter->second->BindType)
+		{
+			alloc = rsdesc[i].Alloc;
+			break;
+		}
+	}
+
+	ctx->ClearUnorderedAccessView(alloc, iter->second->TableOffset, iter->second->Resource, value.f);
+}
+
 void RenderPipeline::CommitParameter(RenderContext* ctx)
 {
 	for (auto pair : _ShaderParameters)

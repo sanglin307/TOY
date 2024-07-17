@@ -185,11 +185,36 @@ void RenderDevice::InitPipelineCache()
 					return false;
 					};
 
+				auto parse_dsv = [&val, this](PixelFormat& dsvFormat, const char* node_name) -> bool {
+					auto s_node = val.get(node_name);
+					if (s_node != nullptr)
+					{
+						dsvFormat = this->GetFormatByName(s_node->as_string()->value_or("D32_FLOAT_S8X24_UINT"));
+						return true;
+					}
+					return false;
+					};
+
+				auto parse_dsstate = [&val, this](DepthStencilDesc& state, const char* node_name) -> bool {
+					auto s_node = val.get(node_name);
+					if (s_node != nullptr)
+					{
+						check(s_node->is_table());
+						const toml::table* vst = s_node->as_table();
+						state.DepthEnable = vst->at("DepthEnable").as_boolean()->value_or(true);
+						state.StencilEnable = vst->at("StencilEnable").as_boolean()->value_or(true);
+						return true;
+					}
+					return false;
+					};
+
 				std::string name = key.data();
 				if (parse_shader(pd.VS, "VS", ShaderProfile::Vertex))
 				{
 					parse_shader(pd.PS, "PS", ShaderProfile::Pixel);
 					parse_rvts(pd.RVTFormats, "RVTFormats");
+					parse_dsv(pd.DSVFormat, "DSVFormat");
+					parse_dsstate(pd.DepthStencilState, "DepthStencilState");
 					graphicPipelines[name] = pd;
 				}
 

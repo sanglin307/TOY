@@ -52,10 +52,10 @@ public:
 	virtual void SetViewport(u32 x, u32 y, u32 width, u32 height, float minDepth = 0.f, float maxDepth = 1.f) override;
 	virtual void SetScissorRect(u32 left, u32 top, u32 right, u32 bottom) override;
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTargetColorFlags colorFlags, RenderTexture* depthStencil, RenderTargetDepthStencilFlags dsFlags) override;
-	virtual void ClearRenderTarget(RenderTexture* renderTarget, const Vector4& colors) override;
+	virtual void ClearRenderTarget(RenderTexture* renderTarget, const Vector4f& colors) override;
 	virtual void ClearDepthStencil(RenderTexture* depthTarget, DepthStentilClearFlag flag, float depth, u8 stencil) override;
-	virtual void ClearUnorderedAccessView(RenderTexture* uavTexture, const float* values) override;
-	virtual void ClearUnorderedAccessView(RenderTexture* uavTexture, const u32* values) override;
+	virtual void ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const float* values) override;
+	virtual void ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const u32* values) override;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
 
 	void TransitionStencilState(ResourceState destState, RenderResource* res);

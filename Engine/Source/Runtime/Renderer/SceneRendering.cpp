@@ -61,7 +61,7 @@ void SceneRenderer::InitSceneTextures()
 
 void SceneRenderer::InitRenderPass()
 {
-	_Passes[(u32)RenderPassType::Test] = new RenderPassTest;
+	_Passes[(u32)RenderPassType::Forward] = new RenderPassForward;
 
 	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
 	{
@@ -113,7 +113,7 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 	_ViewUniformBuffer->UploadData((u8*)&view, sizeof(ViewInfo));
 
 	ctx->SetDescriptorHeap();
-	_Passes[(u32)RenderPassType::Test]->Render(view, sc, ctx);
+	_Passes[(u32)RenderPassType::Forward]->Render(view, sc, ctx);
 	ctx->CopyResource(sc->GetCurrentBackBuffer(), _SceneTextures.ColorOutput);
 
 	_Device->EndFrame(ctx, sc);

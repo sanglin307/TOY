@@ -68,14 +68,14 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 				check(0);
 			}
 			check(positionAccessor.type == fastgltf::AccessorType::Vec3);
-			Vector3* vertices = (Vector3*)std::malloc(positionAccessor.count * sizeof(Vector3));
+			Vector3f* vertices = (Vector3f*)std::malloc(positionAccessor.count * sizeof(Vector3f));
 			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, positionAccessor, [&](fastgltf::math::fvec3 pos, std::size_t idx) {
 				vertices[idx] = Vector3(pos.x(), pos.y(), pos.z());
 				});
 			VertexData data = {
 				.Format = VertexFormat::Float32x3,
 				.Data = (u8*)vertices,
-				.Size = positionAccessor.count * sizeof(Vector3)
+				.Size = positionAccessor.count * sizeof(Vector3f)
 			};
 			segment->InsertAttribute(VertexAttribute::Position, data);
 			std::free(vertices);
@@ -94,15 +94,15 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 					check(0);
 				}
 				check(texCoordAccessor.type == fastgltf::AccessorType::Vec2);
-				Vector2* texData = (Vector2*)std::malloc(sizeof(Vector2) * texCoordAccessor.count);
+				Vector2f* texData = (Vector2f*)std::malloc(sizeof(Vector2f) * texCoordAccessor.count);
 				fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(asset, texCoordAccessor, [&](fastgltf::math::fvec2 uv, std::size_t idx) {
-					texData[idx] = Vector2(uv.x(),uv.y());
+					texData[idx] = Vector2f(uv.x(),uv.y());
 				});
 
 				VertexData data = {
 				.Format = VertexFormat::Float32x2,
 				.Data = (u8*)texData,
-				.Size = sizeof(Vector2) * texCoordAccessor.count
+				.Size = sizeof(Vector2f) * texCoordAccessor.count
 				};
 				segment->InsertAttribute((VertexAttribute)((u32)VertexAttribute::UV0 + i), data);
 				std::free(texData);
@@ -122,22 +122,22 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 				}
 				if (colorAccessor.type == fastgltf::AccessorType::Vec3)
 				{
-					Vector3* colorData = (Vector3*)std::malloc(sizeof(Vector3) * colorAccessor.count);
+					Vector3f* colorData = (Vector3f*)std::malloc(sizeof(Vector3f) * colorAccessor.count);
 					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, colorAccessor, [&](fastgltf::math::fvec3 color, std::size_t idx) {
-						colorData[idx] = Vector3(color.x(),color.y(),color.z());
+						colorData[idx] = Vector3f(color.x(),color.y(),color.z());
 						});
 
 					VertexData data = {
 					.Format = VertexFormat::Float32x3,
 					.Data = (u8*)colorData,
-					.Size = sizeof(Vector3) * colorAccessor.count
+					.Size = sizeof(Vector3f) * colorAccessor.count
 					};
 					segment->InsertAttribute((VertexAttribute)((u32)VertexAttribute::Color0 + i), data);
 					std::free(colorData);
 				}
 				else if (colorAccessor.type == fastgltf::AccessorType::Vec4)
 				{
-					Vector4* colorData = (Vector4*)std::malloc(sizeof(Vector4) * colorAccessor.count);
+					Vector4f* colorData = (Vector4f*)std::malloc(sizeof(Vector4f) * colorAccessor.count);
 					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, colorAccessor, [&](fastgltf::math::fvec4 c, std::size_t idx) {
 						colorData[idx] = Vector4(c[0],c[1],c[2],c[3]);
 						});
@@ -145,7 +145,7 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 					VertexData data = {
 					.Format = VertexFormat::Float32x4,
 					.Data = (u8*)colorData,
-					.Size = sizeof(Vector4) * colorAccessor.count
+					.Size = sizeof(Vector4f) * colorAccessor.count
 					};
 					segment->InsertAttribute((VertexAttribute)((u32)VertexAttribute::Color0 + i), data);
 					std::free(colorData);
@@ -162,14 +162,14 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 				check(0);
 			}
 			check(tangentAccessor.type == fastgltf::AccessorType::Vec4);
-			Vector4* data = (Vector4*)std::malloc(tangentAccessor.count * sizeof(Vector4));
+			Vector4f* data = (Vector4f*)std::malloc(tangentAccessor.count * sizeof(Vector4f));
 			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, tangentAccessor, [&](fastgltf::math::fvec4 d, std::size_t idx) {
-				data[idx] = Vector4(d[0],d[1],d[2],d[3]);
+				data[idx] = Vector4f(d[0],d[1],d[2],d[3]);
 				});
 			VertexData tdata = {
 				.Format = VertexFormat::Float32x4,
 				.Data = (u8*)data,
-				.Size = tangentAccessor.count * sizeof(Vector4)
+				.Size = tangentAccessor.count * sizeof(Vector4f)
 			};
 			segment->InsertAttribute(VertexAttribute::Tangent, tdata);
 			std::free(data);
@@ -184,14 +184,14 @@ Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Materia
 				check(0);
 			}
 			check(normalAccessor.type == fastgltf::AccessorType::Vec3);
-			Vector3* data = (Vector3*)std::malloc(normalAccessor.count * sizeof(Vector3));
+			Vector3f* data = (Vector3f*)std::malloc(normalAccessor.count * sizeof(Vector3f));
 			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, normalAccessor, [&](fastgltf::math::fvec3 d, std::size_t idx) {
-				data[idx] = Vector3(d[0],d[1],d[2]);
+				data[idx] = Vector3f(d[0],d[1],d[2]);
 				});
 			VertexData tdata = {
 				.Format = VertexFormat::Float32x3,
 				.Data = (u8*)data,
-				.Size = normalAccessor.count * sizeof(Vector3)
+				.Size = normalAccessor.count * sizeof(Vector3f)
 			};
 			segment->InsertAttribute(VertexAttribute::Normal, tdata);
 			std::free(data);

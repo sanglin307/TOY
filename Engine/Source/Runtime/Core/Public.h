@@ -25,7 +25,7 @@
 //core
 #include "Types.h"
 #include "Log.h"
-#include "Math.h"
+#include "MathUtils.h"
 #include "Hash.h"
 #include "Path.h"
 #include "Platform.h"

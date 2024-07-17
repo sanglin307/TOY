@@ -1,13 +1,13 @@
 #include "Private.h"
 
-void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
+void RenderPassForward::Init(RenderDevice* device,SceneRenderer* renderer)
 {
-	_Type = RenderPassType::Test;
+	_Type = RenderPassType::Forward;
 	_Device = device;
 	_Renderer = renderer;
 
 	GraphicPipeline::Desc desc = {};
-	ScenePso = static_cast<GraphicPipeline*>(device->CreateGraphicPipeline("TestPSO",desc));
+	ScenePso = static_cast<GraphicPipeline*>(device->CreateGraphicPipeline("ForwardPass",desc));
 
 	Sampler::Desc sd;
 	_Sampler = device->CreateSampler(sd);
@@ -27,7 +27,7 @@ void RenderPassTest::Init(RenderDevice* device,SceneRenderer* renderer)
 	TonemapPso = static_cast<ComputePipeline*>(device->CreateComputePipeline("TonemapCS", cd));
 }
 
-RenderPassTest::~RenderPassTest()
+RenderPassForward::~RenderPassForward()
 {
 	for (auto iter : _Commands)
 	{
@@ -37,7 +37,7 @@ RenderPassTest::~RenderPassTest()
 	delete MaterialBuffer;
 }
 
-void RenderPassTest::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
+void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
 {
 	ctx->SetViewport(0, 0, view.ViewportSize.x, view.ViewportSize.y);
 	ctx->SetScissorRect(0, 0, view.ViewportSize.x, view.ViewportSize.y);
@@ -88,12 +88,13 @@ void RenderPassTest::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
 	TonemapPso->BindParameter("SceneColor", sceneTextures.SceneColor);
 	TonemapPso->BindParameter("ColorUAV", sceneTextures.ColorOutput);
 	TonemapPso->CommitParameter(ctx);
+	TonemapPso->ClearUAV(ctx, "ColorUAV", Vector4u(0));
 	ctx->SetRenderPipeline(TonemapPso);
 	ctx->Dispatch(DivideRoundup(view.ViewportSize.x, 16), DivideRoundup(view.ViewportSize.y, 16), 1);
 
 }
 
-void RenderPassTest::AddCluster(RenderCluster* cluster)
+void RenderPassForward::AddCluster(RenderCluster* cluster)
 {
 	RenderCommand* command = new RenderCommand;
 	for (u32 i = 0; i < ScenePso->Info.VertexLayout.Desc.size(); i++)
@@ -154,7 +155,7 @@ void RenderPassTest::AddCluster(RenderCluster* cluster)
 
 }
 
-void RenderPassTest::RemoveCluster(RenderCluster* cluster)
+void RenderPassForward::RemoveCluster(RenderCluster* cluster)
 {
 	auto iter = _Commands.begin();
 	while (iter != _Commands.end())

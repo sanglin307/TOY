@@ -357,21 +357,46 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTar
     }
 }
 
-void DX12CommandList::ClearUnorderedAccessView(RenderTexture* uavTexture, const float* values)
+void DX12CommandList::ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const float* values)
 {
-   // DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(uavTexture);
-   // _Handle->ClearUnorderedAccessViewFloat()
+    TransitionState(ResourceState::UnorderedAccess, uavRes);
+    DX12DescriptorHeap* dxHeap = static_cast<DX12DescriptorHeap*>(alloc.Heap);
+    D3D12_GPU_DESCRIPTOR_HANDLE base = dxHeap->GPUHandle(alloc);
+    base.ptr += dxHeap->GetStride() * offset;
+    if (uavRes->GetDimension() == ResourceDimension::Buffer)
+    {
+        DX12RenderBuffer* dx12Res = static_cast<DX12RenderBuffer*>(uavRes);
+        _Handle->ClearUnorderedAccessViewFloat(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values, 0, nullptr);
+    }
+    else
+    {
+        DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(uavRes);
+        _Handle->ClearUnorderedAccessViewFloat(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values, 0, nullptr);
+    }
 }
 
-void DX12CommandList::ClearUnorderedAccessView(RenderTexture* uavTexture, const u32* values)
+void DX12CommandList::ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const u32* values)
 {
-
+    TransitionState(ResourceState::UnorderedAccess, uavRes);
+    DX12DescriptorHeap* dxHeap = static_cast<DX12DescriptorHeap*>(alloc.Heap);
+    D3D12_GPU_DESCRIPTOR_HANDLE base = dxHeap->GPUHandle(alloc);
+    base.ptr += dxHeap->GetStride() * offset;
+    if (uavRes->GetDimension() == ResourceDimension::Buffer)
+    {
+        DX12RenderBuffer* dx12Res = static_cast<DX12RenderBuffer*>(uavRes);
+        _Handle->ClearUnorderedAccessViewUint(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values, 0, nullptr);
+    }
+    else
+    {
+        DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(uavRes);
+        _Handle->ClearUnorderedAccessViewUint(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values, 0, nullptr);
+    }
 }
 
-void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const Vector4& colors)
+void DX12CommandList::ClearRenderTarget(RenderTexture* renderTarget, const Vector4f& colors)
 {
     DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(renderTarget);
-    _Handle->ClearRenderTargetView(dx12Res->GetRTVCPUHandle(), (float*)&colors, 0, nullptr);
+    _Handle->ClearRenderTargetView(dx12Res->GetRTVCPUHandle(), colors.f, 0, nullptr);
 }
 
 void DX12CommandList::ClearDepthStencil(RenderTexture* depthTarget, DepthStentilClearFlag flag, float depth, u8 stencil)

@@ -38,3 +38,14 @@ struct MaterialData
     float                   AlphaCutoff;
     uint                    TextureMask;
 };
+
+struct LightData
+{
+    float3  Position;
+    float   Range;
+    float3  Color;
+    uint    Flag;
+    float3  Direction;
+    PAD
+    float2  SpotlightAngles;
+};
