@@ -242,42 +242,31 @@ void RenderDevice::InitPipelineCache()
 	}
 }
 
-void RenderDevice::AddDelayDeleteResource(RenderResource* res, u64 copyFenceValue)
+void RenderDevice::AddDelayDeleteResource(RenderResource* res, DelayDeleteResourceType type, u64 fenceValue)
 {
 	_DelayDeleteResources.push_back(DelayDeleteResource{
-		.FrameNum = _FrameNum,
-		.CopyFenceValue = copyFenceValue,
+		.Type = type,
+		.FenceValue = fenceValue,
 		.Resource = res
 		});
 }
 
 void RenderDevice::CleanDelayDeleteResource()
 {
-	std::list<DelayDeleteResource> needDeleteRes;
+	u64 frameFence = _ContextManager->GetFrameFenceCompletedValue();
+	u64 copyFence = _ContextManager->GetCopyQueueFenceCompletedValue();
+
 	auto iter = _DelayDeleteResources.begin();
-	u64 maxCopyFenceValue = 0;
 	while(iter != _DelayDeleteResources.end())
 	{
-		if (_FrameNum > iter->FrameNum + 1)  // delay 1 frame
+		if (iter->Type == DelayDeleteResourceType::Frame && iter->FenceValue <= frameFence && frameFence > 0 ||
+			iter->Type == DelayDeleteResourceType::CopyQueue && iter->FenceValue <= copyFence && copyFence > 0 ) 
 		{
-			if (iter->CopyFenceValue > maxCopyFenceValue)
-				maxCopyFenceValue = iter->CopyFenceValue;
-
-			needDeleteRes.push_back(*iter);
-			auto diter = iter++;
-			_DelayDeleteResources.erase(diter);
+			delete iter->Resource;
+			iter = _DelayDeleteResources.erase(iter);
 		}
 		else
 			iter++;
-	}
-
-	if (needDeleteRes.size() > 0)
-	{
-		_ContextManager->CpuWaitCopyFinish(maxCopyFenceValue);
-		for (auto res : needDeleteRes)
-		{
-			delete res.Resource;
-		}
 	}
 }
 

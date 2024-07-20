@@ -54,7 +54,7 @@ public:
 		_ContextManager = manager;
 	}
 
-	RHI_API void AddDelayDeleteResource(RenderResource* res, u64 copyFenceValue);
+	RHI_API void AddDelayDeleteResource(RenderResource* res, DelayDeleteResourceType type, u64 fenceValue);
 	RHI_API void CleanDelayDeleteResource();
 
 	DescriptorHeap* GetCPUDescriptorHeap(DescriptorType type)
@@ -65,6 +65,11 @@ public:
 	DescriptorHeap* GetGPUDescriptorHeap(DescriptorType type)
 	{
 		return _DescriptorManager->GetGPUHeap(type);
+	}
+
+	u64 GetCurrentFrameFenceValue()
+	{
+		return _ContextManager->GetMaxFrameFenceValue();
 	}
 
 protected:

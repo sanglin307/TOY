@@ -7,7 +7,7 @@ enum class CameraType
 };
 
 class CameraController;
-class Camera : public Component
+class CameraComponent : public Component
 {
 	friend class CameraController;
 public:
@@ -29,7 +29,7 @@ public:
 		float ZNear;
 	};
 
-	Camera(const std::string& name, const Desc& desc);
+	CameraComponent(const std::string& name, const Desc& desc);
 	const std::string& GetName() const
 	{
 		return _Name;
@@ -63,7 +63,8 @@ class CameraController : public InputHandler
 public:
 	CameraController();
 	~CameraController();
-	void Attach(Camera* cam);
+	void Attach(CameraComponent* cam);
+	void Detach();
 
 	virtual bool OnKey(const KeyEvent& key) override;
 	virtual bool OnMouse(const MouseEvent& mev) override;
@@ -71,7 +72,7 @@ public:
 	virtual void Update(double delta) override;
 
 protected:
-	Camera* _Camera = nullptr;
+	CameraComponent* _Camera = nullptr;
 	float3 _Velocity = {};
 
 };

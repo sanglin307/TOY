@@ -12,5 +12,7 @@ Texture2D BaseColorTexture : register(t0);
 Texture2D NormalTexture : register(t1);
 Texture2D RoughnessMetalnessTexture : register(t2);
 Texture2D EmissiveTexture : register(t3);
+StructuredBuffer<LightData> LightsBuffer : register(t4);
 
 SamplerState TestSampler : register(s0);
+

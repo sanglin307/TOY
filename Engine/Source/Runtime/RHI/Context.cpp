@@ -69,12 +69,7 @@ void ContextManager::SwitchToNextFrame(u32 lastFrameIndex, u32 nextFrameIndex)
 
 void ContextManager::WaitGPUIdle()
 {
-	u64 lastFenceValue = 0;
-	for (u32 i = 0; i < CommandAllocatorNumber; i++)
-	{
-		if (_FenceValues[i] > lastFenceValue)
-			lastFenceValue = _FenceValues[i];
-	}
+	u64 lastFenceValue = GetMaxFrameFenceValue();
 
 	_DirectCommandQueue->Signal(_FrameFence, lastFenceValue);
 	_FrameFence->CpuWait(lastFenceValue);
@@ -84,6 +79,29 @@ void ContextManager::WaitGPUIdle()
 		_FenceValues[i] = lastFenceValue;
 	}
 }
+
+u64 ContextManager::GetMaxFrameFenceValue()
+{
+	u64 lastFenceValue = 0;
+	for (u32 i = 0; i < CommandAllocatorNumber; i++)
+	{
+		if (_FenceValues[i] > lastFenceValue)
+			lastFenceValue = _FenceValues[i];
+	}
+
+	return lastFenceValue;
+}
+
+u64 ContextManager::GetFrameFenceCompletedValue()
+{
+	return _FrameFence->GetCompletedValue();
+}
+
+u64 ContextManager::GetCopyQueueFenceCompletedValue()
+{
+	return _CopyQueueFence->GetCompletedValue();
+}
+
 
 void ContextManager::CommitCopyCommand()
 {
@@ -100,23 +118,11 @@ void ContextManager::CommitCopyCommand()
 
 	_ComittedCopyFenceValue = _PrepareCopyFenceValue;
 }
-
-void ContextManager::CpuWaitCopyFinish(u64 copyFenceValue)
-{
-	if (!copyFenceValue)
-		copyFenceValue = _ComittedCopyFenceValue;  // wait all finish.
-
-	if (_CopyQueueFence->GetCompletedValue() < copyFenceValue)
-	{
-		_CopyQueueFence->CpuWait(copyFenceValue);
-	}
-
-	_FinishedCopyFenceValue = copyFenceValue;
-}
+ 
 
 void ContextManager::GpuWaitCopyFinish()
 {
-	if (_ComittedCopyFenceValue > _FinishedCopyFenceValue)
+	if (_ComittedCopyFenceValue > _CopyQueueFence->GetCompletedValue())
 	{
 		_DirectCommandQueue->Wait(_CopyQueueFence, _ComittedCopyFenceValue);
 	}

@@ -11,11 +11,19 @@ Layer::~Layer()
 		delete n;
 }
 
-void Layer::RegisteToScene()
+void Layer::Registe()
 {
 	for (auto n : _Nodes)
 	{
-		n->RegisteToScene();
+		n->Registe();
+	}
+}
+
+void Layer::UnRegiste()
+{
+	for (auto n : _Nodes)
+	{
+		n->UnRegiste();
 	}
 }
 

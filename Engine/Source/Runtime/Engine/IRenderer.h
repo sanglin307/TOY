@@ -1,12 +1,17 @@
 #pragma once
 
+struct Transform;
 class PrimitiveComponent;
+class LightComponent;
+
 class IRenderScene
 {
 public:
     virtual ~IRenderScene() {}
-    virtual void AddPrimitive(PrimitiveComponent* primitive) = 0;
+    virtual void AddPrimitive(const Transform& trans, PrimitiveComponent* primitive) = 0;
     virtual void RemovePrimitive(PrimitiveComponent* primitive) = 0;
+    virtual void AddLight(const Transform& trans, LightComponent* light) = 0;
+    virtual void RemoveLight(LightComponent* light) = 0;
 };
 
 class GameWorld;

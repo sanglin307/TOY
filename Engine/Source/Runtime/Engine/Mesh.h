@@ -34,14 +34,14 @@ private:
 	PrimitiveTopology  _Topology;
 };
 
-class Mesh : public PrimitiveComponent
+class MeshComponent : public PrimitiveComponent
 {
 public:
-	Mesh(const std::string& name)
+	MeshComponent(const std::string& name)
 	{
 		_Name = name;
 	}
-	virtual ~Mesh();
+	virtual ~MeshComponent();
 	void AddSegment(MeshSegment* segment);
 	virtual PrimitiveType GetType() override
 	{

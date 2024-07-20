@@ -39,13 +39,18 @@ struct MaterialData
     uint                    TextureMask;
 };
 
+#define LightType_Directional 0
+#define LightType_Point       1
+#define LightType_Spot        2
+
 struct LightData
 {
     float3  Position;
     float   Range;
     float3  Color;
-    uint    Flag;
+    uint    Type;
     float3  Direction;
     PAD
     float2  SpotlightAngles;
+    float   Intensity;
 };

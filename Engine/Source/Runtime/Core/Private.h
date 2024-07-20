@@ -28,6 +28,7 @@
 
 #define HLSLPP_FEATURE_TRANSFORM
 #include "hlsl++.h"
+using namespace hlslpp;
 
 // iner 
 #include "Types.h"

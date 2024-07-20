@@ -8,29 +8,20 @@ public:
 	void SetTranslate(const float3& translate);
 	void SetRotation(const quaternion& rot);
 	void SetScale(const float3& scale);
+ 
+	Transform& GetTransform();
 
-	const float3& GetTranslate() const
-	{
-		return _Translate;
-	}
+	void Attach(Component* c);
+	void Detach(Component* c);
 
-	const quaternion& GetRotation() const
-	{
-		return _Rotation;
-	}
-
-	const float3& GetScale() const
-	{
-		return _Scale;
-	}
-
-	void RegisteToScene();
+	void Registe();
+	void UnRegiste();
 
 	float4x4& GetWorldMatrix();
 
 	Component* FindFirstComponent(ComponentType type);
 
-	void Attach(Component* c);
+	
 	void AddChild(Node* node);
 	void SetParent(Node* node);
 
@@ -41,12 +32,7 @@ private:
 
 	std::string _Name;
 	std::vector<Component*> _Components;
-	float3 _Translate;
-	quaternion _Rotation;
-	float3 _Scale;
-	float4x4 _WorldMatrix;
-
-	bool _WorldMatrixInvalid = false;
+	Transform _Transform;
 
 	Node* _Parent = nullptr;
 	std::vector<Node*> _Children;

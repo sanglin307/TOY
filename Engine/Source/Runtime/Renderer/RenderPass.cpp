@@ -162,9 +162,8 @@ void RenderPassForward::RemoveCluster(RenderCluster* cluster)
 	{
 		if ((*iter)->Component == cluster->Component)
 		{
-			auto diter = iter++;
-			delete (*diter);
-			_Commands.erase(diter);
+			delete (*iter);
+			iter = _Commands.erase(iter);
 		}
 		else
 			iter++;

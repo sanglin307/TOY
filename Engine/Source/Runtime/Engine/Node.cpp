@@ -2,6 +2,7 @@
 
 Node::~Node()
 {
+	UnRegiste();
 	for (Component* c : _Components)
 	{
 		delete c;
@@ -21,30 +22,40 @@ Node::Node(const std::string& name)
 
 void Node::SetTranslate(const float3& translate)
 {
-	_Translate = translate;
-	_WorldMatrixInvalid = true;
+	_Transform.Translate = translate;
+	_Transform.WorldMatrixInvalid = true;
 }
 
 void Node::SetRotation(const quaternion& rot)
 {
-	_Rotation = rot;
-	_WorldMatrixInvalid = true;
+	_Transform.Rotation = rot;
+	_Transform.WorldMatrixInvalid = true;
 }
 
 void Node::SetScale(const float3& scale)
 {
-	_Scale = scale;
-	_WorldMatrixInvalid = true;
+	_Transform.Scale = scale;
+	_Transform.WorldMatrixInvalid = true;
 }
 
-float4x4& Node::GetWorldMatrix()
+Transform& Node::GetTransform()
 {
-	if (_WorldMatrixInvalid)
+	if (_Transform.WorldMatrixInvalid)
 	{
 		UpdateWorldMatrix();
 	}
 
-	return _WorldMatrix;
+	return _Transform;
+}
+
+float4x4& Node::GetWorldMatrix()
+{
+	if (_Transform.WorldMatrixInvalid)
+	{
+		UpdateWorldMatrix();
+	}
+
+	return _Transform.WorldMatrix;
 }
 
 void Node::AddChild(Node* node)
@@ -59,14 +70,24 @@ void Node::SetParent(Node* node)
 	_Parent = node;
 }
 
-void Node::RegisteToScene()
+void Node::Registe()
 {
 	for (auto c : _Components)
-		c->RegisteToScene();
+		c->Registe();
 
 	for (auto c : _Children)
-		c->RegisteToScene();
+		c->Registe();
 }
+
+void Node::UnRegiste()
+{
+	for (auto c : _Components)
+		c->UnRegiste();
+
+	for (auto c : _Children)
+		c->UnRegiste();
+}
+
 
 Component* Node::FindFirstComponent(ComponentType type)
 {
@@ -83,19 +104,32 @@ Component* Node::FindFirstComponent(ComponentType type)
 
 void Node::Attach(Component* c)
 {
-	check(std::find(_Components.begin(), _Components.end(), c) == _Components.end());
+	auto iter = std::find(_Components.begin(), _Components.end(), c);
+	if (iter != _Components.end())
+		return;
+
 	_Components.push_back(c);
 	c->Attach(this);
 }
 
+void Node::Detach(Component* c)
+{
+	auto iter = std::find(_Components.begin(), _Components.end(), c);
+	if (iter == _Components.end())
+		return;
+
+	_Components.erase(iter);
+	c->Detach();
+}
+
 void Node::UpdateWorldMatrix()
 {
-	_WorldMatrixInvalid = false;
+	_Transform.WorldMatrixInvalid = false;
 	float4x4 parentMat = float4x4::identity();
 	if (_Parent)
 		parentMat = _Parent->GetWorldMatrix();
 
-	_WorldMatrix = parentMat * float4x4::translation(_Translate) * float4x4(_Rotation) * float4x4::scale(_Scale);
+	_Transform.WorldMatrix = parentMat * float4x4::translation(_Transform.Translate) * float4x4(_Transform.Rotation) * float4x4::scale(_Transform.Scale);
 	for (auto n : _Children)
 	{
 		n->UpdateWorldMatrix();
@@ -104,7 +138,7 @@ void Node::UpdateWorldMatrix()
 
 void Node::Update(double delta)
 {
-	if (_WorldMatrixInvalid)
+	if (_Transform.WorldMatrixInvalid)
 	{
 		UpdateWorldMatrix();
 	}

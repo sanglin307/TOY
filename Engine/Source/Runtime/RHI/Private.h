@@ -4,6 +4,10 @@
 #define RHI_API __declspec(dllexport)
 #endif
 
+#define HLSLPP_FEATURE_TRANSFORM
+#include "hlsl++.h"
+using namespace hlslpp;
+
 #include "../Core/Public.h"
 
 #include "Reflection.h"

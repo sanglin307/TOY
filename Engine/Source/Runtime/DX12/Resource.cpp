@@ -176,7 +176,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
         };
         RenderBuffer* srcBuffer = new DX12RenderBuffer("Texture_TempCopy", this, buffDesc, ResourceState::GenericRead, tempRes);
         ctx->UpdateSubresource(dstTexture, srcBuffer, 0, 0, 1, &textureData);
-        AddDelayDeleteResource(srcBuffer, copyFenceValue);
+        AddDelayDeleteResource(srcBuffer, DelayDeleteResourceType::CopyQueue, copyFenceValue);
     }
     else
     {
@@ -380,7 +380,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
             dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
             RenderBuffer* srcBuffer = new DX12RenderBuffer("Buffer_CopyTemp",this, info, ResourceState::GenericRead, tempRes);
             ctx->CopyResource(dstBuffer, srcBuffer);
-            AddDelayDeleteResource(srcBuffer,copyFenceValue);
+            AddDelayDeleteResource(srcBuffer, DelayDeleteResourceType::CopyQueue, copyFenceValue);
         }
         else
         {
@@ -391,13 +391,13 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
     if (info.Usage & (u32)ResourceUsage::ShaderResource)
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
-                 .Format = TranslatePixelFormat(info.Format),
+                 .Format = info.StructuredBuffer ? DXGI_FORMAT_UNKNOWN : TranslatePixelFormat(info.Format),
                  .ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
                  .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
                  .Buffer = {
                     .FirstElement = 0,
                     .NumElements = UINT(info.Size / info.Stride),
-                    .StructureByteStride = info.Stride,
+                    .StructureByteStride = info.StructuredBuffer ? info.Stride : 0,
                     .Flags = D3D12_BUFFER_SRV_FLAG_NONE
                  },
         };

@@ -15,7 +15,8 @@ public:
 		return ComponentType::Primitive;
 	}
 
-	virtual void RegisteToScene() override;
+	virtual void Registe() override;
+	virtual void UnRegiste() override;
 
 protected:
 };

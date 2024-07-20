@@ -6,7 +6,9 @@ public:
 	~Layer();
 	Layer(const std::string& name);
 	void AddNode(Node* node);
-	void RegisteToScene();
+	void Registe();
+	void UnRegiste();
+
 	Component* FindFirstComponent(ComponentType type);
 
 	void Update(double delta);

@@ -8,8 +8,71 @@ GameWorld& GameWorld::Instance()
 
 void GameWorld::AddLayer(Layer* layer)
 {
-	layer->RegisteToScene();
+	layer->Registe();
 	_Layers.push_back(layer);
+}
+
+void GameWorld::SetupWorld()
+{
+	// camera.
+	for (auto n : _Layers)
+	{
+		Component* c = n->FindFirstComponent(ComponentType::Camera);
+		if (c)
+		{
+			_DefaultCamera = static_cast<CameraComponent*>(c);
+			break;
+		}
+	}
+	if (!_DefaultCamera)
+	{
+		auto config = GameEngine::Instance().GetRenderConfig();
+		CameraComponent::Desc desc = {
+			.Type = CameraType::Perspective,
+			.AspectRatio = config.AspectRatio,
+			.YFov = 60 * Pi() / 180.f,
+			.ZFar = 0,
+			.ZNear = 1.f
+		};
+		_DefaultCamera = new CameraComponent("DefaultCamera", desc);
+		Node* node = new Node("DefaultCameraNode");
+		_DefaultCamera->Attach(node);
+		_Layers[0]->AddNode(node);
+	}
+
+	_CameraController = new CameraController;
+	_CameraController->Attach(_DefaultCamera);
+
+	// light.
+	LightComponent::Desc ldesc = {
+		.Type = LightType::Directional,
+		.Color = float3(1,1,1),
+		.Intensity = 10,
+		.Range = 0,
+		.InnerConeAngle = 0,
+		.OuterConeAngle = 0
+	};
+
+	LightComponent* sunLight = new LightComponent("SunLight", ldesc);
+	Node* lNode = new Node("SunLightNode");
+	sunLight->Attach(lNode);
+	_Layers[0]->AddNode(lNode);
+	sunLight->Registe();
+
+	LightComponent::Desc lpdesc = {
+		.Type = LightType::Point,
+		.Color = float3(1,1,0),
+		.Intensity = 10,
+		.Range = 100,
+		.InnerConeAngle = 0,
+		.OuterConeAngle = 0
+	};
+
+	LightComponent* pointLight = new LightComponent("PointLight", lpdesc);
+	Node* lpNode = new Node("PointLightNode");
+	pointLight->Attach(lpNode);
+	_Layers[0]->AddNode(lpNode);
+	pointLight->Registe();
 }
 
 void GameWorld::Init(const std::string& scenefile)
@@ -23,40 +86,11 @@ void GameWorld::Init(const std::string& scenefile)
 		AddLayer(l);
 	}
 
-	// find first camera.
-	for (auto n : _Layers)
-	{
-		Component* c = n->FindFirstComponent(ComponentType::Camera);
-		if (c)
-		{
-			_DefaultCamera = static_cast<Camera*>(c);
-			break;
-		}
-	}
-	if (!_DefaultCamera)
-	{
-		auto config = GameEngine::Instance().GetRenderConfig();
-		Camera::Desc desc = {
-			.Type = CameraType::Perspective,
-			.AspectRatio = config.AspectRatio,
-			.YFov = 60 * Pi() / 180.f,
-			.ZFar = 0,
-			.ZNear = 1.f
-		};
-		_DefaultCamera = new Camera("DefaultCamera", desc);
-		Node* node = new Node("DefaultCameraNode");
-		_DefaultCamera->Attach(node);
-		_Layers[0]->AddNode(node);
-	}
-
-	_CameraController = new CameraController;
-	_CameraController->Attach(_DefaultCamera);
+	SetupWorld();
 }
 
 void GameWorld::Destroy()
 {	
-	GameEngine::Instance().GetRenderer().RemoveScene(_RenderScene);
-
 	delete _CameraController;
 
 	for (auto l : _Layers)
@@ -65,6 +99,8 @@ void GameWorld::Destroy()
 	}
 	_Layers.clear();
 
+	GameEngine::Instance().GetRenderer().RemoveScene(_RenderScene);
+	_RenderScene = nullptr;
 }
 
 void GameWorld::Update(double delta)

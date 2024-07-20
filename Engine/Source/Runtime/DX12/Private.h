@@ -14,6 +14,9 @@ using namespace Microsoft::WRL;
 #include <dxgidebug.h>
 #endif
 
+#define HLSLPP_FEATURE_TRANSFORM
+#include "hlsl++.h"
+using namespace hlslpp;
 
 #include "../Core/Public.h"
 #include "../RHI/Public.h"

@@ -304,10 +304,16 @@ public :
     RenderDevice* Device = nullptr;
 };
 
+enum class DelayDeleteResourceType : u8
+{
+    Frame = 0,
+    CopyQueue
+};
+
 struct DelayDeleteResource
 {
-    u64 FrameNum;
-    u64 CopyFenceValue = 0;
+    DelayDeleteResourceType Type;
+    u64  FenceValue = 0;
     RenderResource* Resource;
 };
 
@@ -322,6 +328,7 @@ public:
         PixelFormat Format;
         CpuAccessFlags CpuAccess;
         bool Alignment;
+        bool StructuredBuffer = false;
         u8* InitData;
     };
 

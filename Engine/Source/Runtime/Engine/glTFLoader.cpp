@@ -43,9 +43,9 @@ Image* loadImage(fastgltf::Asset& asset, fastgltf::Image& image)
 	return imageData;
 }
 
-Mesh* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Material*>& materials, std::set<Material*>& matSet)
+MeshComponent* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vector<Material*>& materials, std::set<Material*>& matSet)
 {
-	Mesh* m = new Mesh(mesh.name.c_str());
+	MeshComponent* m = new MeshComponent(mesh.name.c_str());
 	for (auto it = mesh.primitives.begin(); it != mesh.primitives.end(); ++it) 
 	{
 		check(it->type == fastgltf::PrimitiveType::Triangles); // only implement triangle first....
@@ -390,9 +390,9 @@ Sampler* loadSampler(RenderDevice* device,fastgltf::Sampler& sampler)
 	return s;
 }
 
-Light* loadLight(fastgltf::Light& light)
+LightComponent* loadLight(fastgltf::Light& light)
 {
-	Light::Desc desc = {
+	LightComponent::Desc desc = {
 		.Color = float3(light.color[0],light.color[1],light.color[2]),
 		.Intensity = light.intensity,
 		.Range = light.range.value_or(-1),
@@ -405,32 +405,32 @@ Light* loadLight(fastgltf::Light& light)
 	else if (light.type == fastgltf::LightType::Spot)
 		desc.Type = LightType::Spot;
 
-	return new Light(light.name.c_str(), desc);
+	return new LightComponent(light.name.c_str(), desc);
 }
 
-Camera* loadCamera(fastgltf::Camera& camera) 
+CameraComponent* loadCamera(fastgltf::Camera& camera)
 {
-	Camera* cam = nullptr;
+	CameraComponent* cam = nullptr;
 	std::visit(fastgltf::visitor{
 		[&](fastgltf::Camera::Perspective& perspective) {
-			Camera::Desc desc = {
+			CameraComponent::Desc desc = {
 				.Type = CameraType::Perspective,
 				.AspectRatio = perspective.aspectRatio.value_or(0),
 				.YFov = perspective.yfov,
 				.ZFar = perspective.zfar.value_or(-1),
 				.ZNear = perspective.znear
 			};
-			cam = new Camera(camera.name.c_str(), desc);
+			cam = new CameraComponent(camera.name.c_str(), desc);
 		},
 		[&](fastgltf::Camera::Orthographic& orthographic) {
-			Camera::Desc desc = {
+			CameraComponent::Desc desc = {
 				.Type = CameraType::Orthographic,
 				.Width = orthographic.xmag,
 				.Height = orthographic.ymag,
 				.ZFar = orthographic.zfar,
 				.ZNear = orthographic.znear
 			};
-			cam = new Camera(camera.name.c_str(), desc);
+			cam = new CameraComponent(camera.name.c_str(), desc);
 		},
 		}, camera.camera);
 
@@ -494,9 +494,9 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
 	std::set<Sampler*> samplerSet;
 	std::set<RenderTexture*> texSet;
 	std::set<Material*> matSet;
-	std::set<Mesh*> meshSet;
-	std::set<Camera*> camSet;
-	std::set<Light*> lightSet;
+	std::set<MeshComponent*> meshSet;
+	std::set<CameraComponent*> camSet;
+	std::set<LightComponent*> lightSet;
 
     std::vector<Image*> images;
     for (auto image : asset->images)
@@ -550,26 +550,26 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
 		matSet.insert(m);
 	}
 
-	std::vector<Mesh*> meshes;
+	std::vector<MeshComponent*> meshes;
 	for (fastgltf::Mesh& mesh : asset->meshes)
 	{
-		Mesh* m = loadMesh(asset.get(), mesh, materials,matSet);
+		MeshComponent* m = loadMesh(asset.get(), mesh, materials,matSet);
 		meshes.push_back(m);
 		meshSet.insert(m);
 	}
 
-	std::vector<Camera*> cameras;
+	std::vector<CameraComponent*> cameras;
 	for (fastgltf::Camera& cam : asset->cameras)
 	{
-		Camera* c = loadCamera(cam);
+		CameraComponent* c = loadCamera(cam);
 		cameras.push_back(c);
 		camSet.insert(c);
 	}
 
-	std::vector<Light*> lights;
+	std::vector<LightComponent*> lights;
 	for (fastgltf::Light& light : asset->lights)
 	{
-		Light* l = loadLight(light);
+		LightComponent* l = loadLight(light);
 		lights.push_back(l);
 		lightSet.insert(l);
 	}
@@ -666,7 +666,7 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
 
 	if (meshSet.size() > 0)
 	{
-		for (Mesh* m : meshSet)
+		for (MeshComponent* m : meshSet)
 		{
 			LOG_ERROR(glTFLoader, std::format("glTF: {} not referrenced mesh : {}", file.string(), m->GetName()));
 			delete m;
@@ -675,7 +675,7 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
 
 	if (camSet.size() > 0)
 	{
-		for (Camera* c : camSet)
+		for (CameraComponent* c : camSet)
 		{
 			LOG_ERROR(glTFLoader, std::format("glTF: {} not referrenced camera : {}", file.string(), c->GetName()));
 			delete c;
@@ -684,7 +684,7 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
  
 	if (lightSet.size() > 0)
 	{
-		for (Light* l : lightSet)
+		for (LightComponent* l : lightSet)
 		{
 			LOG_ERROR(glTFLoader, std::format("glTF: {} not referrenced light : {}", file.string(), l->GetName()));
 			delete l;

@@ -34,14 +34,12 @@ void MeshSegment::SetMaterial(Material* mat)
 	_Material = mat;
 }
 
-void Mesh::AddSegment(MeshSegment* s)
+void MeshComponent::AddSegment(MeshSegment* s)
 {
 	_Segments.push_back(s);
 }
 
-
-
-Mesh::~Mesh()
+MeshComponent::~MeshComponent()
 {
 	for (MeshSegment* s : _Segments)
 	{

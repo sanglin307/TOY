@@ -7,7 +7,7 @@ enum class LightType : u8
     Point
 };
 
-class Light : public Component
+class LightComponent : public Component
 {
 public:
     struct Desc
@@ -25,7 +25,10 @@ public:
         float OuterConeAngle;
     };
 
-    Light(const std::string& name, const Desc& desc);
+    LightComponent(const std::string& name, const Desc& desc);
+
+    virtual void Registe();
+    virtual void UnRegiste();
 
     const std::string& GetName() const
     {
@@ -35,6 +38,11 @@ public:
     virtual ComponentType GetComponentType() override
     {
         return ComponentType::Light;
+    }
+
+    const Desc& GetDesc() const
+    {
+        return _Desc;
     }
 
 private:

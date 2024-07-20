@@ -107,8 +107,10 @@ public:
 	RHI_API RenderContext* GetCopyContext(u64& copyFenceValue);
 	RHI_API void CommitCopyCommand();
 	RHI_API void GpuWaitCopyFinish();
-	RHI_API void CpuWaitCopyFinish(u64 copyFenceValue = 0);
 
+	RHI_API u64 GetMaxFrameFenceValue();
+	u64 GetFrameFenceCompletedValue();
+	u64 GetCopyQueueFenceCompletedValue();
 private:
 	static constexpr u32 CommandAllocatorNumber = 3;
 
@@ -128,7 +130,6 @@ private:
 	RenderContext* _CopyContext;
 	u64 _PrepareCopyFenceValue = 0;
 	u64 _ComittedCopyFenceValue = 0;
-	u64 _FinishedCopyFenceValue = 0;
 	Fence* _CopyQueueFence;
 
 	RenderDevice* _Device;

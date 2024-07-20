@@ -148,6 +148,7 @@
   <ItemGroup>
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="Log.cpp" />
+    <ClCompile Include="MathUtils.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="Platform.cpp" />

@@ -6,19 +6,19 @@
 
 using namespace hlslpp;
 
-Camera::Camera(const std::string& name, const Desc& desc)
+CameraComponent::CameraComponent(const std::string& name, const Desc& desc)
 {
 	_Name = name;
 	_Desc = desc;
 }
 
-void Camera::InitCameraTransform()
+void CameraComponent::InitCameraTransform()
 {
 	_Position = float3(0, 0, -1);
 	_Rotation = quaternion(float3x3((float4x4::look_at(_Position, float3(0), float3(0, 1, 0)))));
 }
 
-void Camera::GetViewInfo(ViewInfo& info)
+void CameraComponent::GetViewInfo(ViewInfo& info)
 {
 	info.View = _ViewMatrix;
 	info.ViewInverse = _ViewInverseMatrix;
@@ -112,10 +112,15 @@ void CameraController::Update(double delta)
 
 
 
-void CameraController::Attach(Camera* cam)
+void CameraController::Attach(CameraComponent* cam)
 {
 	_Camera = cam;
 	_Camera->InitCameraTransform();
+}
+
+void CameraController::Detach()
+{
+	_Camera = nullptr;
 }
 
 CameraController::CameraController()

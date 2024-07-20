@@ -62,6 +62,7 @@ struct Vector3
 	}
 
 	T f[3];
+
 };
 
 using Vector3f = Vector3<float>;
@@ -101,3 +102,18 @@ using Vector4f = Vector4<float>;
 using Vector4u = Vector4<u32>;
 using Vector4i = Vector4<i32>;
 
+struct Coordinate
+{
+	CORE_API static const float3& Zero();
+	CORE_API static const float3& One();
+	CORE_API static const float3& UnitX();
+	CORE_API static const float3& UnitY();
+	CORE_API static const float3& UnitZ();
+
+	CORE_API static const float3& Up();
+	CORE_API static const float3& Down();
+	CORE_API static const float3& Right();
+	CORE_API static const float3& Left();
+	CORE_API static const float3& Forward();
+	CORE_API static const float3& Backward();
+};

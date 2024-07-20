@@ -239,7 +239,7 @@ void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
 
     _ContextManager->SwitchToNextFrame(lastframeIndex, nextFrameIndex);
 
-    // delete copy related temp resources.
+    // delete temp resources.
     CleanDelayDeleteResource();
 
 }
