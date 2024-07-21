@@ -92,8 +92,8 @@ DX12Device::DX12Device()
 
     InitPixelFormat_Platform();
 
-    _ContextManager = new ContextManager(this);
-    _DescriptorManager = new DescriptorManager(this);
+    _ContextManager = new ContextManager(this, cContextNumber);
+    _DescriptorManager = new DescriptorManager(this, cContextNumber);
 
     RootSignature::Desc rsDesc = {
         .RootCBVNum = 8,
@@ -102,9 +102,22 @@ DX12Device::DX12Device()
         .TableCBVNum = 200,
         .TableSRVNum = 400,
         .TableUAVNum = 100,
-        .TableSamplerNum = 100
+        .TableSamplerNum = 100,
+        .Type = PipelineType::Graphic
     };
-    _CachedRootSignature = LoadRootSignature(rsDesc);
+    _CachedGraphicRootSignature = LoadRootSignature(rsDesc);
+
+    RootSignature::Desc crsDesc = {
+        .RootCBVNum = 8,
+        .RootSRVNum = 4,
+        .RootUAVNum = 2,
+        .TableCBVNum = 200,
+        .TableSRVNum = 400,
+        .TableUAVNum = 100,
+        .TableSamplerNum = 10,
+        .Type = PipelineType::Compute
+    };
+    _CachedComputeRootSignature = LoadRootSignature(crsDesc);
 
 }
 
@@ -187,7 +200,7 @@ void DX12Device::OnResize(Swapchain* swapchain, u32 width, u32 height)
     check(SUCCEEDED(sc->_Handle->ResizeBuffers(sc->_Info.FrameCount, sc->_Info.Width, sc->_Info.Height, TranslatePixelFormat(sc->_Info.Format), desc.Flags)));
 
     sc->_RenderTargets.resize(sc->_Info.FrameCount);
-    DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUHeap(DescriptorType::RVT));
+    DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPURTVHeap());
     for (u32 n = 0; n < sc->_Info.FrameCount; n++)
     {
         ComPtr<ID3D12Resource> res;
@@ -214,9 +227,10 @@ void DX12Device::OnResize(Swapchain* swapchain, u32 width, u32 height)
 RenderContext* DX12Device::BeginFrame(Swapchain* sc)
 {
     CommitCopyCommand();
-
+    _CurrentFrameIndex = sc->GetCurrentFrameIndex();
+    _DescriptorManager->ResetDynamicDescriptorHeap(_CurrentFrameIndex);
     _FrameNum++;
-    return _ContextManager->GetDirectContext(sc->GetCurrentFrameIndex());
+    return _ContextManager->GetDirectContext(_CurrentFrameIndex);
 }
 
 void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
@@ -231,13 +245,11 @@ void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
     RenderContext* ctxs[] = { ctx };
     commandQueue->Excute(1,ctxs);
 
-    u32 lastframeIndex = sc->GetCurrentFrameIndex();
-
     sc->Present(true);
 
     u32 nextFrameIndex = sc->GetCurrentFrameIndex();
 
-    _ContextManager->SwitchToNextFrame(lastframeIndex, nextFrameIndex);
+    _ContextManager->SwitchToNextFrame(_CurrentFrameIndex, nextFrameIndex);
 
     // delete temp resources.
     CleanDelayDeleteResource();
@@ -302,7 +314,7 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
     };
 
-    DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUHeap(DescriptorType::RVT));
+    DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPURTVHeap());
     CommandQueue* queue = _ContextManager->GetDirectQueue();
 
     ComPtr<IDXGISwapChain1> swapChain;
@@ -354,7 +366,6 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
 
 void DX12Device::CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders,RootSignature::Desc& desc)
 {
-    desc = {};
     for (u32 i = 0; i < (u32)ShaderProfile::MAX; i++)
     {
         if (!shaders[i])
@@ -444,21 +455,22 @@ void DX12Device::CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)Sha
     }
 }
 
-ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc)
+ComPtr<ID3DBlob> DX12Device::GenerateComputeRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc)
 {
+    check(desc.Type == PipelineType::Compute);
     // calculate root signature space limit
     constexpr static u32 cRootSignatureSizeLimit = 64;   // dword, from dx12 document.
     constexpr static u32 cRootTableSize = 1; // dword.
     constexpr static u32 cRootDescriptorsSize = 2; // dword.
     constexpr static u32 cRootConstantSize = 1;
-    if (desc.RootConstant32Num * cRootConstantSize + (desc.RootCBVNum + desc.RootSRVNum + desc.RootUAVNum) * cRootDescriptorsSize + 4 * cRootTableSize > cRootSignatureSizeLimit)
+    if (desc.RootConstant32Num * cRootConstantSize + (desc.RootCBVNum + desc.RootSRVNum + desc.RootUAVNum) * cRootDescriptorsSize +  4 * cRootTableSize > cRootSignatureSizeLimit)
     {
         check(0);
         return nullptr;
     }
 
     std::vector<D3D12_DESCRIPTOR_RANGE1> ranges;
-    ranges.reserve(4); // table cbv,srv,uav,sampler.
+    ranges.reserve((u32)ShaderProfile::MAX * 4); // table cbv,srv,uav,sampler.
     std::vector<D3D12_ROOT_PARAMETER1> param;
 
     param.push_back(D3D12_ROOT_PARAMETER1{
@@ -473,7 +485,9 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
 
     paramDesc.push_back(RootSignatureParamDesc{
         .Type = ShaderBindType::RootConstant,
-        .DescriptorNum = desc.RootConstant32Num
+        .BindPoint = 0,
+        .DescriptorNum = desc.RootConstant32Num,
+        .Profile = ShaderProfile::MAX
         });
 
     for (u32 i = 0; i < desc.RootCBVNum; i++)
@@ -490,10 +504,12 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
 
         paramDesc.push_back(RootSignatureParamDesc{
             .Type = ShaderBindType::RootCBV,
-            .DescriptorNum = 1
+            .BindPoint = i,
+            .DescriptorNum = 1,
+            .Profile = ShaderProfile::MAX
             });
     }
-    
+
     for (u32 i = 0; i < desc.RootSRVNum; i++)
     {
         param.push_back(D3D12_ROOT_PARAMETER1{
@@ -508,7 +524,9 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
 
         paramDesc.push_back(RootSignatureParamDesc{
            .Type = ShaderBindType::RootSRV,
-           .DescriptorNum = 1
+           .BindPoint = i,
+           .DescriptorNum = 1,
+           .Profile = ShaderProfile::MAX
             });
     }
 
@@ -526,21 +544,21 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
 
         paramDesc.push_back(RootSignatureParamDesc{
            .Type = ShaderBindType::RootUAV,
-           .DescriptorNum = 1
+           .BindPoint = i,
+           .DescriptorNum = 1,
+           .Profile = ShaderProfile::MAX
             });
     }
-
-    DescriptorHeap* heap = _DescriptorManager->GetGPUHeap(DescriptorType::CBV_SRV_UAV);
 
     if (desc.TableCBVNum > 0)
     {
         ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
-            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
-            .NumDescriptors = desc.TableCBVNum,
-            .BaseShaderRegister = 0,
-            .RegisterSpace = RootSignature::cDescriptorTableSpace,
-            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
-            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+        .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+        .NumDescriptors = desc.TableCBVNum,
+        .BaseShaderRegister = 0,
+        .RegisterSpace = RootSignature::cDescriptorTableSpace,
+        .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
+        .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
 
         param.push_back(D3D12_ROOT_PARAMETER1{
@@ -553,10 +571,12 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             });
 
         paramDesc.push_back(RootSignatureParamDesc{
-           .Type = ShaderBindType::TableCBV,
-           .DescriptorNum = desc.TableCBVNum,
-           .Alloc = heap->AllocateBlock(desc.TableCBVNum)
+            .Type = ShaderBindType::TableCBV,
+            .BindPoint = 0,
+            .DescriptorNum = desc.TableCBVNum,
+            .Profile = ShaderProfile::Compute
             });
+        
     }
 
     if (desc.TableSRVNum > 0)
@@ -580,21 +600,23 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             });
 
         paramDesc.push_back(RootSignatureParamDesc{
-           .Type = ShaderBindType::TableSRV,
-           .DescriptorNum = desc.TableSRVNum,
-           .Alloc = heap->AllocateBlock(desc.TableSRVNum)
+            .Type = ShaderBindType::TableSRV,
+            .BindPoint = 0,
+            .DescriptorNum = desc.TableSRVNum,
+            .Profile = ShaderProfile::Compute
             });
+        
     }
 
     if (desc.TableUAVNum > 0)
     {
         ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
-           .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-           .NumDescriptors = desc.TableUAVNum,
-           .BaseShaderRegister = 0,
-           .RegisterSpace = RootSignature::cDescriptorTableSpace,
-           .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
-           .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+            .NumDescriptors = desc.TableUAVNum,
+            .BaseShaderRegister = 0,
+            .RegisterSpace = RootSignature::cDescriptorTableSpace,
+            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
+            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
 
         param.push_back(D3D12_ROOT_PARAMETER1{
@@ -607,22 +629,23 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             });
 
         paramDesc.push_back(RootSignatureParamDesc{
-           .Type = ShaderBindType::TableUAV,
-           .DescriptorNum = desc.TableUAVNum,
-           .Alloc = heap->AllocateBlock(desc.TableUAVNum)
+            .Type = ShaderBindType::TableUAV,
+            .BindPoint = 0,
+            .DescriptorNum = desc.TableUAVNum,
+            .Profile = ShaderProfile::Compute
             });
+    
     }
 
-    heap = _DescriptorManager->GetGPUHeap(DescriptorType::Sampler);
     if (desc.TableSamplerNum > 0)
     {
         ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
-           .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-           .NumDescriptors = desc.TableSamplerNum,
-           .BaseShaderRegister = 0,
-           .RegisterSpace = RootSignature::cDescriptorTableSpace,
-           .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
-           .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+            .NumDescriptors = desc.TableSamplerNum,
+            .BaseShaderRegister = 0,
+            .RegisterSpace = RootSignature::cDescriptorTableSpace,
+            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
+            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
             });
 
         param.push_back(D3D12_ROOT_PARAMETER1{
@@ -635,10 +658,290 @@ ComPtr<ID3DBlob> DX12Device::GenerateRootSignatureBlob(const RootSignature::Desc
             });
 
         paramDesc.push_back(RootSignatureParamDesc{
-           .Type = ShaderBindType::TableSampler,
-           .DescriptorNum = desc.TableSamplerNum,
-           .Alloc = heap->AllocateBlock(desc.TableSamplerNum)
+            .Type = ShaderBindType::TableSampler,
+            .BindPoint = 0,
+            .DescriptorNum = desc.TableSamplerNum,
+            .Profile = ShaderProfile::Compute
             });
+         
+    }
+
+    D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = {
+        .Version = D3D_ROOT_SIGNATURE_VERSION_1_1,
+        .Desc_1_1 = {
+           .NumParameters = (u32)param.size(),
+           .pParameters = param.data(),
+           .NumStaticSamplers = 0,
+           .pStaticSamplers = nullptr,
+           .Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+                    D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+                    D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+                    D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+                    D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
+                    D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED,
+        }
+    };
+
+    ComPtr<ID3DBlob> signature;
+    ComPtr<ID3DBlob> error;
+    if (FAILED(D3D12SerializeVersionedRootSignature(&rsDesc, signature.GetAddressOf(), error.GetAddressOf())))
+    {
+        std::string se((const char*)error->GetBufferPointer(), error->GetBufferSize());
+        LOG_ERROR(RootSignature, std::format("D3D12SerializeVersionedRootSignature Failed:{}", se));
+        return nullptr;
+    }
+
+    return signature;
+
+}
+
+ComPtr<ID3DBlob> DX12Device::GenerateGraphicRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc)
+{
+    check(desc.Type == PipelineType::Graphic);
+    // calculate root signature space limit
+    constexpr static u32 cRootSignatureSizeLimit = 64;   // dword, from dx12 document.
+    constexpr static u32 cRootTableSize = 1; // dword.
+    constexpr static u32 cRootDescriptorsSize = 2; // dword.
+    constexpr static u32 cRootConstantSize = 1;
+    if (desc.RootConstant32Num * cRootConstantSize + (desc.RootCBVNum + desc.RootSRVNum + desc.RootUAVNum) * cRootDescriptorsSize + (u32)ShaderProfile::MAX * 4 * cRootTableSize > cRootSignatureSizeLimit)
+    {
+        check(0);
+        return nullptr;
+    }
+
+    std::vector<D3D12_DESCRIPTOR_RANGE1> ranges;
+    ranges.reserve((u32)ShaderProfile::MAX * 4); // table cbv,srv,uav,sampler.
+    std::vector<D3D12_ROOT_PARAMETER1> param;
+
+    param.push_back(D3D12_ROOT_PARAMETER1{
+           .ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+           .Constants = {
+                .ShaderRegister = 0,
+                .RegisterSpace = RootSignature::cRootConstantSpace,
+                .Num32BitValues = desc.RootConstant32Num
+           },
+           .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
+
+    paramDesc.push_back(RootSignatureParamDesc{
+        .Type = ShaderBindType::RootConstant,
+        .BindPoint = 0,
+        .DescriptorNum = desc.RootConstant32Num,
+        .Profile = ShaderProfile::MAX
+        });
+
+    for (u32 i = 0; i < desc.RootCBVNum; i++)
+    {
+        param.push_back(D3D12_ROOT_PARAMETER1{
+            .ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV,
+            .Descriptor = {
+                .ShaderRegister = i,
+                .RegisterSpace = RootSignature::cRootDescriptorSpace,
+                .Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE
+            },
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+            });
+
+        paramDesc.push_back(RootSignatureParamDesc{
+            .Type = ShaderBindType::RootCBV,
+            .BindPoint = i,
+            .DescriptorNum = 1,
+            .Profile = ShaderProfile::MAX
+            });
+    }
+    
+    for (u32 i = 0; i < desc.RootSRVNum; i++)
+    {
+        param.push_back(D3D12_ROOT_PARAMETER1{
+            .ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV,
+            .Descriptor = {
+                .ShaderRegister = i,
+                .RegisterSpace = RootSignature::cRootDescriptorSpace,
+                .Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE
+            },
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+            });
+
+        paramDesc.push_back(RootSignatureParamDesc{
+           .Type = ShaderBindType::RootSRV,
+           .BindPoint = i,
+           .DescriptorNum = 1,
+           .Profile = ShaderProfile::MAX
+            });
+    }
+
+    for (u32 i = 0; i < desc.RootUAVNum; i++)
+    {
+        param.push_back(D3D12_ROOT_PARAMETER1{
+            .ParameterType = D3D12_ROOT_PARAMETER_TYPE_UAV,
+            .Descriptor = {
+                .ShaderRegister = i,
+                .RegisterSpace = RootSignature::cRootDescriptorSpace,
+                .Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE
+            },
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+            });
+
+        paramDesc.push_back(RootSignatureParamDesc{
+           .Type = ShaderBindType::RootUAV,
+           .BindPoint = i,
+           .DescriptorNum = 1,
+           .Profile = ShaderProfile::MAX
+            });
+    }
+
+    auto GetShaderVisibility = [](ShaderProfile profile) ->D3D12_SHADER_VISIBILITY {
+        if (profile == ShaderProfile::Vertex)
+            return D3D12_SHADER_VISIBILITY_VERTEX;
+        else if (profile == ShaderProfile::Pixel)
+            return D3D12_SHADER_VISIBILITY_PIXEL;
+        else if (profile == ShaderProfile::Compute)
+            return D3D12_SHADER_VISIBILITY_ALL;
+        else if (profile == ShaderProfile::Mesh)
+            return D3D12_SHADER_VISIBILITY_MESH;
+        else if (profile == ShaderProfile::Amplification)
+            return D3D12_SHADER_VISIBILITY_AMPLIFICATION;
+        else if (profile == ShaderProfile::Lib)
+            return D3D12_SHADER_VISIBILITY_ALL;
+
+            check(0);
+            return D3D12_SHADER_VISIBILITY_ALL;
+        };
+ 
+    if (desc.TableCBVNum > 0)
+    {
+        for (u8 i = 0; i < (u8)ShaderProfile::MAX; i++)
+        {
+            if (i == (u8)ShaderProfile::Compute || i == (u8)ShaderProfile::Lib)
+                continue;
+
+            ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
+            .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+            .NumDescriptors = desc.TableCBVNum,
+            .BaseShaderRegister = 0,
+            .RegisterSpace = RootSignature::cDescriptorTableSpace,
+            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
+            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+                });
+
+            param.push_back(D3D12_ROOT_PARAMETER1{
+                .ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+                .DescriptorTable = {
+                    .NumDescriptorRanges = 1,
+                    .pDescriptorRanges = &ranges[ranges.size() - 1],
+                    },
+                .ShaderVisibility = GetShaderVisibility(ShaderProfile(i))
+                });
+
+            paramDesc.push_back(RootSignatureParamDesc{
+               .Type = ShaderBindType::TableCBV,
+               .BindPoint = 0,
+               .DescriptorNum = desc.TableCBVNum,
+               .Profile = ShaderProfile(i)
+                });
+        }
+    }
+
+    if (desc.TableSRVNum > 0)
+    {
+        for (u8 i = 0; i < (u8)ShaderProfile::MAX; i++)
+        {
+            if (i == (u8)ShaderProfile::Compute || i == (u8)ShaderProfile::Lib)
+                continue;
+
+            ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
+                .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+                .NumDescriptors = desc.TableSRVNum,
+                .BaseShaderRegister = 0,
+                .RegisterSpace = RootSignature::cDescriptorTableSpace,
+                .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
+                .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+                });
+
+            param.push_back(D3D12_ROOT_PARAMETER1{
+                .ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+                .DescriptorTable = {
+                    .NumDescriptorRanges = 1,
+                    .pDescriptorRanges = &ranges[ranges.size() - 1],
+                    },
+                .ShaderVisibility = GetShaderVisibility(ShaderProfile(i))
+                });
+
+            paramDesc.push_back(RootSignatureParamDesc{
+               .Type = ShaderBindType::TableSRV,
+               .BindPoint = 0,
+               .DescriptorNum = desc.TableSRVNum,
+               .Profile = ShaderProfile(i)
+                });
+        }
+    }
+
+    if (desc.TableUAVNum > 0)
+    {
+        for (u8 i = 0; i < (u8)ShaderProfile::MAX; i++)
+        {
+            if (i == (u8)ShaderProfile::Compute || i == (u8)ShaderProfile::Lib)
+                continue;
+
+            ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
+               .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+               .NumDescriptors = desc.TableUAVNum,
+               .BaseShaderRegister = 0,
+               .RegisterSpace = RootSignature::cDescriptorTableSpace,
+               .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
+               .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+                });
+
+            param.push_back(D3D12_ROOT_PARAMETER1{
+                .ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+                .DescriptorTable = {
+                    .NumDescriptorRanges = 1,
+                    .pDescriptorRanges = &ranges[ranges.size() - 1],
+                    },
+                .ShaderVisibility = GetShaderVisibility(ShaderProfile(i))
+                });
+
+            paramDesc.push_back(RootSignatureParamDesc{
+               .Type = ShaderBindType::TableUAV,
+               .BindPoint = 0,
+               .DescriptorNum = desc.TableUAVNum,
+               .Profile = ShaderProfile(i)
+                });
+        }
+    }
+ 
+    if (desc.TableSamplerNum > 0)
+    {
+        for (u8 i = 0; i < (u8)ShaderProfile::MAX; i++)
+        {
+            if (i == (u8)ShaderProfile::Compute || i == (u8)ShaderProfile::Lib)
+                continue;
+
+            ranges.push_back(D3D12_DESCRIPTOR_RANGE1{
+               .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+               .NumDescriptors = desc.TableSamplerNum,
+               .BaseShaderRegister = 0,
+               .RegisterSpace = RootSignature::cDescriptorTableSpace,
+               .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
+               .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+            });
+
+            param.push_back(D3D12_ROOT_PARAMETER1{
+                .ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+                .DescriptorTable = {
+                    .NumDescriptorRanges = 1,
+                    .pDescriptorRanges = &ranges[ranges.size() - 1],
+                    },
+                .ShaderVisibility = GetShaderVisibility(ShaderProfile(i))
+             });
+
+            paramDesc.push_back(RootSignatureParamDesc{
+               .Type = ShaderBindType::TableSampler,
+               .BindPoint = 0,
+               .DescriptorNum = desc.TableSamplerNum,
+               .Profile = ShaderProfile(i)
+             });
+        }
     }
 
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = {
@@ -1186,7 +1489,8 @@ RenderPipeline* DX12Device::CreateComputePipeline(const std::string& name, const
     shaderRes[(u32)ShaderProfile::Compute] = LoadShader(desc.CS);
 
     // root signature
-    RootSignature::Desc rd;
+    RootSignature::Desc rd = {};
+    rd.Type = PipelineType::Compute;
     CalculateRootSignatureDesc(shaderRes, rd);
     RootSignature* rs = LoadRootSignature(rd);
     check(rs);
@@ -1245,7 +1549,8 @@ RenderPipeline* DX12Device::CreateGraphicPipeline(const std::string& name,const 
     shaderRes[(u32)ShaderProfile::Pixel] = LoadShader(desc.PS);
 
     // root signature
-    RootSignature::Desc rd;
+    RootSignature::Desc rd = {};
+    rd.Type = PipelineType::Graphic;
     CalculateRootSignatureDesc(shaderRes, rd);
     RootSignature* rs = LoadRootSignature(rd);
     check(rs);
@@ -1290,8 +1595,11 @@ void DX12Device::CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESC
 
 RootSignature* DX12Device::LoadRootSignature(const RootSignature::Desc& rd)
 {
-    if (_CachedRootSignature != nullptr && _CachedRootSignature->Satisfy(rd))
-        return _CachedRootSignature;
+    if (rd.Type == PipelineType::Graphic && _CachedGraphicRootSignature != nullptr && _CachedGraphicRootSignature->Satisfy(rd))
+        return _CachedGraphicRootSignature;
+
+    if (rd.Type == PipelineType::Compute && _CachedComputeRootSignature != nullptr && _CachedComputeRootSignature->Satisfy(rd))
+        return _CachedComputeRootSignature;
 
     u64 hash = rd.HashResult();
     auto iter = _RootSignatureCache.find(hash);
@@ -1301,10 +1609,14 @@ RootSignature* DX12Device::LoadRootSignature(const RootSignature::Desc& rd)
     }
 
     std::vector<RootSignatureParamDesc> paramDesc;
-    ComPtr<ID3DBlob> signature = GenerateRootSignatureBlob(rd,paramDesc);
+    ComPtr<ID3DBlob> signature = nullptr;
+    if(rd.Type == PipelineType::Graphic)
+        signature = GenerateGraphicRootSignatureBlob(rd, paramDesc);
+    else if (rd.Type == PipelineType::Compute)
+        signature = GenerateComputeRootSignatureBlob(rd, paramDesc);
     ComPtr<ID3D12RootSignature> rs;
     check(SUCCEEDED(_Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rs))));
-    std::string rsName = std::format("RCBV_{}_RSRV_{}_RUAV_{}_TCBV_{}_TSRV_{}_TUAV_{}_TS_{}", rd.RootCBVNum, rd.RootSRVNum, rd.RootUAVNum, rd.TableCBVNum, rd.TableSRVNum, rd.TableUAVNum, rd.TableSamplerNum);
+    std::string rsName = std::format("Type_{}_RCBV_{}_RSRV_{}_RUAV_{}_TCBV_{}_TSRV_{}_TUAV_{}_TS_{}", (u32)rd.Type,rd.RootCBVNum, rd.RootSRVNum, rd.RootUAVNum, rd.TableCBVNum, rd.TableSRVNum, rd.TableUAVNum, rd.TableSamplerNum);
     rs->SetName(PlatformUtils::UTF8ToUTF16(rsName).c_str());
     RootSignature* obj = new DX12RootSignature(rd,paramDesc,rs);
 
@@ -1442,7 +1754,7 @@ Sampler* DX12Device::CreateSampler(const Sampler::Desc& desc)
         .MaxLOD = desc.MaxLOD
     };
 
-    DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::Sampler));
+    DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUSamplerHeap());
     DescriptorAllocation descriptor = heap->Allocate();
     D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(descriptor);
     _Device->CreateSampler(&samplerDesc, cpuHandle);

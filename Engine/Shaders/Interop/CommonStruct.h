@@ -21,7 +21,15 @@ struct ViewInfo
     float3   ViewLocation;
     PAD
     uint2 ViewportSize;
+    PAD
+    PAD
     uint FrameIndex;
+    uint LightNum;
+};
+
+struct DrawData
+{
+    uint PrimitiveId;
 };
 
 #define BaseColorTextureMask  0x1
@@ -46,11 +54,21 @@ struct MaterialData
 struct LightData
 {
     float3  Position;
-    float   Range;
+    PAD
     float3  Color;
-    uint    Type;
+    PAD
     float3  Direction;
     PAD
     float2  SpotlightAngles;
+    PAD
+    PAD
+    uint    Type;
     float   Intensity;
+    float   Range;
+    PAD
+};
+
+struct PrimitiveData
+{
+    float4x4 LocalToWorld;
 };

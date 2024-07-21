@@ -18,6 +18,7 @@ public:
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) = 0;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) = 0;
 	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) = 0;
+	virtual DynamicDescriptorHeap* CreateDynamicDescriptorHeap(u32 size, DescriptorType type) = 0;
 	virtual RenderPipeline* CreateGraphicPipeline(const std::string& name,const GraphicPipeline::Desc& desc) = 0;
 	virtual RenderPipeline* CreateComputePipeline(const std::string& name,const ComputePipeline::Desc& desc) = 0;
 	virtual RenderBuffer* CreateBuffer(const std::string& name, const RenderBuffer::Desc& info) = 0;
@@ -57,22 +58,25 @@ public:
 	RHI_API void AddDelayDeleteResource(RenderResource* res, DelayDeleteResourceType type, u64 fenceValue);
 	RHI_API void CleanDelayDeleteResource();
 
-	DescriptorHeap* GetCPUDescriptorHeap(DescriptorType type)
-	{
-		return _DescriptorManager->GetCPUHeap(type);
-	}
-
-	DescriptorHeap* GetGPUDescriptorHeap(DescriptorType type)
-	{
-		return _DescriptorManager->GetGPUHeap(type);
-	}
-
 	u64 GetCurrentFrameFenceValue()
 	{
 		return _ContextManager->GetMaxFrameFenceValue();
 	}
 
+	u32 GetCurrentFrameIndex()
+	{
+		return _CurrentFrameIndex;
+	}
+
+	DescriptorManager* GetDescriptorManager()
+	{
+		return _DescriptorManager;
+	}
+
 protected:
+	static const u32 cContextNumber = 3;  // equal to swap chain render target number.
+
+	u32 _CurrentFrameIndex; // related to dynamic descriptor heap and swapchain render target number.
 	u64 _FrameNum = 0;
 	std::vector<PixelFormatInfo> _Formats;
 	std::unordered_map<std::string, PixelFormat> _FormatNameMap;

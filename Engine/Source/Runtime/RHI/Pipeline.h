@@ -255,6 +255,12 @@ struct DepthStencilDesc
 	}
 };
 
+enum class PipelineType
+{
+	Graphic = 0,
+	Compute
+};
+
 enum class ShaderBindType
 {
 	RootConstant = 0,
@@ -271,8 +277,9 @@ enum class ShaderBindType
 struct RootSignatureParamDesc
 {
 	ShaderBindType Type;
+	u32 BindPoint;
 	u32 DescriptorNum;
-	DescriptorAllocation Alloc;
+	ShaderProfile Profile;
 };
 
 class RootSignature
@@ -288,6 +295,7 @@ public:
 		u32 TableSRVNum;
 		u32 TableUAVNum;
 		u32 TableSamplerNum;
+		PipelineType Type;
 
 		u64 HashResult() const
 		{
@@ -299,16 +307,7 @@ public:
 	constexpr static u32 cRootDescriptorSpace = 1;
 	constexpr static u32 cRootConstantSpace = 2;
 
-	virtual ~RootSignature()
-	{
-		for (u32 i = 0; i < _ParamsDesc.size(); i++)
-		{
-			if (!_ParamsDesc[i].Alloc.Heap)
-				continue;
-
-			_ParamsDesc[i].Alloc.Heap->FreeBlock(_ParamsDesc[i].Alloc);
-		}
-	};
+	virtual ~RootSignature() {};
 	virtual std::any Handle() const { return nullptr; }
 
 	const std::vector<RootSignatureParamDesc>& GetParamDesc() const
@@ -323,6 +322,8 @@ public:
 
 	bool Satisfy(const RootSignature::Desc& desc)
 	{
+		if (desc.Type != _Info.Type)
+			return false;
 		if (desc.RootCBVNum > _Info.RootCBVNum)
 			return false;
 		if (desc.RootSRVNum > _Info.RootSRVNum)
@@ -351,6 +352,7 @@ struct ShaderParameter
 {
 	std::string Name;
 	ShaderBindType BindType;
+	ShaderProfile Profile;
 	u32 RootParamIndex;
 	u32 TableOffset;
 	u32 DescriptorNum;
@@ -359,11 +361,7 @@ struct ShaderParameter
 
 class RenderContext;
 
-enum class PipelineType
-{
-	Graphic = 0,
-	Compute
-};
+
 
 class RenderPipeline
 {
@@ -388,8 +386,6 @@ public:
 
 	RHI_API void CommitParameter(RenderContext* ctx);
 	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
-	RHI_API void ClearUAV(RenderContext* ctx, const std::string& name, const Vector4f& value);
-	RHI_API void ClearUAV(RenderContext* ctx, const std::string& name, const Vector4u& value);
 	RHI_API void AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
 
 protected:
@@ -397,8 +393,9 @@ protected:
 	std::string _Name;
 	PipelineType _Type;
 
-	std::unordered_map<std::string, ShaderParameter*> _ShaderParameters;
+	std::unordered_map<std::string, std::vector<ShaderParameter*>*> _ShaderParameters;
 	// shader parameter table data.
+	std::vector<ShaderParameter*> _RootParams;
 	std::vector<ShaderParameter*> _CBVs;
 	std::vector<ShaderParameter*> _SRVs;
 	std::vector<ShaderParameter*> _UAVs;

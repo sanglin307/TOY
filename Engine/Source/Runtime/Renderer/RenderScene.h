@@ -15,6 +15,7 @@ struct RenderCluster
 	std::vector<Stream>  VertexStreams;
 	RenderBuffer* IndexBuffer = nullptr;
 	Material* Material = nullptr;
+	PrimitiveData* Primitive;
 	PrimitiveComponent* Component;
 };
 
@@ -37,15 +38,19 @@ public:
 	virtual void AddLight(const Transform& trans,LightComponent* light) override;
 	virtual void RemoveLight(LightComponent* light) override;
 
-private:
+	u32 GetLightNum()
+	{
+		return (u32)_Lights.size();
+	}
 
-	void UpdateLightBuffer();
+private:
 
 	GameWorld* _World;
 	SceneRenderer* _Renderer;
 	std::vector<RenderCluster*> _Clusters;
+	std::vector<PrimitiveData> _PrimitiveDataBuffer;
 
 	std::vector<RenderLight*> _Lights;
 	std::vector<LightData> _LightDataBuffer;
-	RenderBuffer* _LightsBuffer = nullptr;
+	
 };

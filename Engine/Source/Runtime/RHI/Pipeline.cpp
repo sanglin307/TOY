@@ -7,73 +7,25 @@ void RenderPipeline::BindParameter(const std::string& name, RenderResource* reso
 	if (iter == _ShaderParameters.end())
 		return;
 
-	iter->second->Resource = resource;
+	for (auto s : *iter->second)
+	{
+		s->Resource = resource;
+	}
 }
 
-void RenderPipeline::ClearUAV(RenderContext* ctx, const std::string& name, const Vector4f& value)
-{
-	auto iter = _ShaderParameters.find(name);
-	if (iter == _ShaderParameters.end())
-	{
-		check(0);
-		return;
-	}
-
-	const std::vector<RootSignatureParamDesc>& rsdesc = _RootSignature->GetParamDesc();
-
-	DescriptorAllocation alloc;
-	for (u32 i = 0; i < rsdesc.size(); i++)
-	{
-		if (rsdesc[i].Type == iter->second->BindType)
-		{
-			alloc = rsdesc[i].Alloc;
-			break;
-		}
-	}
-
-	ctx->ClearUnorderedAccessView(alloc, iter->second->TableOffset, iter->second->Resource, value.f);
-}
-
-void RenderPipeline::ClearUAV(RenderContext* ctx, const std::string& name, const Vector4u& value)
-{
-	auto iter = _ShaderParameters.find(name);
-	if (iter == _ShaderParameters.end())
-	{
-		check(0);
-		return;
-	}
-
-	const std::vector<RootSignatureParamDesc>& rsdesc = _RootSignature->GetParamDesc();
-
-	DescriptorAllocation alloc;
-	for (u32 i = 0; i < rsdesc.size(); i++)
-	{
-		if (rsdesc[i].Type == iter->second->BindType)
-		{
-			alloc = rsdesc[i].Alloc;
-			break;
-		}
-	}
-
-	ctx->ClearUnorderedAccessView(alloc, iter->second->TableOffset, iter->second->Resource, value.f);
-}
 
 void RenderPipeline::CommitParameter(RenderContext* ctx)
 {
-	for (auto pair : _ShaderParameters)
+ 
+	for (auto param : _RootParams)
 	{
-		if (!pair.second->Resource)
-			continue;
-
-		ShaderBindType t = pair.second->BindType;
-		if (t == ShaderBindType::RootCBV || t == ShaderBindType::RootSRV || t == ShaderBindType::RootUAV)
-			ctx->SetRootDescriptorParameter(pair.second, _Type);
+		ctx->SetRootDescriptorParameter(param, _Type);
 	}
 
-	ctx->SetRootDescriptorTableParameter(_RootSignature, _CBVs,_Type);
-	ctx->SetRootDescriptorTableParameter(_RootSignature, _SRVs,_Type);
-	ctx->SetRootDescriptorTableParameter(_RootSignature, _UAVs,_Type);
-	ctx->SetRootDescriptorTableParameter(_RootSignature, _Samplers,_Type);
+	ctx->SetRootDescriptorTableParameter(_CBVs,_Type);
+	ctx->SetRootDescriptorTableParameter(_SRVs,_Type);
+	ctx->SetRootDescriptorTableParameter(_UAVs,_Type);
+	ctx->SetRootDescriptorTableParameter(_Samplers,_Type);
 
 }
 
@@ -86,17 +38,24 @@ void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderReso
 	const RootSignature::Desc& desc = rs->GetDesc();
 	check(paramDesc.size() > 0);
 
-	u32 ParamOffset[(u32)ShaderBindType::Max] = {};
-	ShaderBindType t = paramDesc[0].Type;
-	ParamOffset[(u32)t] = 0;
-	for (u32 i = 1; i < paramDesc.size(); i++)
-	{
-		if (t != paramDesc[i].Type)
+	auto GetRootParamIndex = [&paramDesc](ShaderBindType bindType, ShaderProfile profile, u32 bindPoint) -> u32 {
+		for (u32 i = 0; i < paramDesc.size(); i++)
 		{
-			t = paramDesc[i].Type; // new 
-			ParamOffset[(u32)t] = i;
+			if (bindType == ShaderBindType::RootConstant || bindType == ShaderBindType::RootCBV || bindType == ShaderBindType::RootSRV || bindType == ShaderBindType::RootUAV)
+			{
+				if (paramDesc[i].Type == bindType && paramDesc[i].BindPoint == bindPoint)
+					return i;
+			}
+			else
+			{
+				if (paramDesc[i].Profile == profile && paramDesc[i].Type == bindType)
+					return i;
+			}
 		}
-	}
+
+		check(0);
+		return 0;
+	};
 
 	for (u32 i = 0; i < (u32)ShaderProfile::MAX; i++)
 	{
@@ -108,28 +67,38 @@ void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderReso
 		{
 			for (u32 r = 0; r < reflection->BoundResources.size(); r++)
 			{
-				if (_ShaderParameters.contains(reflection->BoundResources[r].Name))
-					continue;
-
 				ShaderParameter* param = new ShaderParameter;
 				const SRBoundResource& res = reflection->BoundResources[r];
 				param->Name = res.Name;
-				_ShaderParameters[param->Name] = param;
+				param->Profile = ShaderProfile(i);
+				auto iter = _ShaderParameters.find(param->Name);
+				if (iter == _ShaderParameters.end())
+				{
+					std::vector<ShaderParameter*>* pv = new std::vector<ShaderParameter*>;
+					pv->push_back(param);
+					_ShaderParameters[param->Name] = pv;
+				}
+				else
+				{
+					iter->second->push_back(param);
+				}
+		
 				if (res.Type == ShaderInputType::CBUFFER)
 				{
 					if (res.BindSpace == RootSignature::cRootDescriptorSpace)
 					{
 						check(res.BindPoint + res.BindCount <= desc.RootCBVNum);
 						param->BindType = ShaderBindType::RootCBV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootCBV] + res.BindPoint;
+						param->RootParamIndex = GetRootParamIndex(ShaderBindType::RootCBV, ShaderProfile(i),res.BindPoint);
 						param->TableOffset = 0;
 						param->DescriptorNum = 1;
+						_RootParams.push_back(param);
 					}
 					else if (res.BindSpace == RootSignature::cDescriptorTableSpace)
 					{
 						check(res.BindPoint + res.BindCount <= desc.TableCBVNum);
 						param->BindType = ShaderBindType::TableCBV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableCBV];
+						param->RootParamIndex = GetRootParamIndex(ShaderBindType::TableCBV, ShaderProfile(i), res.BindPoint);
 						param->TableOffset = res.BindPoint;
 						param->DescriptorNum = res.BindCount;
 						_CBVs.push_back(param);
@@ -144,15 +113,16 @@ void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderReso
 					{
 						check(res.BindPoint + res.BindCount <= desc.RootSRVNum);
 						param->BindType = ShaderBindType::RootSRV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootSRV] + res.BindPoint;
+						param->RootParamIndex = GetRootParamIndex(ShaderBindType::RootSRV, ShaderProfile(i), res.BindPoint);
 						param->TableOffset = 0;
 						param->DescriptorNum = 1;
+						_RootParams.push_back(param);
 					}
 					else if (res.BindSpace == RootSignature::cDescriptorTableSpace)
 					{
 						check(res.BindPoint + res.BindCount <= desc.TableSRVNum);
 						param->BindType = ShaderBindType::TableSRV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableSRV];
+						param->RootParamIndex = GetRootParamIndex(ShaderBindType::TableSRV, ShaderProfile(i), res.BindPoint);
 						param->TableOffset = res.BindPoint;
 						param->DescriptorNum = res.BindCount;
 						_SRVs.push_back(param);
@@ -166,15 +136,16 @@ void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderReso
 					{
 						check(res.BindPoint + res.BindCount <= desc.RootUAVNum);
 						param->BindType = ShaderBindType::RootUAV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::RootUAV] + res.BindPoint;
+						param->RootParamIndex = GetRootParamIndex(ShaderBindType::RootUAV, ShaderProfile(i), res.BindPoint);
 						param->TableOffset = 0;
 						param->DescriptorNum = 1;
+						_RootParams.push_back(param);
 					}
 					else if (res.BindSpace == RootSignature::cDescriptorTableSpace)
 					{
 						check(res.BindPoint + res.BindCount <= desc.TableUAVNum);
 						param->BindType = ShaderBindType::TableUAV;
-						param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableUAV];
+						param->RootParamIndex = GetRootParamIndex(ShaderBindType::TableUAV, ShaderProfile(i), res.BindPoint);
 						param->TableOffset = res.BindPoint;
 						param->DescriptorNum = res.BindCount;
 						_UAVs.push_back(param);
@@ -187,7 +158,7 @@ void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderReso
 					check(res.BindPoint + res.BindCount <= desc.TableSamplerNum);
 					check(res.BindSpace == RootSignature::cDescriptorTableSpace);
 					param->BindType = ShaderBindType::TableSampler;
-					param->RootParamIndex = ParamOffset[(u32)ShaderBindType::TableSampler];
+					param->RootParamIndex = GetRootParamIndex(ShaderBindType::TableSampler, ShaderProfile(i), res.BindPoint);
 					param->TableOffset = res.BindPoint;
 					param->DescriptorNum = res.BindCount;
 					_Samplers.push_back(param);

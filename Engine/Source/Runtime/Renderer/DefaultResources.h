@@ -9,6 +9,11 @@ public:
 	{
 		return _VertexBuffers[(u32)attribute];
 	}
+
+	RenderTexture* GetColorBlackTexture()
+	{
+		return _ColorBlackTexture;
+	}
 	void Init(RenderDevice* device);
 	void Destroy();
 private:
@@ -20,5 +25,7 @@ private:
 
 private:
 	std::array<RenderBuffer*, (u32)VertexAttribute::Max> _VertexBuffers = {};
+	RenderTexture* _ColorBlackTexture;
+	RenderTexture* _ColorWhiteTexture;
 	std::set<RenderResource*> _Resources;
 };

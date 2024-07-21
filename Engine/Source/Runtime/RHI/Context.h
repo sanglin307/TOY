@@ -53,11 +53,11 @@ public:
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTargetColorFlags colorFlags, RenderTexture* depthStencil, RenderTargetDepthStencilFlags dsFlags) = 0;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const Vector4f& colors) = 0;
 	virtual void ClearDepthStencil(RenderTexture* depthTarget, DepthStentilClearFlag flag, float depth, u8 stencil) = 0;
-	virtual void ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const float* values) = 0;
-	virtual void ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const u32* values) = 0;
+	virtual void ClearUnorderedAccessView(RenderResource* uavRes, const Vector4f& value) = 0;
+	virtual void ClearUnorderedAccessView(RenderResource* uavRes, const Vector4u& values) = 0;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
 	virtual void SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type) = 0;
-	virtual void SetRootDescriptorTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params, PipelineType type) = 0;
+	virtual void SetRootDescriptorTableParameter(const std::vector<ShaderParameter*>& params, PipelineType type) = 0;
 	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
 	virtual void DrawIndexedInstanced(u32 indexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
 	virtual void SetPrimitiveTopology(const PrimitiveTopology topology) = 0;
@@ -96,7 +96,7 @@ protected:
 class ContextManager
 {
 public:
-	RHI_API ContextManager(RenderDevice* device);
+	RHI_API ContextManager(RenderDevice* device, u32 contextCount);
 	RHI_API ~ContextManager();
 
 	RHI_API void WaitGPUIdle();
@@ -112,14 +112,12 @@ public:
 	u64 GetFrameFenceCompletedValue();
 	u64 GetCopyQueueFenceCompletedValue();
 private:
-	static constexpr u32 CommandAllocatorNumber = 3;
-
+	u32 _DirectContextNumber;
 	CommandQueue* _DirectCommandQueue;
 	std::vector<CommandAllocator*> _DirectCommandAllocators;
 	std::vector<RenderContext*> _DirectContexts;
 	Fence* _FrameFence;
-	u64 _FenceValues[CommandAllocatorNumber];
-
+	std::vector<u64> _FenceValues;
 
 	CommandQueue* _ComputeCommandQueue;
 	CommandAllocator* _ComputeCommandAllocator;

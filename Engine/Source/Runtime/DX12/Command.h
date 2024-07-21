@@ -54,8 +54,8 @@ public:
 	virtual void SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTargetColorFlags colorFlags, RenderTexture* depthStencil, RenderTargetDepthStencilFlags dsFlags) override;
 	virtual void ClearRenderTarget(RenderTexture* renderTarget, const Vector4f& colors) override;
 	virtual void ClearDepthStencil(RenderTexture* depthTarget, DepthStentilClearFlag flag, float depth, u8 stencil) override;
-	virtual void ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const float* values) override;
-	virtual void ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const u32* values) override;
+	virtual void ClearUnorderedAccessView(RenderResource* uavRes, const Vector4f& values) override;
+	virtual void ClearUnorderedAccessView(RenderResource* uavRes, const Vector4u& values) override;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
 
 	void TransitionStencilState(ResourceState destState, RenderResource* res);
@@ -64,7 +64,7 @@ public:
 	void TransitionState(ResourceState destState, RenderResource** resources, u32 number);
 
 	virtual void SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type) override;
-	virtual void SetRootDescriptorTableParameter(const RootSignature* rs,const std::vector<ShaderParameter*>& params, PipelineType type) override;
+	virtual void SetRootDescriptorTableParameter(const std::vector<ShaderParameter*>& params, PipelineType type) override;
 	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
 	virtual void DrawIndexedInstanced(u32 indexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
 	virtual void Dispatch(u32 ThreadGroupCountX, u32 ThreadGroupCountY, u32 ThreadGroupCountZ) override;

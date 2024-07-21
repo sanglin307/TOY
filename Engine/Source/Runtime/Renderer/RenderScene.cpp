@@ -9,6 +9,10 @@ RenderCluster::~RenderCluster()
 
 	if (IndexBuffer)
 		delete IndexBuffer;
+
+	if (Primitive)
+		delete Primitive;
+
 }
 
 RenderLight::~RenderLight()
@@ -36,37 +40,6 @@ RenderScene::~RenderScene()
 	{
 		delete l;
 	}
-
-	if (_LightsBuffer)
-	{
-		delete _LightsBuffer;
-	}
-}
-
-void RenderScene::UpdateLightBuffer()
-{
-	RenderDevice* device = _Renderer->GetDevice();
-	if (_LightsBuffer)
-	{
-		device->AddDelayDeleteResource(_LightsBuffer,DelayDeleteResourceType::Frame,device->GetCurrentFrameFenceValue());
-		_LightsBuffer = nullptr;
-	}
-
-	if (_LightDataBuffer.size() == 0)
-		return;
-
-	RenderBuffer::Desc desc = {
-		.Size = _LightDataBuffer.size() * sizeof(LightData),
-		.Stride = sizeof(LightData),
-		.Usage = (u32)ResourceUsage::ShaderResource,
-		.Format = PixelFormat::UNKNOWN,
-		.CpuAccess = CpuAccessFlags::None,
-		.Alignment = true,
-		.StructuredBuffer = true,
-		.InitData = (u8*)_LightDataBuffer.data()
-	};
-
-	_LightsBuffer = device->CreateBuffer("LightsBuffer", desc);	 
 }
 
 void RenderScene::AddLight(const Transform& trans,LightComponent* light)
@@ -104,7 +77,7 @@ void RenderScene::AddLight(const Transform& trans,LightComponent* light)
 	_Lights.push_back(l);
 	_LightDataBuffer.push_back(*l->Light);
 
-	UpdateLightBuffer();
+	_Renderer->UpdateLightBuffer(_LightDataBuffer);
 
 }
 
@@ -123,7 +96,7 @@ void RenderScene::RemoveLight(LightComponent* light)
 	_LightDataBuffer.erase(liter);
 	_Lights.erase(iter);
 
-	UpdateLightBuffer();
+	_Renderer->UpdateLightBuffer(_LightDataBuffer);
 }
 
 void RenderScene::AddPrimitive(const Transform& trans, PrimitiveComponent* primitive)
@@ -182,15 +155,20 @@ void RenderScene::AddPrimitive(const Transform& trans, PrimitiveComponent* primi
 
 				cluster->IndexBuffer = device->CreateBuffer(std::format("IndexBuffer_{}", (u64)(primitive)), desc);
 			}
-
+			cluster->Primitive = new PrimitiveData;
+			cluster->Primitive->LocalToWorld = trans.WorldMatrix;
 			_Clusters.push_back(cluster);
-			_Renderer->AddCluster(cluster);
+
+			_PrimitiveDataBuffer.push_back(*cluster->Primitive);
+			_Renderer->AddCluster(u32(_PrimitiveDataBuffer.size()-1),cluster);
 		}
 	}
 	else
 	{
 		check(0);
 	}
+
+	_Renderer->UpdatePrimitivesBuffer(_PrimitiveDataBuffer);
 	
 }
 
@@ -203,6 +181,10 @@ void RenderScene::RemovePrimitive(PrimitiveComponent* primitive)
 		{
 			_Renderer->RemoveCluster(*iter);
 			delete *iter;
+			u32 pos = (u32)std::distance(_Clusters.begin(), iter);
+			auto liter = _PrimitiveDataBuffer.begin();
+			std::advance(liter, pos);
+			_PrimitiveDataBuffer.erase(liter);
 			iter = _Clusters.erase(iter);
 		}
 		else
@@ -210,5 +192,7 @@ void RenderScene::RemovePrimitive(PrimitiveComponent* primitive)
 			iter++;
 		}
 	}
+
+	_Renderer->UpdatePrimitivesBuffer(_PrimitiveDataBuffer);
 }
 

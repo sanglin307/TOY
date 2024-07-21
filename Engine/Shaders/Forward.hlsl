@@ -1,6 +1,21 @@
 
+#include "Interop/CommonStruct.h"
 
-#include "GlobalResources.hlsl"
+// root descriptor table use space 0
+// root descriptor use space 1
+// root constant use space 2
+ConstantBuffer<ViewInfo> ViewCB;
+ConstantBuffer<MaterialData> MaterialCB;
+ConstantBuffer<DrawData> DrawCB;
+
+Texture2D BaseColorTexture;
+Texture2D NormalTexture;
+Texture2D RoughnessMetalnessTexture;
+Texture2D EmissiveTexture;
+StructuredBuffer<LightData> LightsBuffer;
+StructuredBuffer<PrimitiveData> PrimitiveBuffer;
+
+SamplerState TestSampler;
 
 struct VertexInput
 {
@@ -92,15 +107,14 @@ MaterialProperties EvaluateMaterial(PSInput input)
     }
     return properties;
 }
-
-
-
+ 
 
 PSInput VSMain(VertexInput vertex)
 {
 	PSInput result;
-
-    result.position = mul(ViewCB.ViewProject, float4(vertex.position, 1.0f));
+    PrimitiveData pd = PrimitiveBuffer[DrawCB.PrimitiveId];
+    result.position = mul(pd.LocalToWorld, float4(vertex.position, 1.0f));
+    result.position = mul(ViewCB.ViewProject, float4(result.position));
     result.normal = vertex.normal;
     result.color = vertex.color;
     result.UV = vertex.UV;
@@ -112,6 +126,13 @@ PSInput VSMain(VertexInput vertex)
 float4 PSMain(PSInput input) : SV_TARGET
 {
     MaterialProperties surface = EvaluateMaterial(input);
-    float3 color = surface.Normal;
+    
+    float3 color = float3(0, 0, 0);
+    for (uint i = 0; i < ViewCB.LightNum;i++)
+    {
+        LightData l = LightsBuffer[i];
+        color.xyz += surface.BaseColor * l.Color;
+    }
+    
     return float4(color, 1);
 }

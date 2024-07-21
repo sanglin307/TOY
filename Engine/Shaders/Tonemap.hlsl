@@ -4,9 +4,9 @@
 // root descriptor table use space 0
 // root descriptor use space 1
 // root constant use space 2
-ConstantBuffer<ViewInfo> ViewCB : register(b0, space0);
-Texture2D SceneColor : register(t0);
-RWTexture2D<float4> ColorUAV : register(u0);
+ConstantBuffer<ViewInfo> ViewCB;
+Texture2D SceneColor;
+RWTexture2D<float4> ColorUAV;
 
 template<typename T>
 T LinearToSRGB(T linearRGB)

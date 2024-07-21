@@ -17,16 +17,17 @@ RenderContext* RenderContext::Open()
 	return this;
 }
  
-ContextManager::ContextManager(RenderDevice* device)
+ContextManager::ContextManager(RenderDevice* device, u32 contextCount)
 {
+	_DirectContextNumber = contextCount;
 	_Device = device;
 	_Device->SetContextManager(this);
 
-	for (u32 index = 0; index < CommandAllocatorNumber; index++)
+	for (u32 index = 0; index < contextCount; index++)
 	{
 		_DirectCommandAllocators.push_back(device->CreateCommandAllocator(CommandType::Direct));
 		_DirectContexts.push_back(device->CreateCommandContext(_DirectCommandAllocators[index], CommandType::Direct));
-		_FenceValues[index] = 0;
+		_FenceValues.push_back(0);
 	}
 	_DirectCommandQueue = device->CreateCommandQueue(CommandType::Direct);
 	_FrameFence = device->CreateFence(0);
@@ -74,7 +75,7 @@ void ContextManager::WaitGPUIdle()
 	_DirectCommandQueue->Signal(_FrameFence, lastFenceValue);
 	_FrameFence->CpuWait(lastFenceValue);
 
-	for (u32 i = 0; i < CommandAllocatorNumber; i++)
+	for (u32 i = 0; i < _DirectContextNumber; i++)
 	{
 		_FenceValues[i] = lastFenceValue;
 	}
@@ -83,7 +84,7 @@ void ContextManager::WaitGPUIdle()
 u64 ContextManager::GetMaxFrameFenceValue()
 {
 	u64 lastFenceValue = 0;
-	for (u32 i = 0; i < CommandAllocatorNumber; i++)
+	for (u32 i = 0; i < _DirectContextNumber; i++)
 	{
 		if (_FenceValues[i] > lastFenceValue)
 			lastFenceValue = _FenceValues[i];
@@ -157,7 +158,7 @@ ContextManager::~ContextManager()
 	delete _DirectCommandQueue;
 	_DirectCommandQueue = nullptr;
 
-	for (u32 index = 0; index < CommandAllocatorNumber; index++)
+	for (u32 index = 0; index < _DirectContextNumber; index++)
 	{
 		delete _DirectContexts[index];
 		delete _DirectCommandAllocators[index];

@@ -584,7 +584,7 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
 					},
 					[&](const fastgltf::TRS& trs) {
 						n->SetScale(float3(trs.scale.x(),trs.scale.y(),trs.scale.z()));
-						n->SetRotation(quaternion(trs.rotation.w(), trs.rotation.x(), trs.rotation.y(), trs.rotation.z()));
+						n->SetRotation(quaternion(trs.rotation.x(), trs.rotation.y(), trs.rotation.z(), trs.rotation.w()));
 						n->SetTranslate(float3(trs.translation.x(), trs.translation.y(), trs.translation.z()));
 					}
 			}, node.transform);

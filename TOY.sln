@@ -68,7 +68,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interop", "Interop", "{F6B1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sources", "Sources", "{333BC946-D5F7-4665-9E91-5AC3B52CE68B}"
 	ProjectSection(SolutionItems) = preProject
-		Engine\Shaders\GlobalResources.hlsl = Engine\Shaders\GlobalResources.hlsl
 		Engine\Shaders\Forward.hlsl = Engine\Shaders\Forward.hlsl
 		Engine\Shaders\Tonemap.hlsl = Engine\Shaders\Tonemap.hlsl
 	EndProjectSection

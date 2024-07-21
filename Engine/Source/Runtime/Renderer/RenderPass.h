@@ -15,6 +15,7 @@ enum class RenderPassType
 
 struct RenderCommand
 {
+	u32 PrimitiveID = 0;
 	PrimitiveComponent* Component = nullptr;
 	std::vector<RenderBuffer*> VertexBuffers;
 	RenderBuffer* IndexBuffer = nullptr;
@@ -31,7 +32,7 @@ public:
 	virtual ~RenderPass() {};
 	virtual void Init(RenderDevice* device,SceneRenderer* renderer) = 0;
 	virtual void Render(ViewInfo& view, Swapchain* sc,RenderContext* ctx) = 0;
-	virtual void AddCluster(RenderCluster* cluster) = 0;
+	virtual void AddCluster(u32 primitiveID, RenderCluster* cluster) = 0;
 	virtual void RemoveCluster(RenderCluster* cluster) = 0;
 
 protected:
@@ -47,7 +48,7 @@ public:
 	virtual ~RenderPassForward();
 	virtual void Init(RenderDevice* device, SceneRenderer* renderer) override;
 	virtual void Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx) override;
-	virtual void AddCluster(RenderCluster* cluster) override;
+	virtual void AddCluster(u32 primitiveID, RenderCluster* cluster) override;
 	virtual void RemoveCluster(RenderCluster* cluster) override;
 
 private:

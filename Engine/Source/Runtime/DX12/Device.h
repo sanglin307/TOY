@@ -11,6 +11,7 @@ public :
 	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
 	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) override;
 	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) override;
+	virtual DynamicDescriptorHeap* CreateDynamicDescriptorHeap(u32 size, DescriptorType type) override;
 	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& desc) override;
 	virtual RenderPipeline* CreateGraphicPipeline(const std::string& name,const GraphicPipeline::Desc& desc) override;
 	virtual RenderPipeline* CreateComputePipeline(const std::string& name,const ComputePipeline::Desc& desc) override;
@@ -57,13 +58,15 @@ private:
 
 	RootSignature* LoadRootSignature(const RootSignature::Desc& desc);
 	void CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders, RootSignature::Desc& desc);
-	ComPtr<ID3DBlob> GenerateRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc);
+	ComPtr<ID3DBlob> GenerateGraphicRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc);
+	ComPtr<ID3DBlob> GenerateComputeRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc);
 
 	ComPtr<IDXGIFactory4> _Factory;
 	ComPtr<IDXGIAdapter1> _Adapter;
 	ComPtr<ID3D12Device5> _Device;
 
-	RootSignature* _CachedRootSignature = nullptr; // if cache one satisfy our need ,use it.
+	RootSignature* _CachedGraphicRootSignature = nullptr; // if cache one satisfy our need ,use it.
+	RootSignature* _CachedComputeRootSignature = nullptr;
  
 };
 

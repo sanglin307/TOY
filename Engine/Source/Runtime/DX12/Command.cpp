@@ -54,8 +54,9 @@ void DX12CommandList::SetRootSignature(const RootSignature* rootsig, PipelineTyp
 
 void DX12CommandList::SetDescriptorHeap()
 {
-    DescriptorHeap* desHeap = _Device->_DescriptorManager->GetGPUHeap(DescriptorType::CBV_SRV_UAV);
-    DescriptorHeap* samplerHeap = _Device->_DescriptorManager->GetGPUHeap(DescriptorType::Sampler);
+    u32 frameIndex = _Device->GetCurrentFrameIndex();
+    DynamicDescriptorHeap* desHeap = _Device->_DescriptorManager->GetDynamicDescriptorHeap(DescriptorType::CBV_SRV_UAV, frameIndex);
+    DynamicDescriptorHeap* samplerHeap = _Device->_DescriptorManager->GetDynamicDescriptorHeap(DescriptorType::Sampler, frameIndex);
     ID3D12DescriptorHeap* ppHeap[] = { std::any_cast<ID3D12DescriptorHeap*>(desHeap->Handle()), std::any_cast<ID3D12DescriptorHeap*>(samplerHeap->Handle()) };
     _Handle->SetDescriptorHeaps(2, ppHeap);
 }
@@ -66,38 +67,26 @@ void DX12CommandList::SetRenderPipeline(RenderPipeline* pipeline)
     _Handle->SetPipelineState(ps);
 }
 
-void DX12CommandList::SetRootDescriptorTableParameter(const RootSignature* rs, const std::vector<ShaderParameter*>& params, PipelineType type)
+void DX12CommandList::SetRootDescriptorTableParameter(const std::vector<ShaderParameter*>& params, PipelineType type)
 {
     if (params.size() == 0)
         return;
 
-    const std::vector<RootSignatureParamDesc>& rsdesc = rs->GetParamDesc();
-
-    DescriptorAllocation alloc;
-    check(params[0]->BindType >= ShaderBindType::TableCBV);
-    for (u32 i = 0; i < rsdesc.size(); i++)
-    {
-        if (rsdesc[i].Type == params[0]->BindType)
-        {
-            alloc = rsdesc[i].Alloc;
-            break;
-        }
-    }
-        
-
+    u32 frameIndex = _Device->GetCurrentFrameIndex();
     if (params[0]->BindType == ShaderBindType::TableCBV || params[0]->BindType == ShaderBindType::TableSRV || params[0]->BindType == ShaderBindType::TableUAV)
     {
-        DX12DescriptorHeap* dxHeap = static_cast<DX12DescriptorHeap*>(alloc.Heap);
-        D3D12_CPU_DESCRIPTOR_HANDLE base = dxHeap->CPUHandle(alloc);
-     
+        DX12DynamicDescriptorHeap* dxHeap = static_cast<DX12DynamicDescriptorHeap*>(_Device->_DescriptorManager->GetDynamicDescriptorHeap(DescriptorType::CBV_SRV_UAV, frameIndex));
+       
+        std::set<u32> rootIndexs;
         for (auto param : params)
         {
-            D3D12_CPU_DESCRIPTOR_HANDLE dest = base;
-            dest.ptr += dxHeap->GetStride() * param->TableOffset;
-
+            u32 alloc = dxHeap->Allocate();
+            D3D12_CPU_DESCRIPTOR_HANDLE dest = dxHeap->CPUHandle(alloc);
+          
             if (param->BindType == ShaderBindType::TableCBV)
             {
                 DX12RenderBuffer* buffer = static_cast<DX12RenderBuffer*>(param->Resource);
+                TransitionState(ResourceState::VertexAndConstantBuffer, buffer);
                 _Device->CopyDescriptor(dest, buffer->GetCBVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
             }
             else if (param->BindType == ShaderBindType::TableSRV)
@@ -111,7 +100,9 @@ void DX12CommandList::SetRootDescriptorTableParameter(const RootSignature* rs, c
                 {
                     DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(param->Resource);
                     _Device->CopyDescriptor(dest, tex->GetSRVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                }
+                } 
+                TransitionState(ResourceState::AllShaderResource, param->Resource);
+                 
             }
             else if (param->BindType == ShaderBindType::TableUAV)
             {
@@ -125,38 +116,51 @@ void DX12CommandList::SetRootDescriptorTableParameter(const RootSignature* rs, c
                     DX12RenderTexture* tex = static_cast<DX12RenderTexture*>(param->Resource);
                     _Device->CopyDescriptor(dest, tex->GetUAVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 }
+
+                TransitionState(ResourceState::UnorderedAccess, param->Resource);
+            }
+
+            // set the first.
+            if (!rootIndexs.contains(param->RootParamIndex))
+            {
+                if (type == PipelineType::Graphic)
+                {
+                    _Handle->SetGraphicsRootDescriptorTable(param->RootParamIndex, dxHeap->GPUHandle(alloc));
+                }
+                else if (type == PipelineType::Compute)
+                {
+                    _Handle->SetComputeRootDescriptorTable(param->RootParamIndex, dxHeap->GPUHandle(alloc));
+                }
+                rootIndexs.insert(param->RootParamIndex);
             }
         }
 
-        if (type == PipelineType::Graphic)
-        {
-            _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
-        }
-        else if (type == PipelineType::Compute)
-        {
-            _Handle->SetComputeRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
-        }
+        
     }
     else if (params[0]->BindType == ShaderBindType::TableSampler)
     {
-        DX12DescriptorHeap* dxHeap = static_cast<DX12DescriptorHeap*>(alloc.Heap);
-        D3D12_CPU_DESCRIPTOR_HANDLE base = dxHeap->CPUHandle(alloc);
+        DX12DynamicDescriptorHeap* dxHeap = static_cast<DX12DynamicDescriptorHeap*>(_Device->_DescriptorManager->GetDynamicDescriptorHeap(DescriptorType::Sampler, frameIndex));
         
+        std::set<u32> rootIndexs;
         for (auto param : params)
         {
             DX12Sampler* sampler = static_cast<DX12Sampler*>(param->Resource);
-            D3D12_CPU_DESCRIPTOR_HANDLE dest = base;
-            dest.ptr += dxHeap->GetStride() * param->TableOffset;
+            u32 alloc = dxHeap->Allocate();
+            D3D12_CPU_DESCRIPTOR_HANDLE dest = dxHeap->CPUHandle(alloc);
             _Device->CopyDescriptor(dest, sampler->GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-        }
 
-        if (type == PipelineType::Graphic)
-        {
-            _Handle->SetGraphicsRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
-        }
-        else if (type == PipelineType::Compute)
-        {
-            _Handle->SetComputeRootDescriptorTable(params[0]->RootParamIndex, dxHeap->GPUHandle(alloc));
+            if (!rootIndexs.contains(param->RootParamIndex))
+            {
+                if (type == PipelineType::Graphic)
+                {
+                    _Handle->SetGraphicsRootDescriptorTable(param->RootParamIndex, dxHeap->GPUHandle(alloc));
+                }
+                else if (type == PipelineType::Compute)
+                {
+                    _Handle->SetComputeRootDescriptorTable(param->RootParamIndex, dxHeap->GPUHandle(alloc));
+                }
+                rootIndexs.insert(param->RootParamIndex);
+            }
         }
     }
     
@@ -357,39 +361,47 @@ void DX12CommandList::SetRenderTargets(u32 rtNum, RenderTexture** rts, RenderTar
     }
 }
 
-void DX12CommandList::ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const float* values)
+void DX12CommandList::ClearUnorderedAccessView(RenderResource* uavRes, const Vector4f& value)
 {
     TransitionState(ResourceState::UnorderedAccess, uavRes);
-    DX12DescriptorHeap* dxHeap = static_cast<DX12DescriptorHeap*>(alloc.Heap);
+    u32 frameIndex = _Device->GetCurrentFrameIndex();
+    DX12DynamicDescriptorHeap* dxHeap = static_cast<DX12DynamicDescriptorHeap*>(_Device->GetDescriptorManager()->GetDynamicDescriptorHeap(DescriptorType::CBV_SRV_UAV, frameIndex));
+    u32 alloc = dxHeap->Allocate();
+    D3D12_CPU_DESCRIPTOR_HANDLE dest = dxHeap->CPUHandle(alloc);
     D3D12_GPU_DESCRIPTOR_HANDLE base = dxHeap->GPUHandle(alloc);
-    base.ptr += dxHeap->GetStride() * offset;
     if (uavRes->GetDimension() == ResourceDimension::Buffer)
     {
         DX12RenderBuffer* dx12Res = static_cast<DX12RenderBuffer*>(uavRes);
-        _Handle->ClearUnorderedAccessViewFloat(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values, 0, nullptr);
+        _Device->CopyDescriptor(dest, dx12Res->GetUAVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _Handle->ClearUnorderedAccessViewFloat(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), value.f, 0, nullptr);
     }
     else
     {
         DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(uavRes);
-        _Handle->ClearUnorderedAccessViewFloat(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values, 0, nullptr);
+        _Device->CopyDescriptor(dest, dx12Res->GetUAVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _Handle->ClearUnorderedAccessViewFloat(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), value.f, 0, nullptr);
     }
 }
 
-void DX12CommandList::ClearUnorderedAccessView(DescriptorAllocation& alloc, u32 offset, RenderResource* uavRes, const u32* values)
+void DX12CommandList::ClearUnorderedAccessView(RenderResource* uavRes, const Vector4u& values)
 {
     TransitionState(ResourceState::UnorderedAccess, uavRes);
-    DX12DescriptorHeap* dxHeap = static_cast<DX12DescriptorHeap*>(alloc.Heap);
+    u32 frameIndex = _Device->GetCurrentFrameIndex();
+    DX12DynamicDescriptorHeap* dxHeap = static_cast<DX12DynamicDescriptorHeap*>(_Device->GetDescriptorManager()->GetDynamicDescriptorHeap(DescriptorType::CBV_SRV_UAV, frameIndex));
+    u32 alloc = dxHeap->Allocate();
+    D3D12_CPU_DESCRIPTOR_HANDLE dest = dxHeap->CPUHandle(alloc);
     D3D12_GPU_DESCRIPTOR_HANDLE base = dxHeap->GPUHandle(alloc);
-    base.ptr += dxHeap->GetStride() * offset;
     if (uavRes->GetDimension() == ResourceDimension::Buffer)
     {
         DX12RenderBuffer* dx12Res = static_cast<DX12RenderBuffer*>(uavRes);
-        _Handle->ClearUnorderedAccessViewUint(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values, 0, nullptr);
+        _Device->CopyDescriptor(dest, dx12Res->GetUAVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _Handle->ClearUnorderedAccessViewUint(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values.f, 0, nullptr);
     }
     else
     {
         DX12RenderTexture* dx12Res = static_cast<DX12RenderTexture*>(uavRes);
-        _Handle->ClearUnorderedAccessViewUint(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values, 0, nullptr);
+        _Device->CopyDescriptor(dest, dx12Res->GetUAVCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _Handle->ClearUnorderedAccessViewUint(base, dx12Res->GetUAVCPUHandle(), std::any_cast<ID3D12Resource*>(uavRes->Handle()), values.f, 0, nullptr);
     }
 }
 

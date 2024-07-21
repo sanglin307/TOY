@@ -20,6 +20,26 @@ D3D12_GPU_DESCRIPTOR_HANDLE DX12DescriptorHeap::GPUHandle(DescriptorAllocation& 
     return base;
 }
 
+std::any DX12DynamicDescriptorHeap::Handle()
+{
+    return _Handle.Get();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DX12DynamicDescriptorHeap::CPUHandle(u32 pos)
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE base = _Handle->GetCPUDescriptorHandleForHeapStart();
+    base.ptr += pos * _Stride;
+    return base;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE DX12DynamicDescriptorHeap::GPUHandle(u32 pos)
+{
+    D3D12_GPU_DESCRIPTOR_HANDLE base = _Handle->GetGPUDescriptorHandleForHeapStart();
+    base.ptr += pos * _Stride;
+    return base;
+}
+
+
 void DX12Swapchain::Present(bool vSync)
 {
     check(SUCCEEDED(_Handle->Present(vSync ? 1 : 0, 0)));
@@ -43,7 +63,7 @@ D3D12_DESCRIPTOR_HEAP_TYPE TranslateDescriptorType(DescriptorType type)
         return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     case DescriptorType::Sampler:
         return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-    case DescriptorType::RVT:
+    case DescriptorType::RTV:
         return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     case DescriptorType::DSV:
         return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
@@ -68,6 +88,21 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(const DescriptorHeap::Config& c
     check(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
 
     return new DX12DescriptorHeap(c, _Device->GetDescriptorHandleIncrementSize(heapDesc.Type),heap);
+}
+
+DynamicDescriptorHeap* DX12Device::CreateDynamicDescriptorHeap(u32 size, DescriptorType type)
+{
+    check(_Device);
+    check(type == DescriptorType::CBV_SRV_UAV || type == DescriptorType::Sampler);
+    ComPtr<ID3D12DescriptorHeap> heap;
+    D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {
+        .Type = TranslateDescriptorType(type),
+        .NumDescriptors = size,
+        .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+    };
+    check(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
+
+    return new DX12DynamicDescriptorHeap(size, _Device->GetDescriptorHandleIncrementSize(heapDesc.Type), heap);
 }
 
 RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTexture::Desc& desc)
@@ -185,7 +220,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
 
     if (desc.Usage & (u32)ResourceUsage::ShaderResource)
     {
-        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUSRVHeap());
         if (IsDepthPixelFormat(desc.Format))
         {
             // depth shader view.
@@ -243,7 +278,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
 
     if (desc.Usage & (u32)ResourceUsage::RenderTarget)
     {
-        DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUHeap(DescriptorType::RVT));
+        DX12DescriptorHeap* rvtHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPURTVHeap());
         DescriptorAllocation da = rvtHeap->Allocate();
         D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = rvtHeap->CPUHandle(da);
         _Device->CreateRenderTargetView(resource.Get(), nullptr, cpuHandle);
@@ -260,7 +295,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
                     .MipSlice = 0,
                   }
         };
-        DX12DescriptorHeap* dsvHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUHeap(DescriptorType::DSV));
+        DX12DescriptorHeap* dsvHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetGPUDSVHeap());
         DescriptorAllocation da = dsvHeap->Allocate();
         D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = dsvHeap->CPUHandle(da);
         _Device->CreateDepthStencilView(resource.Get(), &dsvDesc, cpuHandle);
@@ -278,7 +313,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
              },
         };
 
-        DX12DescriptorHeap* uavHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        DX12DescriptorHeap* uavHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUSRVHeap());
         DescriptorAllocation uav = uavHeap->Allocate();
         D3D12_CPU_DESCRIPTOR_HANDLE uavHandle = uavHeap->CPUHandle(uav);
         _Device->CreateUnorderedAccessView(resource.Get(), nullptr, &uavDesc, uavHandle);
@@ -342,7 +377,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
                  .SizeInBytes = (UINT)bufferSize
             };
            
-            DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+            DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUSRVHeap());
             DescriptorAllocation descriptor = heap->Allocate();
             D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(descriptor);
             _Device->CreateConstantBufferView(&cbvDesc, cpuHandle);
@@ -402,7 +437,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
                  },
         };
 
-        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUSRVHeap());
         DescriptorAllocation srvDescriptor = heap->Allocate();
         D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(srvDescriptor);
         _Device->CreateShaderResourceView(resource.Get(), &srvDesc, cpuHandle);
@@ -423,7 +458,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
              },
         };
 
-        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUHeap(DescriptorType::CBV_SRV_UAV));
+        DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUSRVHeap());
         DescriptorAllocation uavDescriptor = heap->Allocate();
         D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->CPUHandle(uavDescriptor);
         _Device->CreateUnorderedAccessView(resource.Get(), nullptr,&uavDesc, cpuHandle);

@@ -56,6 +56,27 @@ private:
 	ComPtr<ID3D12DescriptorHeap> _Handle = nullptr;
 };
 
+class DX12DynamicDescriptorHeap : public DynamicDescriptorHeap
+{
+	friend class DX12Device;
+public:
+	virtual ~DX12DynamicDescriptorHeap() { _Handle.Reset(); }
+	virtual std::any Handle() override;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle(u32 pos);
+	D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle(u32 pos);
+private:
+	DX12DynamicDescriptorHeap(u32 size, u32 stride, ComPtr<ID3D12DescriptorHeap> handle)
+	{
+		_Current = 0;
+		_Size = size;
+		_Stride = stride;
+		_Handle = handle;
+	}
+
+	ComPtr<ID3D12DescriptorHeap> _Handle = nullptr;
+};
+
 class DX12RenderBuffer : public RenderBuffer
 {
 	friend class DX12Device;

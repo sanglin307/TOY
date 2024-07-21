@@ -82,12 +82,6 @@ std::wstring GetTargetProfile(ShaderProfile profile)
         return std::format(L"ps_6_{}", ver);
     case ShaderProfile::Compute:
         return std::format(L"cs_6_{}", ver);
-    case ShaderProfile::Geometry:
-        return std::format(L"gs_6_{}", ver);
-    case ShaderProfile::Domain:
-        return std::format(L"ds_6_{}", ver);
-    case ShaderProfile::Hull:
-        return std::format(L"hs_6_{}", ver);
     case ShaderProfile::Mesh:
         return std::format(L"ms_6_{}", ver);
     case ShaderProfile::Amplification:

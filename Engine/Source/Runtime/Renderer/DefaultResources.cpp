@@ -20,9 +20,9 @@ void DefaultResource::Init(RenderDevice* device)
 	_VertexBuffers[(u32)VertexAttribute::Normal] = device->CreateBuffer("DefaultVertexBuffer_Normal", dn);
 	_Resources.insert(_VertexBuffers[(u32)VertexAttribute::Normal]);
 
-	float3 tangentValue = { 0,1,0.f };
+	float4 tangentValue = { 0,1,0.f,1 };
 	RenderBuffer::Desc dt = {
-		.Size = sizeof(float) * 3,
+		.Size = sizeof(float) * 4,
 		.Stride = 0,
 		.Usage = (u32)ResourceUsage::VertexBuffer,
 		.CpuAccess = CpuAccessFlags::None,
@@ -44,7 +44,7 @@ void DefaultResource::Init(RenderDevice* device)
 	_VertexBuffers[(u32)VertexAttribute::Color0] = _VertexBuffers[(u32)VertexAttribute::Color1] = _VertexBuffers[(u32)VertexAttribute::Color2] = device->CreateBuffer("DefaultVertexBuffer_Color", dc);
 	_Resources.insert(_VertexBuffers[(u32)VertexAttribute::Color0]);
 
-	float2 uvValue = {};
+	float2 uvValue = {0.f, 0.f};
 	RenderBuffer::Desc duv = {
 		.Size = sizeof(float) * 2,
 		.Stride = 0,
@@ -59,6 +59,21 @@ void DefaultResource::Init(RenderDevice* device)
 		_VertexBuffers[i] = uvBuffer;
 	}
 	_Resources.insert(uvBuffer);
+
+	float value = 0;
+	RenderTexture::Desc tb = {
+		.Width = 1,
+		.Height = 1,
+		.DepthOrArraySize = 1,
+		.MipLevels = 1,
+		.Format = PixelFormat::R8G8B8A8_UNORM,
+		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Dimension = ResourceDimension::Texture2D,
+		.Data = (u8*)&value,
+		.Size = sizeof(value)
+	};
+	_ColorBlackTexture = device->CreateTexture("DefaultBlackColorTexture", tb);
+	_Resources.insert(_ColorBlackTexture);
 
 }
 

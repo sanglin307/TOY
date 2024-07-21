@@ -118,7 +118,7 @@ enum class DescriptorType
 {
     CBV_SRV_UAV = 0,
     Sampler,
-    RVT,
+    RTV,
     DSV,
     Max
 };
@@ -170,23 +170,61 @@ protected:
     std::list<Block> _FreeBlocks;
 };
 
+class DynamicDescriptorHeap
+{
+public:
+    virtual ~DynamicDescriptorHeap() {};
+    virtual std::any Handle() { return nullptr; }
+    RHI_API u32 Allocate();
+    RHI_API void Reset();
+protected:
+    u32 _Size;
+    u32 _Stride;
+    u32 _Current;
+};
+
 class RenderDevice;
 class DescriptorManager
 {
 public:
-    RHI_API DescriptorManager(RenderDevice* device);
+    RHI_API DescriptorManager(RenderDevice* device,u32 dynamicHeapCount);
     RHI_API ~DescriptorManager();
 
-    DescriptorHeap* GetCPUHeap(DescriptorType type)
+    DescriptorHeap* GetCPUSRVHeap()
     {
-        check(type != DescriptorType::DSV);
-        check(type != DescriptorType::RVT);
-        return _CPUHeaps[(u32)type];
+        return _CPUSRVHeap;
     }
 
-    DescriptorHeap* GetGPUHeap(DescriptorType type)
+    DescriptorHeap* GetCPUSamplerHeap()
     {
-        return _GPUHeaps[(u32)type];
+        return _CPUSamplerHeap;
+    }
+
+    DescriptorHeap* GetGPURTVHeap()
+    {
+        return _GPURTVHeap;
+    }
+
+    DescriptorHeap* GetGPUDSVHeap()
+    {
+        return _GPUDSVHeap;
+    }
+
+    DynamicDescriptorHeap* GetDynamicDescriptorHeap(DescriptorType type, u32 index)
+    {
+        if (type == DescriptorType::CBV_SRV_UAV)
+            return _SRVDynamicHeap[index];
+        else if (type == DescriptorType::Sampler)
+            return _SamplerDynamicHeap[index];
+        else
+            return nullptr;
+    }
+
+    void ResetDynamicDescriptorHeap(u32 index)
+    {
+        check(index < _SRVDynamicHeap.size());
+        _SRVDynamicHeap[index]->Reset();
+        _SamplerDynamicHeap[index]->Reset();
     }
 
     constexpr static u32 cCPUSRVDescriptorNum = 8000;
@@ -195,9 +233,17 @@ public:
     constexpr static u32 cGPUSamplerDescriptorNum = 100;
     constexpr static u32 cGPURTVDSVDescriptorNum = 100;
 
+    constexpr static u32 cDynamicSRVDescriptorNum = 8192;
+    constexpr static u32 cDynamicSamplerDescriptorNum = 100;
+
 private:
-    DescriptorHeap* _CPUHeaps[(u32)DescriptorType::Max];
-    DescriptorHeap* _GPUHeaps[(u32)DescriptorType::Max];
+    DescriptorHeap* _CPUSRVHeap;
+    DescriptorHeap* _CPUSamplerHeap;
+    DescriptorHeap* _GPURTVHeap;
+    DescriptorHeap* _GPUDSVHeap;
+
+    std::vector<DynamicDescriptorHeap*> _SRVDynamicHeap;
+    std::vector<DynamicDescriptorHeap*> _SamplerDynamicHeap;
     RenderDevice* _Device;
 };
 

@@ -2,7 +2,25 @@
 
 SceneRenderer::~SceneRenderer()
 {
-	delete _ViewUniformBuffer;
+	if (_ViewUniformBuffer)
+	{
+		delete _ViewUniformBuffer;
+	}
+
+	if (_DrawDataBuffer)
+	{
+		delete _DrawDataBuffer;
+	}
+
+	if (_PrimitivesBuffer)
+	{
+		delete _PrimitivesBuffer;
+	}
+
+	if (_LightsBuffer)
+	{
+		delete _LightsBuffer;
+	}
 
 	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
 	{
@@ -81,6 +99,14 @@ SceneRenderer::SceneRenderer(RenderDevice* device)
 	};
 	_ViewUniformBuffer = device->CreateBuffer("ViewInfo", udesc);
 
+	RenderBuffer::Desc ddesc = {
+		.Size = sizeof(DrawData),
+		.Usage = (u32)ResourceUsage::UniformBuffer,
+		.CpuAccess = CpuAccessFlags::Write,
+		.Alignment = true
+	};
+	_DrawDataBuffer = device->CreateBuffer("DrawData", ddesc);
+
 	InitSceneTextures();
 	InitRenderPass();
 }
@@ -90,11 +116,11 @@ void SceneRenderer::BindScene(RenderScene* scene)
 	_Scene = scene;
 }
 
-void SceneRenderer::AddCluster(RenderCluster* cluster)
+void SceneRenderer::AddCluster(u32 primitiveId, RenderCluster* cluster)
 {
 	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
 	{
-		_Passes[p]->AddCluster(cluster);
+		_Passes[p]->AddCluster(primitiveId,cluster);
 	}
 }
 
@@ -110,6 +136,7 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 {
 	RenderContext* ctx = _Device->BeginFrame(sc);
 	
+	view.LightNum = _Scene->GetLightNum();
 	_ViewUniformBuffer->UploadData((u8*)&view, sizeof(ViewInfo));
 
 	ctx->SetDescriptorHeap();
@@ -119,4 +146,52 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 	_Device->EndFrame(ctx, sc);
 }
 
- 
+void SceneRenderer::UpdateLightBuffer(const std::vector<LightData>& lightsData)
+{
+	if (_LightsBuffer)
+	{
+		_Device->AddDelayDeleteResource(_LightsBuffer, DelayDeleteResourceType::Frame, _Device->GetCurrentFrameFenceValue());
+		_LightsBuffer = nullptr;
+	}
+
+	if (lightsData.size() == 0)
+		return;
+
+	RenderBuffer::Desc desc = {
+		.Size = lightsData.size() * sizeof(LightData),
+		.Stride = sizeof(LightData),
+		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Format = PixelFormat::UNKNOWN,
+		.CpuAccess = CpuAccessFlags::None,
+		.Alignment = true,
+		.StructuredBuffer = true,
+		.InitData = (u8*)lightsData.data()
+	};
+
+	_LightsBuffer = _Device->CreateBuffer("LightsBuffer", desc);
+}
+
+void SceneRenderer::UpdatePrimitivesBuffer(const std::vector<PrimitiveData>& primitivesData)
+{
+	if (_PrimitivesBuffer)
+	{
+		_Device->AddDelayDeleteResource(_PrimitivesBuffer, DelayDeleteResourceType::Frame, _Device->GetCurrentFrameFenceValue());
+		_PrimitivesBuffer = nullptr;
+	}
+
+	if (primitivesData.size() == 0)
+		return;
+
+	RenderBuffer::Desc desc = {
+		.Size = primitivesData.size() * sizeof(PrimitiveData),
+		.Stride = sizeof(PrimitiveData),
+		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Format = PixelFormat::UNKNOWN,
+		.CpuAccess = CpuAccessFlags::None,
+		.Alignment = true,
+		.StructuredBuffer = true,
+		.InitData = (u8*)primitivesData.data()
+	};
+
+	_PrimitivesBuffer = _Device->CreateBuffer("PrimitivesBuffer", desc);
+}

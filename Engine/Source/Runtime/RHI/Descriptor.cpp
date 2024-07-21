@@ -1,57 +1,61 @@
 #include "Private.h"
 
-DescriptorManager::DescriptorManager(RenderDevice* device)
+DescriptorManager::DescriptorManager(RenderDevice* device, u32 dynamicHeapCount)
 {
     _Device = device;
-    for (u32 i = 0; i < (u32)DescriptorType::Max; i++)
-    {
-        DescriptorType t = (DescriptorType)i;
-        bool gpuVisible = true;
-        u32 num = cGPUSRVDescriptorNum;
-        if (t == DescriptorType::RVT || t == DescriptorType::DSV)
-        {
-            gpuVisible = false;
-            num = cGPURTVDSVDescriptorNum;
-        }
-
-        if (t == DescriptorType::Sampler)
-        {
-            num = cGPUSamplerDescriptorNum;
-        }
-
-        DescriptorHeap::Config c = {
-            .Type = t,
-            .Number = num,
-            .GPUVisible = gpuVisible
-        };
-        _GPUHeaps[i] = _Device->CreateDescriptorHeap(c);
-    }
-
-    _CPUHeaps[(u32)DescriptorType::CBV_SRV_UAV] = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
+    _CPUSRVHeap = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
         .Type = DescriptorType::CBV_SRV_UAV,
         .Number = cCPUSRVDescriptorNum,
-        .GPUVisible = false 
+        .GPUVisible = false
         });
 
-    _CPUHeaps[(u32)DescriptorType::Sampler] = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
+    _CPUSamplerHeap = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
         .Type = DescriptorType::Sampler,
         .Number = cCPUSamplerDescriptorNum,
         .GPUVisible = false
         });
 
-    _CPUHeaps[(u32)DescriptorType::RVT] = nullptr;
-    _CPUHeaps[(u32)DescriptorType::DSV] = nullptr;
+    _GPURTVHeap = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
+        .Type = DescriptorType::RTV,
+        .Number = cGPURTVDSVDescriptorNum,
+        .GPUVisible = false
+        });
+
+    _GPUDSVHeap = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
+        .Type = DescriptorType::DSV,
+        .Number = cGPURTVDSVDescriptorNum,
+        .GPUVisible = false
+      });
+
+    for (u32 i = 0; i < dynamicHeapCount; i++)
+    {
+        _SRVDynamicHeap.push_back(_Device->CreateDynamicDescriptorHeap(cDynamicSRVDescriptorNum, DescriptorType::CBV_SRV_UAV));
+        _SamplerDynamicHeap.push_back(_Device->CreateDynamicDescriptorHeap(cDynamicSamplerDescriptorNum, DescriptorType::Sampler));
+    }
 }
 
 DescriptorManager::~DescriptorManager()
 {
-    for (u32 i = 0; i < (u32)DescriptorType::Max; i++)
-    {
-        if (_GPUHeaps[i])
-            delete _GPUHeaps[i];
+    if (_CPUSRVHeap)
+        delete _CPUSRVHeap;
 
-        if(_CPUHeaps[i])
-            delete _CPUHeaps[i];
+    if (_CPUSamplerHeap)
+        delete _CPUSamplerHeap;
+
+    if (_GPURTVHeap)
+        delete _GPURTVHeap;
+
+    if (_GPUDSVHeap)
+        delete _GPUDSVHeap;
+
+    for (auto s : _SRVDynamicHeap)
+    {
+        delete s;
+    }
+
+    for( auto s : _SamplerDynamicHeap)
+    {
+        delete s;
     }
 }
 
@@ -191,4 +195,16 @@ void DescriptorHeap::FreeBlock(const DescriptorAllocation& pos)
     check(0);
 }
 
- 
+
+u32 DynamicDescriptorHeap::Allocate()
+{
+    check(_Current < _Size - 1);
+    
+    u32 alloc = _Current++;
+    return alloc;
+}
+
+void DynamicDescriptorHeap::Reset()
+{
+    _Current = 0;
+}

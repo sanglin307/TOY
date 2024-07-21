@@ -1,13 +1,10 @@
 #pragma once
 
-enum class ShaderProfile
+enum class ShaderProfile : u8
 {
 	Vertex = 0,
 	Pixel,
 	Compute,
-	Geometry,
-	Domain,
-	Hull,
 	Mesh,
 	Amplification,
 	Lib,
