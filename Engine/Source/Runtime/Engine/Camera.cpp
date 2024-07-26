@@ -57,8 +57,8 @@ void CameraController::Update(double delta)
 	{
 		int2 mouseDelta = InputManager::Instance().GetMousePostion() - mousePrePos;
 		mousePrePos = InputManager::Instance().GetMousePostion();
-		quaternion pitch = quaternion::rotation_euler_zxy(float3(mouseDelta[1] * delta * 0.2f, 0.f,0.f));
-		quaternion yaw = quaternion::rotation_euler_zxy(float3(0.f, mouseDelta[0] * delta * 0.2f, 0.f));
+		quaternion pitch = quaternion::rotation_euler_zxy(float3(mouseDelta[1] * delta * 0.1f, 0.f,0.f));
+		quaternion yaw = quaternion::rotation_euler_zxy(float3(0.f, mouseDelta[0] * delta * 0.1f, 0.f));
 		_Camera->_Rotation = mul(mul(pitch, _Camera->_Rotation),yaw);
 		 
 
@@ -83,7 +83,7 @@ void CameraController::Update(double delta)
 	}
 
 	_Velocity = SmoothStep(_Velocity, movement, 0.2f);
-	_Camera->_Position += _Velocity * float(delta) * 4.0f;
+	_Camera->_Position += _Velocity * float(delta) * 2.0f;
 
 	
 	_Camera->_ViewInverseMatrix = mul(float4x4(_Camera->_Rotation), float4x4::translation(_Camera->_Position));
@@ -95,7 +95,7 @@ void CameraController::Update(double delta)
 	if (_Camera->_Desc.Type == CameraType::Perspective)
 	{
 		frustum persp = frustum::field_of_view_y(_Camera->_Desc.YFov, _Camera->_Desc.AspectRatio, _Camera->_Desc.ZNear, _Camera->_Desc.ZFar);
-		_Camera->_ProjectMatrix = float4x4::perspective(projection(persp, zclip::zero, zdirection::reverse, _Camera->_Desc.ZFar <= 0 ? zplane::infinite: zplane::finite));
+		_Camera->_ProjectMatrix = float4x4::perspective(projection(persp, zclip::zero, zdirection::forward, _Camera->_Desc.ZFar <= 0 ? zplane::infinite: zplane::finite));
 		
 	}
 	else if(_Camera->_Desc.Type == CameraType::Orthographic)

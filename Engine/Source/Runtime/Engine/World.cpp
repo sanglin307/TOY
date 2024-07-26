@@ -32,7 +32,7 @@ void GameWorld::SetupWorld()
 			.AspectRatio = config.AspectRatio,
 			.YFov = 60 * Pi() / 180.f,
 			.ZFar = 0,
-			.ZNear = 1.f
+			.ZNear = 0.1f
 		};
 		_DefaultCamera = new CameraComponent("DefaultCamera", desc);
 		Node* node = new Node("DefaultCameraNode");
@@ -61,9 +61,9 @@ void GameWorld::SetupWorld()
 
 	LightComponent::Desc lpdesc = {
 		.Type = LightType::Point,
-		.Color = float3(1,1,0),
+		.Color = float3(1,0,0),
 		.Intensity = 10,
-		.Range = 100,
+		.Range = 1000,
 		.InnerConeAngle = 0,
 		.OuterConeAngle = 0
 	};

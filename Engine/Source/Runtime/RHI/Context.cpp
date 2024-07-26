@@ -121,11 +121,12 @@ void ContextManager::CommitCopyCommand()
 }
  
 
-void ContextManager::GpuWaitCopyFinish()
+void ContextManager::WaitCopyFinish()
 {
 	if (_ComittedCopyFenceValue > _CopyQueueFence->GetCompletedValue())
 	{
-		_DirectCommandQueue->Wait(_CopyQueueFence, _ComittedCopyFenceValue);
+		//_DirectCommandQueue->Wait(_CopyQueueFence, _ComittedCopyFenceValue);
+		_CopyQueueFence->CpuWait(_ComittedCopyFenceValue); // use cpu wait first, there are CopyQueueAllocate reset when use gpu wait. TODO.
 	}
 }
 

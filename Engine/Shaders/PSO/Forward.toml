@@ -3,7 +3,7 @@ VS = { Path = "Forward.hlsl" , Entry = "VSMain", Macros = [] }
 PS = { Path = "Forward.hlsl", Entry = "PSMain", Macros = [] }
 RVTFormats = ["R16G16B16A16_FLOAT"]
 DSVFormat = "D32_FLOAT_S8X24_UINT"
-DepthStencilState = { DepthEnable = true, StencilEnable = true }
+DepthStencilState = { DepthEnable = true, StencilEnable = false }
 
 [TonemapCS]
 CS = { Path = "Tonemap.hlsl" , Entry = "CSMain", Macros = [] }

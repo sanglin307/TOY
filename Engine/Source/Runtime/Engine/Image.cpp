@@ -21,6 +21,7 @@ void ImageReader::Destroy()
 	}
 }
 
+
 Image* ImageReader::LoadFromMemory(u8* data, u64 size)
 {
 	u64 hash = Hash(data, size);
@@ -41,7 +42,7 @@ Image* ImageReader::LoadFromMemory(u8* data, u64 size)
 			image->Data[i] = imageData[readpos];
 			image->Data[i + 1] = imageData[readpos + 1];
 			image->Data[i + 2] = imageData[readpos + 2];
-			image->Data[i + 3] = 0;
+			image->Data[i + 3] = 255;
 		}
 		image->Format = PixelFormat::R8G8B8A8_UNORM;
 	}

@@ -1,6 +1,6 @@
 #include "Private.h"
 
- 
+
 std::any DX12DescriptorHeap::Handle()
 {
     return _Handle.Get();
@@ -42,7 +42,41 @@ D3D12_GPU_DESCRIPTOR_HANDLE DX12DynamicDescriptorHeap::GPUHandle(u32 pos)
 
 void DX12Swapchain::Present(bool vSync)
 {
-    check(SUCCEEDED(_Handle->Present(vSync ? 1 : 0, 0)));
+    HRESULT hr = _Handle->Present(vSync ? 1 : 0, 0);
+     
+    if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+    {
+#ifdef NV_Aftermath
+        GFSDK_Aftermath_CrashDump_Status status = GFSDK_Aftermath_CrashDump_Status_Unknown;
+        GFSDK_Aftermath_GetCrashDumpStatus(&status);
+
+        auto tStart = std::chrono::steady_clock::now();
+        auto tElapsed = std::chrono::milliseconds::zero();
+
+        // Loop while Aftermath crash dump data collection has not finished or
+        // the application is still processing the crash dump data.
+        while (status != GFSDK_Aftermath_CrashDump_Status_CollectingDataFailed &&
+            status != GFSDK_Aftermath_CrashDump_Status_Finished &&
+            tElapsed.count() < 2000) // 2s.
+        {
+            // Sleep a couple of milliseconds and poll the status again.
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            GFSDK_Aftermath_GetCrashDumpStatus(&status);
+
+            tElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - tStart);
+        }
+
+        if (status == GFSDK_Aftermath_CrashDump_Status_Finished)
+        {
+            LOG_FATAL(NVAftermath, "Device Lost for DX12, Nv aftermath crash dump finished!");
+        }
+        else
+        {
+            LOG_FATAL(NVAftermath, std::format("Device Lost for DX12, Nv aftermath crash dump timeout :{}!", (u32)status));
+        }
+#endif
+    }
+     
 }
 
 DX12Swapchain::~DX12Swapchain()
@@ -105,17 +139,57 @@ DynamicDescriptorHeap* DX12Device::CreateDynamicDescriptorHeap(u32 size, Descrip
     return new DX12DynamicDescriptorHeap(size, _Device->GetDescriptorHandleIncrementSize(heapDesc.Type), heap);
 }
 
+void DX12Device::GenerateMipmaps(const RenderTexture::Desc& desc,std::vector<D3D12_SUBRESOURCE_DATA>& mipData)
+{
+    DirectX::Image image = {
+        .width = desc.Width,
+        .height = desc.Height,
+        .format = TranslatePixelFormat(desc.Format),
+        .pixels = desc.Data
+    };
+    DirectX::ComputePitch(image.format, image.width, image.height, image.rowPitch, image.slicePitch);
+
+    DirectX::ScratchImage mipChain;
+    SUCCEEDED(GenerateMipMaps(image, DirectX::TEX_FILTER_SEPARATE_ALPHA, desc.MipLevels, mipChain, true));
+
+    auto images = mipChain.GetImages();
+    u32 imageCount = (u32)mipChain.GetImageCount();
+
+    for (u32 i = 0; i < imageCount; i++)
+    {
+        D3D12_SUBRESOURCE_DATA& sd = mipData.emplace_back();
+        sd.pData = std::malloc(images[i].slicePitch);
+        std::memcpy((void*)sd.pData, images[i].pixels, images[i].slicePitch);
+        sd.RowPitch = images[i].rowPitch;
+        sd.SlicePitch = images[i].slicePitch;
+    }
+}
+
 RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTexture::Desc& desc)
 {
     check(_Device);
+    PixelFormat format = desc.Format;
+
+    std::vector<D3D12_SUBRESOURCE_DATA> mipData;
+    if (desc.MipLevels == 0 || desc.MipLevels > 1) // generate mipmap
+    {
+        GenerateMipmaps(desc,mipData);
+    }
+    else if (desc.Data)
+    {
+        D3D12_SUBRESOURCE_DATA& md = mipData.emplace_back();
+        md.pData = desc.Data;
+        DirectX::ComputePitch(TranslatePixelFormat(format), desc.Width, desc.Height, (size_t&)md.RowPitch, (size_t&)md.SlicePitch);
+    }
+
     ComPtr<ID3D12Resource> resource;
     D3D12_RESOURCE_DESC texDesc = {
         .Dimension = TranslateResourceDimension(desc.Dimension),
         .Width = desc.Width,
         .Height = desc.Height,
         .DepthOrArraySize = desc.DepthOrArraySize,
-        .MipLevels = 1,
-        .Format = TranslatePixelFormat(desc.Format),
+        .MipLevels = desc.MipLevels != 1 ? (UINT16)mipData.size(): 1u,
+        .Format = TranslatePixelFormat(format),
         .SampleDesc {
             .Count = 1,
             .Quality = 0
@@ -145,8 +219,8 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
     if (desc.Usage & (u32)ResourceUsage::DepthStencil)
     {
         texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        check(IsDepthPixelFormat(desc.Format));
-        texDesc.Format = TranslatePixelFormat(GetDepthResourceFormat(desc.Format));
+        check(IsDepthPixelFormat(format));
+        texDesc.Format = TranslatePixelFormat(GetDepthResourceFormat(format));
     }
 
     if (desc.Usage & (u32)ResourceUsage::UnorderedAccess)
@@ -177,11 +251,13 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
 
     if (desc.Data != nullptr)
     {
-        const u64 uploadBufferSize = GetTextureRequiredIntermediateSize(resource.Get(), 0, 1);
+        u64 requiredSize = 0;
+        _Device->GetCopyableFootprints(&texDesc, 0, (UINT)mipData.size(), 0, nullptr, nullptr, nullptr, &requiredSize);
+
         D3D12_RESOURCE_DESC tempDesc = {
             .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
             .Alignment = 0,
-            .Width = uploadBufferSize,
+            .Width = requiredSize,
             .Height = 1,
             .DepthOrArraySize = 1,
             .MipLevels = 1,
@@ -197,21 +273,23 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
                .Type = D3D12_HEAP_TYPE_UPLOAD
         };
         check(SUCCEEDED(_Device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &tempDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&tempRes))));
-        D3D12_SUBRESOURCE_DATA textureData = {
-            .pData = desc.Data,
-            .RowPitch = desc.Width * GetPixelSize(desc.Format)
-        };
-        textureData.SlicePitch = textureData.RowPitch * desc.Height;
-
+       
         u64 copyFenceValue = 0;
         DX12CommandList* ctx = static_cast<DX12CommandList*>(_ContextManager->GetCopyContext(copyFenceValue));
         dstTexture = new DX12RenderTexture(name, this, desc, ResourceState::CopyDest, resource);
         RenderBuffer::Desc buffDesc = {
-            .Size = uploadBufferSize
+            .Size = requiredSize
         };
         RenderBuffer* srcBuffer = new DX12RenderBuffer("Texture_TempCopy", this, buffDesc, ResourceState::GenericRead, tempRes);
-        ctx->UpdateSubresource(dstTexture, srcBuffer, 0, 0, 1, &textureData);
+        ctx->UpdateSubresource(dstTexture, srcBuffer, 0, 0, (u32)mipData.size(), mipData.data());
         AddDelayDeleteResource(srcBuffer, DelayDeleteResourceType::CopyQueue, copyFenceValue);
+        if (desc.MipLevels != 1)
+        {
+            for (u32 i = 0; i < mipData.size(); i++)
+            {
+                std::free((void*)mipData[i].pData);
+            }
+        }
     }
     else
     {
@@ -221,10 +299,10 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
     if (desc.Usage & (u32)ResourceUsage::ShaderResource)
     {
         DX12DescriptorHeap* heap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUSRVHeap());
-        if (IsDepthPixelFormat(desc.Format))
+        if (IsDepthPixelFormat(format))
         {
             // depth shader view.
-            texDesc.Format = TranslatePixelFormat(GetDepthShaderResourceFormat(desc.Format,true));
+            texDesc.Format = TranslatePixelFormat(GetDepthShaderResourceFormat(format,true));
             D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
                  .Format = texDesc.Format,
                  .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
@@ -240,9 +318,9 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
             dstTexture->SetSRV(srvDescriptor, cpuHandle);
 
             // stencil shader view.
-            if (IsStencilPixelFormat(desc.Format))
+            if (IsStencilPixelFormat(format))
             {
-                texDesc.Format = TranslatePixelFormat(GetDepthShaderResourceFormat(desc.Format, false));
+                texDesc.Format = TranslatePixelFormat(GetDepthShaderResourceFormat(format, false));
                 srvDesc = {
                      .Format = texDesc.Format,
                      .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
@@ -266,7 +344,8 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
                  .ViewDimension = TranslateResourceViewDimension(desc.Dimension),
                  .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
                  .Texture2D = {
-                    .MipLevels = 1
+                    .MostDetailedMip = 0,
+                    .MipLevels = desc.MipLevels
                  }
             };
             DescriptorAllocation srvDescriptor = heap->Allocate();
@@ -288,7 +367,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
     if (desc.Usage & (u32)ResourceUsage::DepthStencil)
     {
         D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {
-                 .Format = TranslatePixelFormat(desc.Format),
+                 .Format = TranslatePixelFormat(format),
                  .ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
                  .Flags = D3D12_DSV_FLAG_NONE,
                  .Texture2D = {

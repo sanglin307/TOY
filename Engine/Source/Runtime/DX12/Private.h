@@ -14,6 +14,15 @@ using namespace Microsoft::WRL;
 #include <dxgidebug.h>
 #endif
 
+#ifdef NV_Aftermath
+#pragma warning(disable: 4819)
+#include <GFSDK_Aftermath.h>
+#include <GFSDK_Aftermath_GpuCrashDump.h>
+#include <GFSDK_Aftermath_GpuCrashDumpDecoding.h>
+#endif
+
+#include "DirectXTex.h"
+
 #define HLSLPP_FEATURE_TRANSFORM
 #include "hlsl++.h"
 using namespace hlslpp;

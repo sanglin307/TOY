@@ -123,7 +123,7 @@ struct RasterizerDesc
 {
 	FillMode Fill = FillMode::Solid;
 	CullMode Cull = CullMode::Back;
-	bool FrontCounterClockwise = false;
+	bool FrontCounterClockwise = true; // default to gltf spec.
 	bool DepthClip = true;
 	bool Multisample = false;
 	bool LineAA = false;

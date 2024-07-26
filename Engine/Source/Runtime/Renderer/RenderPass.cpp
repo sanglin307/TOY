@@ -11,7 +11,7 @@ void RenderPassForward::Init(RenderDevice* device,SceneRenderer* renderer)
 
 	Sampler::Desc sd;
 	_Sampler = device->CreateSampler(sd);
-	ScenePso->BindParameter("TestSampler", _Sampler);
+	ScenePso->BindParameter("DefaultSampler", _Sampler);
 
 	RenderBuffer::Desc bd = {
 		.Size = sizeof(MaterialData),

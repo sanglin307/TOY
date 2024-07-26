@@ -24,12 +24,79 @@ D3D12_COMMAND_LIST_TYPE TranslateCommandType(const CommandType t)
         return D3D12_COMMAND_LIST_TYPE_NONE;
     }
 }
- 
+
+#ifdef NV_Aftermath
+
+void AftermathWriteFile(const std::string& filecategory, const void* data, const u32 size)
+{
+    std::filesystem::path path = PathUtil::NvAftermathOutput();
+    if (!std::filesystem::exists(path))
+    {
+        std::filesystem::create_directory(path);
+    }
+
+    std::string now = PlatformUtils::DateNowString();
+    std::filesystem::path fileName = path / std::format("{}_{}.dump",filecategory, now);
+    std::filesystem::path original = fileName;
+    u32 try_count = 0;
+    while (std::filesystem::exists(fileName))
+    {
+        fileName = path / std::format("{}_{}_{}.txt", filecategory, now, try_count);
+        try_count++;
+    }
+
+    if (try_count > 0)
+    {
+        std::filesystem::copy_file(original, fileName);
+    }
+
+    std::ofstream stream;
+    stream.open(original, std::ios::out | std::ios::trunc);
+    stream.write((const char*)data, size);
+    stream.flush();
+}
+
+void GpuCrashDumpCallback(const void* pGpuCrashDump, const uint32_t gpuCrashDumpSize, void* pUserData)
+{
+    AftermathWriteFile("GpuCrashDump", pGpuCrashDump, gpuCrashDumpSize);
+}
+
+void ShaderDebugInfoCallback(const void* pShaderDebugInfo, const uint32_t shaderDebugInfoSize, void* pUserData)
+{
+    AftermathWriteFile("ShaderDebugInfo", pShaderDebugInfo, shaderDebugInfoSize);
+}
+
+void CrashDumpDescriptionCallback(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addDescription, void* pUserData)
+{
+    addDescription(GFSDK_Aftermath_GpuCrashDumpDescriptionKey_ApplicationName, "TOY Engine");
+    addDescription(GFSDK_Aftermath_GpuCrashDumpDescriptionKey_ApplicationVersion, "v1.0");
+}
+
+void ResolveMarkerCallback(const void* pMarkerData, const uint32_t markerDataSize, void* pUserData, void** ppResolvedMarkerData, uint32_t* pResolvedMarkerDataSize)
+{
+    //TODO
+}
+#endif
+
 DX12Device::DX12Device()
 {
+
+    SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)); // for use of DirectXTex
+
+#ifdef NV_Aftermath
+    GFSDK_Aftermath_EnableGpuCrashDumps(
+        GFSDK_Aftermath_Version_API,
+        GFSDK_Aftermath_GpuCrashDumpWatchedApiFlags_DX,
+        GFSDK_Aftermath_GpuCrashDumpFeatureFlags_Default,   // Default behavior.
+        GpuCrashDumpCallback,                               // Register callback for GPU crash dumps.
+        ShaderDebugInfoCallback,                            // Register callback for shader debug information.
+        CrashDumpDescriptionCallback,                       // Register callback for GPU crash dump description.
+        ResolveMarkerCallback,                              // Register callback for marker resolution (R495 or later NVIDIA graphics driver).
+        nullptr);                           
+#endif
     u32 dxgiFactoryFlags = 0;
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(NV_Aftermath)
     {
         ComPtr<ID3D12Debug> debug = nullptr;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debug))))
@@ -89,6 +156,21 @@ DX12Device::DX12Device()
     check(_Factory);
     check(_Adapter);
     check(_Device);
+
+#ifdef NV_Aftermath
+    // Initialize Nsight Aftermath for this device.
+    const uint32_t aftermathFlags =
+        GFSDK_Aftermath_FeatureFlags_EnableMarkers |             // Enable event marker tracking.
+        GFSDK_Aftermath_FeatureFlags_CallStackCapturing |        // Enable automatic call stack event markers.
+        GFSDK_Aftermath_FeatureFlags_EnableResourceTracking |    // Enable tracking of resources.
+        GFSDK_Aftermath_FeatureFlags_GenerateShaderDebugInfo |   // Generate debug information for shaders.
+        GFSDK_Aftermath_FeatureFlags_EnableShaderErrorReporting; // Enable additional runtime shader error reporting.
+
+    GFSDK_Aftermath_DX12_Initialize(
+        GFSDK_Aftermath_Version_API,
+        aftermathFlags,
+        _Device.Get());
+#endif
 
     InitPixelFormat_Platform();
 
@@ -236,7 +318,7 @@ RenderContext* DX12Device::BeginFrame(Swapchain* sc)
 void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
 {
     // wait copy queue finish when excute direct queue.
-    GpuWaitCopyFinish();
+    WaitCopyFinish();
 
     RenderTexture* rt = sc->GetCurrentBackBuffer();
     ctx->Close(rt);
@@ -1409,15 +1491,6 @@ void DX12Device::TranslateDepthStencilState(const DepthStencilDesc& depthState, 
             .StencilFunc = TranslateComparisonFunc(depthState.BackStencilFunc)
         }
     };
-}
-
-u64 DX12Device::GetTextureRequiredIntermediateSize(ID3D12Resource* resource, u32 firstSubresource, u32 subResourceNum)
-{
-    auto Desc = resource->GetDesc();
-    u64 requiredSize = 0;
-
-    _Device->GetCopyableFootprints(&Desc, firstSubresource, subResourceNum, 0, nullptr, nullptr, nullptr, &requiredSize);
-    return requiredSize;
 }
 
 void DX12Device::TranslateInputLayout(const InputLayout& inputLayouts, std::vector<D3D12_INPUT_ELEMENT_DESC>& dxInputLayout)

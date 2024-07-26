@@ -5,6 +5,12 @@
 #include <fastgltf/types.hpp>
 #include <fastgltf/tools.hpp>
 
+struct gltfTexture
+{
+	u32 textureIndex;
+	RenderTexture* resource;
+};
+
 glTFLoader& glTFLoader::Instance()
 {
 	static glTFLoader sInst;
@@ -237,7 +243,74 @@ MeshComponent* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vecto
 	return m;
 }
 
-Material* loadMaterial(fastgltf::Asset& asset, fastgltf::Material& material, std::vector<RenderTexture*>& textures, std::set<RenderTexture*>& texSet) 
+PixelFormat TranslateToSRGBFormat(PixelFormat format)
+{
+	if (format == PixelFormat::R8G8B8A8_UNORM)
+	{
+		format = PixelFormat::R8G8B8A8_UNORM_SRGB;
+	}
+	else if (format == PixelFormat::BC1_UNORM)
+	{
+		format = PixelFormat::BC1_UNORM_SRGB;
+	}
+	else if (format == PixelFormat::BC2_UNORM)
+	{
+		format = PixelFormat::BC2_UNORM_SRGB;
+	}
+	else if (format == PixelFormat::BC3_UNORM)
+	{
+		format = PixelFormat::BC3_UNORM_SRGB;
+	}
+	else if (format == PixelFormat::BC7_UNORM)
+	{
+		format = PixelFormat::BC7_UNORM_SRGB;
+	}
+	else if (format == PixelFormat::B8G8R8A8_TYPELESS)
+	{
+		format = PixelFormat::B8G8R8A8_UNORM_SRGB;
+	}
+	else if (format == PixelFormat::B8G8R8X8_TYPELESS)
+	{
+		format = PixelFormat::B8G8R8X8_UNORM_SRGB;
+	}
+
+	return format;
+}
+
+RenderTexture* loadTexture(RenderDevice* device, fastgltf::Asset& asset, u32 textureIndex, bool srgb, std::vector<gltfTexture>& gltfTextures, std::vector<Image*>& images, std::set<Image*>& imageSet, std::vector<Sampler*>& samplers,std::set<Sampler*>& samplerSet)
+{
+	if (gltfTextures[textureIndex].resource)
+		return gltfTextures[textureIndex].resource;
+
+	fastgltf::Texture tex = asset.textures[textureIndex];
+	check(tex.imageIndex.has_value());
+	Image* image = images[tex.imageIndex.value()];
+	imageSet.erase(image);
+ 
+	RenderTexture::Desc desc = {
+		.Width = image->Width,
+		.Height = image->Height,
+		.DepthOrArraySize = 1,
+		.MipLevels = RenderTexture::CalculateMipCount(image->Width,image->Height),
+		.Format = srgb ? TranslateToSRGBFormat(image->Format) : image->Format,
+		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Dimension = ResourceDimension::Texture2D,
+		.Data = image->Data,
+		.Size = image->Size
+	};
+
+	RenderTexture* texture = device->CreateTexture(tex.name.c_str(), desc);
+	if (tex.samplerIndex.has_value())
+	{
+		texture->OptionSampler = samplers[tex.samplerIndex.value()];
+		samplerSet.erase(texture->OptionSampler);
+	}
+
+	gltfTextures[textureIndex].resource = texture;
+	return texture;
+}
+
+Material* loadMaterial(RenderDevice* device, fastgltf::Asset& asset, fastgltf::Material& material, std::vector<gltfTexture>& gltfTextures, std::vector<Image*>& images, std::set<Image*>& imageSet, std::vector<Sampler*>& samplers, std::set<Sampler*>& samplerSet)
 {
 	Material* mat = new Material;
 	mat->Name = material.name;
@@ -253,32 +326,28 @@ Material* loadMaterial(fastgltf::Asset& asset, fastgltf::Material& material, std
 	{
 		mat->BaseColorTexture.TextureCoordIndex = (u32)material.pbrData.baseColorTexture->texCoordIndex;
 		u32 texIndex = (u32)material.pbrData.baseColorTexture->textureIndex;
-		mat->BaseColorTexture.Texture = textures[texIndex];
-		texSet.erase(textures[texIndex]);
+		mat->BaseColorTexture.Texture = loadTexture(device,asset,texIndex,true,gltfTextures,images,imageSet,samplers,samplerSet);
 	}
 
 	if (material.normalTexture.has_value())
 	{
 		mat->NormalTexture.TextureCoordIndex = (u32)material.normalTexture->texCoordIndex;
 		u32 texIndex = (u32)material.normalTexture->textureIndex;
-		mat->NormalTexture.Texture = textures[texIndex];
-		texSet.erase(textures[texIndex]);
+		mat->NormalTexture.Texture = loadTexture(device, asset, texIndex, false, gltfTextures, images, imageSet, samplers, samplerSet);
 	}
  
 	if (material.pbrData.metallicRoughnessTexture.has_value())
 	{
 		mat->RoughnessMetalnessTexture.TextureCoordIndex = (u32)material.pbrData.metallicRoughnessTexture->texCoordIndex;
 		u32 texIndex = (u32)material.pbrData.metallicRoughnessTexture->textureIndex;
-		mat->RoughnessMetalnessTexture.Texture = textures[texIndex];
-		texSet.erase(textures[texIndex]);
+		mat->RoughnessMetalnessTexture.Texture = loadTexture(device, asset, texIndex, false, gltfTextures, images, imageSet, samplers, samplerSet);
 	}
 
 	if (material.emissiveTexture.has_value())
 	{
 		mat->EmissiveTexture.TextureCoordIndex = (u32)material.emissiveTexture->texCoordIndex;
 		u32 texIndex = (u32)material.emissiveTexture->textureIndex;
-		mat->EmissiveTexture.Texture = textures[texIndex];
-		texSet.erase(textures[texIndex]);
+		mat->EmissiveTexture.Texture = loadTexture(device, asset, texIndex, true, gltfTextures, images, imageSet, samplers, samplerSet);
 	}
 
 	if (material.anisotropy != nullptr)
@@ -287,8 +356,7 @@ Material* loadMaterial(fastgltf::Asset& asset, fastgltf::Material& material, std
 		{
 			mat->AnisotropyTexture.TextureCoordIndex = (u32)material.anisotropy->anisotropyTexture->texCoordIndex;
 			u32 texIndex = (u32)material.anisotropy->anisotropyTexture->textureIndex;
-			mat->AnisotropyTexture.Texture = textures[texIndex];
-			texSet.erase(textures[texIndex]);
+			mat->AnisotropyTexture.Texture = loadTexture(device, asset, texIndex, false, gltfTextures, images, imageSet, samplers, samplerSet);
 		}
 
 		mat->AnisotropyRotation = material.anisotropy->anisotropyRotation;
@@ -515,37 +583,19 @@ void glTFLoader::Load(std::string_view path, std::vector<Layer*>& newLayers)
 		samplerSet.insert(s);
 	}
 
-	std::vector<RenderTexture*> textures;
-	for (fastgltf::Texture& tex : asset->textures)
+	std::vector<gltfTexture> textures;
+	for (u32 i=0; i<asset->textures.size();i++)
 	{
-		check(tex.imageIndex.has_value());
-		Image* image = images[tex.imageIndex.value()];
-		imageSet.erase(image);
-		RenderTexture::Desc desc = {
-			.Width = image->Width,
-			.Height = image->Height,
-			.DepthOrArraySize = 1,
-			.Format = image->Format,
-			.Usage = (u32)ResourceUsage::ShaderResource,
-			.Dimension = ResourceDimension::Texture2D,
-			.Data = image->Data,
-			.Size = image->Size
-		};
-
-		RenderTexture* texture = device->CreateTexture(tex.name.c_str(),desc);
-		if (tex.samplerIndex.has_value())
-		{
-			texture->OptionSampler = samplers[tex.samplerIndex.value()];
-			samplerSet.erase(texture->OptionSampler);
-		}
-		textures.push_back(texture);
-		texSet.insert(texture);
+		textures.push_back(gltfTexture{
+			.textureIndex = i,
+			.resource = nullptr
+			});
 	}
 
 	std::vector<Material*> materials;
 	for (fastgltf::Material& mat : asset->materials)
 	{
-		Material* m = loadMaterial(asset.get(), mat, textures,texSet);
+		Material* m = loadMaterial(device,asset.get(), mat, textures, images, imageSet,samplers,samplerSet);
 		materials.push_back(m);
 		matSet.insert(m);
 	}

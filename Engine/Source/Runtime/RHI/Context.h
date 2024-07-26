@@ -106,7 +106,7 @@ public:
 
 	RHI_API RenderContext* GetCopyContext(u64& copyFenceValue);
 	RHI_API void CommitCopyCommand();
-	RHI_API void GpuWaitCopyFinish();
+	RHI_API void WaitCopyFinish();
 
 	RHI_API u64 GetMaxFrameFenceValue();
 	u64 GetFrameFenceCompletedValue();

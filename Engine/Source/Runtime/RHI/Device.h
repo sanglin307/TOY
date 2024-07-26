@@ -28,9 +28,8 @@ public:
 
 	RHI_API void CreateInputLayout(const ShaderResource* shader, InputSlotMapping slotMapping, InputLayout& inputLayout);
 
-	RHI_API u8 GetPixelComponentSize(PixelFormat format);
-	RHI_API u8 GetPixelComponentNum(PixelFormat format);
-	RHI_API u8 GetPixelSize(PixelFormat format);
+	RHI_API u8 GetPixelComponentBitSize(PixelFormat format);
+	RHI_API u8 GetPixelBitSize(PixelFormat format);
 	RHI_API bool IsCompressedPixelFormat(PixelFormat format);
 	RHI_API bool IsDepthPixelFormat(PixelFormat format);
 	RHI_API bool IsStencilPixelFormat(PixelFormat format);
@@ -48,7 +47,7 @@ public:
 	virtual void OnResize(Swapchain* swapchain, u32 width, u32 height) = 0;
 
 	void CommitCopyCommand() { _ContextManager->CommitCopyCommand(); }
-	void GpuWaitCopyFinish() { _ContextManager->GpuWaitCopyFinish(); }
+	void WaitCopyFinish() { _ContextManager->WaitCopyFinish(); }
 
 	void SetContextManager(ContextManager* manager)
 	{

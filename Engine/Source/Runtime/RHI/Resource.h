@@ -107,9 +107,8 @@ enum class PixelFormat : u32
 
 struct PixelFormatInfo
 {
-    u8         ComponentNum;
-    u8         ComponentSize;
-    u8         ByteSize;
+    u8         ComponentBitSize;
+    u8         BitSize;
     bool       CompressFormat;
     std::any   PlatformFormat;
 };
@@ -427,9 +426,9 @@ class Sampler : public RenderResource
 public:
     struct Desc
     {
-        SampleFilterMode MinFilter = SampleFilterMode::Point;
-        SampleFilterMode MagFilter = SampleFilterMode::Point;
-        SampleFilterMode MipFilter = SampleFilterMode::Point;
+        SampleFilterMode MinFilter = SampleFilterMode::Linear;
+        SampleFilterMode MagFilter = SampleFilterMode::Linear;
+        SampleFilterMode MipFilter = SampleFilterMode::Linear;
 
         TextureAddressMode AddressU = TextureAddressMode::Wrap;
         TextureAddressMode AddressV = TextureAddressMode::Wrap;
@@ -473,7 +472,7 @@ public:
         u32 Width;
         u32 Height;
         u16 DepthOrArraySize;
-        u16 MipLevels;
+        u16 MipLevels = 1;
         PixelFormat Format;
         u32 Usage;
         ResourceDimension Dimension;
@@ -485,6 +484,23 @@ public:
 
     virtual ResourceDimension GetDimension() override { return _Desc.Dimension; }
     virtual u32 GetUsage() override { return _Desc.Usage; }
+
+    static u16 CalculateMipCount(u32 width, u32 height)
+    {
+        u16 mipLevels = 1;
+        while (height > 1 || width > 1)
+        {
+            if (height > 1)
+                height >>= 1;
+
+            if (width > 1)
+                width >>= 1;
+
+            ++mipLevels;
+        }
+
+        return mipLevels;
+    }
 
     Sampler* OptionSampler = nullptr;
 

@@ -30,8 +30,9 @@ public :
 	void CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESCRIPTOR_HANDLE src, D3D12_DESCRIPTOR_HEAP_TYPE  heapType);
  
 private:
+	void GenerateMipmaps(const RenderTexture::Desc& desc, std::vector<D3D12_SUBRESOURCE_DATA>& mipData);
+
 	void ReportLiveObjects();
-	 
     void InitPixelFormat_Platform();
 	
 	void TranslateGraphicPipeline(const GraphicPipeline::Desc& pso, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders, D3D12_GRAPHICS_PIPELINE_STATE_DESC& dxPso);
@@ -40,7 +41,6 @@ private:
 	void TranslateDepthStencilState(const DepthStencilDesc& depthState, D3D12_DEPTH_STENCIL_DESC& dxDepthState);
 	void TranslateInputLayout(const InputLayout& inputLayouts, std::vector<D3D12_INPUT_ELEMENT_DESC>& dxInputLayout);
 
-	u64 GetTextureRequiredIntermediateSize(ID3D12Resource* resource, u32 firstSubresource, u32 subResourceNum);
 	void UpdateSubresource(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* destResource, ID3D12Resource* tempResource, u64 tempResOffset, u32 firstSubresource, u32 NumSubresources, const D3D12_SUBRESOURCE_DATA* pSrcData);
 
 	static D3D12_SRV_DIMENSION TranslateResourceViewDimension(const ResourceDimension rd, bool multipleSample = false);

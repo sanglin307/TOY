@@ -277,9 +277,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R32G32B32A32_TYPELESS; f <= (u32)PixelFormat::R32G32B32A32_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 4,
-			 .ComponentSize = 4,
-			 .ByteSize = 16,
+			 .ComponentBitSize = 32,
+			 .BitSize = 128,
 			 .CompressFormat = false
 		};
 	}
@@ -287,9 +286,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R32G32B32_TYPELESS; f <= (u32)PixelFormat::R32G32B32_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 3,
-			 .ComponentSize = 4,
-			 .ByteSize = 12,
+			 .ComponentBitSize = 32,
+			 .BitSize = 96,
 			 .CompressFormat = false
 		};
 	}
@@ -297,9 +295,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R16G16B16A16_TYPELESS; f <= (u32)PixelFormat::R16G16B16A16_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 4,
-			 .ComponentSize = 2,
-			 .ByteSize = 8,
+			 .ComponentBitSize = 16,
+			 .BitSize = 64,
 			 .CompressFormat = false
 		};
 	}
@@ -307,9 +304,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R32G32_TYPELESS; f <= (u32)PixelFormat::R32G32_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 2,
-			 .ComponentSize = 4,
-			 .ByteSize = 8,
+			 .ComponentBitSize = 32,
+			 .BitSize = 64,
 			 .CompressFormat = false
 		};
 	}
@@ -317,27 +313,24 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R32G8X24_TYPELESS; f <= (u32)PixelFormat::X32_TYPELESS_G8X24_UINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 2,
-			 .ComponentSize = 4,
-			 .ByteSize = 8,
+			 .ComponentBitSize = 32,
+			 .BitSize = 64,
 			 .CompressFormat = false
 		};
 	}
 
-	for (u32 f = (u32)PixelFormat::R10G10B10A2_TYPELESS; f <= (u32)PixelFormat::R11G11B10_FLOAT; f++)
+	for (u32 f = (u32)PixelFormat::R10G10B10A2_TYPELESS; f <= (u32)PixelFormat::R10G10B10A2_UINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 4,
-			 .ComponentSize = 1,  // average..
-			 .ByteSize = 4,
+			 .ComponentBitSize = 10,  // largest..
+			 .BitSize = 32,
 			 .CompressFormat = false
 		};
 	}
 
 	_Formats[(u32)PixelFormat::R11G11B10_FLOAT] = PixelFormatInfo{
-			 .ComponentNum = 3,
-			 .ComponentSize = 1,  // average..
-			 .ByteSize = 4,
+			 .ComponentBitSize = 11,  // largest..
+			 .BitSize = 32,
 			 .CompressFormat = false
 	};
 
@@ -345,9 +338,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R8G8B8A8_TYPELESS; f <= (u32)PixelFormat::R8G8B8A8_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 4,
-			 .ComponentSize = 1,
-			 .ByteSize = 4,
+			 .ComponentBitSize = 8,
+			 .BitSize = 32,
 			 .CompressFormat = false
 		};
 	}
@@ -355,9 +347,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R16G16_TYPELESS; f <= (u32)PixelFormat::R16G16_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 2,
-			 .ComponentSize = 2,
-			 .ByteSize = 4,
+			 .ComponentBitSize = 16,
+			 .BitSize = 32,
 			 .CompressFormat = false
 		};
 	}
@@ -365,9 +356,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R32_TYPELESS; f <= (u32)PixelFormat::R32_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 1,
-			 .ComponentSize = 4,
-			 .ByteSize = 4,
+			 .ComponentBitSize = 32,
+			 .BitSize = 32,
 			 .CompressFormat = false
 		};
 	}
@@ -375,9 +365,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R24G8_TYPELESS; f <= (u32)PixelFormat::X24_TYPELESS_G8_UINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 2,
-			 .ComponentSize = 3,  // take large one.
-			 .ByteSize = 4,
+			 .ComponentBitSize = 24,  // take large one.
+			 .BitSize = 32,
 			 .CompressFormat = false
 		};
 	}
@@ -385,9 +374,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R8G8_TYPELESS; f <= (u32)PixelFormat::R8G8_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 2,
-			 .ComponentSize = 1,
-			 .ByteSize = 2,
+			 .ComponentBitSize = 8,
+			 .BitSize = 16,
 			 .CompressFormat = false
 		};
 	}
@@ -395,9 +383,8 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R16_TYPELESS; f <= (u32)PixelFormat::R16_SINT; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 1,
-			 .ComponentSize = 2,
-			 .ByteSize = 2,
+			 .ComponentBitSize = 16,
+			 .BitSize = 16,
 			 .CompressFormat = false
 		};
 	}
@@ -405,88 +392,119 @@ RenderDevice::RenderDevice()
 	for (u32 f = (u32)PixelFormat::R8_TYPELESS; f <= (u32)PixelFormat::A8_UNORM; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 1,
-			 .ComponentSize = 1,
-			 .ByteSize = 1,
+			 .ComponentBitSize = 8,
+			 .BitSize = 8,
 			 .CompressFormat = false
 		};
 	}
 
 	_Formats[(u32)PixelFormat::R1_UNORM] = PixelFormatInfo{
-			 .ComponentNum = 1,
-			 .ComponentSize = 0,
-			 .ByteSize = 0,  // need specific calculate when using.
+			 .ComponentBitSize = 1,
+			 .BitSize = 1,   
 			 .CompressFormat = false
 	};
 
-	for (u32 f = (u32)PixelFormat::R9G9B9E5_SHAREDEXP; f <= (u32)PixelFormat::G8R8_G8B8_UNORM; f++)
+	_Formats[(u32)PixelFormat::R9G9B9E5_SHAREDEXP] = PixelFormatInfo{
+			 .ComponentBitSize = 14,  // largest..
+			 .BitSize = 32,
+			 .CompressFormat = false
+	};
+
+	for (u32 f = (u32)PixelFormat::R8G8_B8G8_UNORM; f <= (u32)PixelFormat::G8R8_G8B8_UNORM; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 4,
-			 .ComponentSize = 1,
-			 .ByteSize = 4,
+			 .ComponentBitSize = 8,
+			 .BitSize = 32,
 			 .CompressFormat = false
 		};
 	}
 
-	for (u32 f = (u32)PixelFormat::BC1_TYPELESS; f <= (u32)PixelFormat::BC5_SNORM; f++)
+	for (u32 f = (u32)PixelFormat::BC1_TYPELESS; f <= (u32)PixelFormat::BC1_UNORM_SRGB; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 0,
-			 .ComponentSize = 0,
-			 .ByteSize = 0,
+			 .ComponentBitSize = 6,
+			 .BitSize = 4,
+			 .CompressFormat = true
+		};
+	}
+
+	for (u32 f = (u32)PixelFormat::BC2_TYPELESS; f <= (u32)PixelFormat::BC3_UNORM_SRGB; f++)
+	{
+		_Formats[f] = PixelFormatInfo{
+			 .ComponentBitSize = 6,
+			 .BitSize = 8,
+			 .CompressFormat = true
+		};
+	}
+
+	for (u32 f = (u32)PixelFormat::BC4_TYPELESS; f <= (u32)PixelFormat::BC4_SNORM; f++)
+	{
+		_Formats[f] = PixelFormatInfo{
+			 .ComponentBitSize = 8,
+			 .BitSize = 4,
+			 .CompressFormat = true
+		};
+	}
+
+	for (u32 f = (u32)PixelFormat::BC5_TYPELESS; f <= (u32)PixelFormat::BC5_SNORM; f++)
+	{
+		_Formats[f] = PixelFormatInfo{
+			 .ComponentBitSize = 8,
+			 .BitSize = 8,
 			 .CompressFormat = true
 		};
 	}
 
 	_Formats[(u32)PixelFormat::B5G6R5_UNORM] = PixelFormatInfo{
-			 .ComponentNum = 3,
-			 .ComponentSize = 1,
-			 .ByteSize = 2,
+			 .ComponentBitSize = 6,
+			 .BitSize = 16,
 			 .CompressFormat = false
 	};
 
 	_Formats[(u32)PixelFormat::B5G5R5A1_UNORM] = PixelFormatInfo{
-			 .ComponentNum = 4,
-			 .ComponentSize = 1,
-			 .ByteSize = 2,
+			 .ComponentBitSize = 5,
+			 .BitSize = 16,
 			 .CompressFormat = false
 	};
 
 	for (u32 f = (u32)PixelFormat::B8G8R8A8_UNORM; f <= (u32)PixelFormat::B8G8R8X8_UNORM_SRGB; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 4,
-			 .ComponentSize = 1,
-			 .ByteSize = 4,
+			 .ComponentBitSize = 8,
+			 .BitSize = 32,
 			 .CompressFormat = false
 		};
 	}
 
-	for (u32 f = (u32)PixelFormat::BC6H_TYPELESS; f <= (u32)PixelFormat::BC7_UNORM_SRGB; f++)
+	for (u32 f = (u32)PixelFormat::BC6H_TYPELESS; f <= (u32)PixelFormat::BC6H_SF16; f++)
 	{
 		_Formats[f] = PixelFormatInfo{
-			 .ComponentNum = 0,
-			 .ComponentSize = 0,
-			 .ByteSize = 0,
+			 .ComponentBitSize = 16,
+			 .BitSize = 8,
+			 .CompressFormat = true
+		};
+	}
+
+	for (u32 f = (u32)PixelFormat::BC7_TYPELESS; f <= (u32)PixelFormat::BC7_UNORM_SRGB; f++)
+	{
+		_Formats[f] = PixelFormatInfo{
+			 .ComponentBitSize = 7,
+			 .BitSize = 8,
 			 .CompressFormat = true
 		};
 	}
 }
 
-u8 RenderDevice::GetPixelComponentSize(PixelFormat format)
+u8 RenderDevice::GetPixelComponentBitSize(PixelFormat format)
 {
-    return _Formats[(u32)format].ComponentSize;
+    return _Formats[(u32)format].ComponentBitSize;
 }
 
-u8 RenderDevice::GetPixelComponentNum(PixelFormat format)
-{
-    return _Formats[(u32)format].ComponentNum;
-}
+ 
 
-u8 RenderDevice::GetPixelSize(PixelFormat format)
+u8 RenderDevice::GetPixelBitSize(PixelFormat format)
 {
-    return _Formats[(u32)format].ByteSize;
+    return _Formats[(u32)format].BitSize;
 }
 
 bool RenderDevice::IsCompressedPixelFormat(PixelFormat format)
@@ -517,6 +535,7 @@ bool RenderDevice::IsStencilPixelFormat(PixelFormat format)
 
 	return false;
 }
+ 
 
 PixelFormat RenderDevice::GetDepthResourceFormat(PixelFormat format)
 {
@@ -609,7 +628,7 @@ void RenderDevice::CreateInputLayout(const ShaderResource* shader, InputSlotMapp
 				.InstanceStepRate = 0
 				});
 
-			offset += GetPixelSize(pixel);
+			offset += GetPixelBitSize(pixel)/8;
 		}
 		else if (slotMapping == InputSlotMapping::Seperated)
 		{
