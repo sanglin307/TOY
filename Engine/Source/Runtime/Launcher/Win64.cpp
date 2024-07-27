@@ -199,7 +199,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
             MouseEvent mouseEvent = {
                             .Type = MouseEvent::ActionType::Pressed,
-                            .Key = KeyType::MousePosition,
+                            .Key = action,
                             .Modifier = KeyMods(),
                             .XPos = GET_X_LPARAM(lParam),
                             .YPos = GET_Y_LPARAM(lParam),

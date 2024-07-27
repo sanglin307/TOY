@@ -25,21 +25,21 @@ ContextManager::ContextManager(RenderDevice* device, u32 contextCount)
 
 	for (u32 index = 0; index < contextCount; index++)
 	{
-		_DirectCommandAllocators.push_back(device->CreateCommandAllocator(CommandType::Direct));
-		_DirectContexts.push_back(device->CreateCommandContext(_DirectCommandAllocators[index], CommandType::Direct));
-		_FenceValues.push_back(0);
+		_DirectCommandAllocators.push_back(device->CreateCommandAllocator(std::format("DirectContextAllocator_{}",index),CommandType::Direct));
+		_DirectContexts.push_back(device->CreateCommandContext(std::format("DirectContext_{}", index),_DirectCommandAllocators[index], CommandType::Direct));
+		_FenceValues.push_back(index+1);
 	}
-	_DirectCommandQueue = device->CreateCommandQueue(CommandType::Direct);
-	_FrameFence = device->CreateFence(0);
+	_DirectCommandQueue = device->CreateCommandQueue("DirectCommandQueue",CommandType::Direct);
+	_FrameFence = device->CreateFence("FrameFence", 0);
 
-	_ComputeCommandAllocator = device->CreateCommandAllocator(CommandType::Compute);
-	_ComputeCommandQueue = device->CreateCommandQueue(CommandType::Compute);
-	_ComputeContext = device->CreateCommandContext(_ComputeCommandAllocator, CommandType::Compute);
+	_ComputeCommandAllocator = device->CreateCommandAllocator("ComputeCommandAllocator",CommandType::Compute);
+	_ComputeCommandQueue = device->CreateCommandQueue("ComputeCommandQueue", CommandType::Compute);
+	_ComputeContext = device->CreateCommandContext("ComputeCommandContext",_ComputeCommandAllocator, CommandType::Compute);
 
-	_CopyCommandAllocator = device->CreateCommandAllocator(CommandType::Copy);
-	_CopyCommandQueue = device->CreateCommandQueue(CommandType::Copy);
-	_CopyContext = device->CreateCommandContext(_CopyCommandAllocator, CommandType::Copy);
-	_CopyQueueFence = device->CreateFence(_PrepareCopyFenceValue);
+	_CopyCommandAllocator = device->CreateCommandAllocator("CopyCommandAllocator",CommandType::Copy);
+	_CopyCommandQueue = device->CreateCommandQueue("CopyCommandQueue",CommandType::Copy);
+	_CopyContext = device->CreateCommandContext("CopyCommandContext",_CopyCommandAllocator, CommandType::Copy);
+	_CopyQueueFence = device->CreateFence("CopyQueueFence",_PrepareCopyFenceValue);
 }
 
 RenderContext* ContextManager::GetDirectContext(u32 index) 
@@ -65,7 +65,7 @@ void ContextManager::SwitchToNextFrame(u32 lastFrameIndex, u32 nextFrameIndex)
 		_FrameFence->CpuWait(nextFenceValue);
 	}
 
-	nextFenceValue = lastFenceValue + 1; // next frame fence value.
+	nextFenceValue = lastFenceValue + 1;
 }
 
 void ContextManager::WaitGPUIdle()
@@ -75,6 +75,7 @@ void ContextManager::WaitGPUIdle()
 	_DirectCommandQueue->Signal(_FrameFence, lastFenceValue);
 	_FrameFence->CpuWait(lastFenceValue);
 
+	lastFenceValue++;
 	for (u32 i = 0; i < _DirectContextNumber; i++)
 	{
 		_FenceValues[i] = lastFenceValue;
@@ -123,7 +124,7 @@ void ContextManager::CommitCopyCommand()
 
 void ContextManager::WaitCopyFinish()
 {
-	if (_ComittedCopyFenceValue > _CopyQueueFence->GetCompletedValue())
+	if (_CopyQueueFence->GetCompletedValue() < _ComittedCopyFenceValue)
 	{
 		//_DirectCommandQueue->Wait(_CopyQueueFence, _ComittedCopyFenceValue);
 		_CopyQueueFence->CpuWait(_ComittedCopyFenceValue); // use cpu wait first, there are CopyQueueAllocate reset when use gpu wait. TODO.

@@ -5,18 +5,29 @@
 #endif
 
 using namespace hlslpp;
-
+ 
 CameraComponent::CameraComponent(const std::string& name, const Desc& desc)
 {
 	_Name = name;
-	_Desc = desc;
+	_Info = desc;
 }
 
-void CameraComponent::InitCameraTransform()
+
+void CameraComponent::LookAt(const float3& eyePos, const float3& lookAt, const float3& up)
 {
-	_Position = float3(0, 0, -1);
-	_Rotation = quaternion(float3x3((float4x4::look_at(_Position, float3(0), float3(0, 1, 0)))));
+	_EyePos = eyePos;
+	_Direction = lookAt - eyePos;
+	_Distance = length(_Direction);
+	_Direction = normalize(_Direction);
+	_Right = cross(up, _Direction);
+	_Right = normalize(_Right);
+	_Up = cross(_Direction, _Right);
+
+	float3x3 mat(_Right, _Up, _Direction);
+	_Rotation = quaternion(mat);
+	_ViewMatrix = float4x4::look_at(_EyePos, lookAt, _Up);
 }
+
 
 void CameraComponent::GetViewInfo(ViewInfo& info)
 {
@@ -26,7 +37,7 @@ void CameraComponent::GetViewInfo(ViewInfo& info)
 	info.ProjectInverse = inverse(_ProjectMatrix);
 	info.ViewProject = _ViewProjectMatrix;
 	info.ViewProjectInverse = inverse(_ViewProjectMatrix);
-	info.ViewLocation = _Position;
+	info.ViewLocation = _EyePos;
 }
 
 bool CameraController::OnKey(const KeyEvent& key)
@@ -36,71 +47,84 @@ bool CameraController::OnKey(const KeyEvent& key)
 
 bool CameraController::OnMouse(const MouseEvent& mev)
 {
+	if (mev.Key == KeyType::MouseScrollUp || mev.Key == KeyType::MouseScrollDown)
+	{
+		_MouseScrollDelta = mev.ScrollDelta;
+	}
+	else
+	{
+		_MouseScrollDelta = 0.f;
+	}
+ 
+
 	return true;
 }
 
-float3 SmoothStep(const float3& v1, const float3& v2, float t)
-{
-	t = (t > 1.0f) ? 1.0f : ((t < 0.0f) ? 0.0f : t);  // Clamp value to 0 to 1
-	t = t * t * (3.f - 2.f * t);
-	return lerp(v1, v2, t);
-}
+ 
 
 void CameraController::Update(double delta)
 {
 	if (!_Camera)
 		return;
 
-	float3 movement = {};
 	static int2 mousePrePos = InputManager::Instance().GetMousePostion();
 	if (InputManager::Instance().IsKeyDown(KeyType::LeftMouseButton))
 	{
 		int2 mouseDelta = InputManager::Instance().GetMousePostion() - mousePrePos;
 		mousePrePos = InputManager::Instance().GetMousePostion();
-		quaternion pitch = quaternion::rotation_euler_zxy(float3(mouseDelta[1] * delta * 0.1f, 0.f,0.f));
-		quaternion yaw = quaternion::rotation_euler_zxy(float3(0.f, mouseDelta[0] * delta * 0.1f, 0.f));
-		_Camera->_Rotation = mul(mul(pitch, _Camera->_Rotation),yaw);
-		 
+		if (_Type == CameraControlType::Orbit)
+		{
+			if (mouseDelta[0] != 0 || mouseDelta[1] != 0 || _MouseScrollDelta != 0.f)
+			{
+				float yAngle = 0.f;
+				float zAngle = 0.f;
+	 
+				float3 target = _Camera->_EyePos + _Camera->_Direction * _Camera->_Distance;
+				Math::ConvertToSphericalCoord(_Camera->_EyePos, target, _Camera->_Distance, yAngle, zAngle);
+ 
+			    zAngle -= float(delta * _Camera->_Speed * mouseDelta[0]);
+			    yAngle += float(delta * _Camera->_Speed * mouseDelta[1]);
 
-		if (InputManager::Instance().IsKeyDown(KeyType::A))
-			movement.x -= 1;
-		if (InputManager::Instance().IsKeyDown(KeyType::D))
-			movement.x += 1;
-		if (InputManager::Instance().IsKeyDown(KeyType::S))
-			movement.z -= 1;
-		if (InputManager::Instance().IsKeyDown(KeyType::W))
-			movement.z += 1;
-		if (InputManager::Instance().IsKeyDown(KeyType::Q))
-			movement.y -= 1;
-		if (InputManager::Instance().IsKeyDown(KeyType::E))
-			movement.y += 1;
+				_Camera->_Distance -= float(_MouseScrollDelta * delta * 8);
 
-		movement = mul(movement, _Camera->_Rotation); 
+				if (_Camera->_Distance < 1)
+					_Camera->_Distance = 1;
+				if (_Camera->_Distance > 10)
+					_Camera->_Distance = 10;
+
+				float limit = 3.0f;
+				limit = limit * Math::Deg2Rad();
+
+				if (yAngle < limit)
+					yAngle = limit;
+
+				if (yAngle > Math::Pi() - limit)
+					yAngle = Math::Pi() - limit;
+
+				float3 finalPos;
+				Math::ConvertFromSphericalCoord(_Camera->_Distance, yAngle, zAngle, target, finalPos);
+
+				_Camera->LookAt(finalPos, target, float3(0, 1, 0));
+			}
+		}
 	}
 	else
 	{
 		mousePrePos = InputManager::Instance().GetMousePostion();
 	}
+	_MouseScrollDelta = 0.f;
 
-	_Velocity = SmoothStep(_Velocity, movement, 0.2f);
-	_Camera->_Position += _Velocity * float(delta) * 2.0f;
+	_Camera->_ViewInverseMatrix = inverse(_Camera->_ViewMatrix);
 
-	
-	_Camera->_ViewInverseMatrix = mul(float4x4(_Camera->_Rotation), float4x4::translation(_Camera->_Position));
-	_Camera->_ViewMatrix = inverse(_Camera->_ViewInverseMatrix);
-	
-	uint2 viewportSize = GameEngine::Instance().GetViewport()->GetSize();
-	float aspectRatio = viewportSize[0] * 1.f / viewportSize[1];
-
-	if (_Camera->_Desc.Type == CameraType::Perspective)
+	if (_Camera->_Info.Type == CameraType::Perspective)
 	{
-		frustum persp = frustum::field_of_view_y(_Camera->_Desc.YFov, _Camera->_Desc.AspectRatio, _Camera->_Desc.ZNear, _Camera->_Desc.ZFar);
-		_Camera->_ProjectMatrix = float4x4::perspective(projection(persp, zclip::zero, zdirection::forward, _Camera->_Desc.ZFar <= 0 ? zplane::infinite: zplane::finite));
+		frustum persp = frustum::field_of_view_y(_Camera->_Info.YFov, _Camera->_Info.AspectRatio, _Camera->_Info.ZNear, _Camera->_Info.ZFar);
+		_Camera->_ProjectMatrix = float4x4::perspective(projection(persp, zclip::zero, zdirection::forward, _Camera->_Info.ZFar <= 0 ? zplane::infinite: zplane::finite));
 		
 	}
-	else if(_Camera->_Desc.Type == CameraType::Orthographic)
+	else if(_Camera->_Info.Type == CameraType::Orthographic)
 	{
-		frustum ortho(_Camera->_Desc.Width, _Camera->_Desc.Height, _Camera->_Desc.ZNear, _Camera->_Desc.ZFar);
+		frustum ortho(_Camera->_Info.Width, _Camera->_Info.Height, _Camera->_Info.ZNear, _Camera->_Info.ZFar);
 		_Camera->_ProjectMatrix = float4x4::orthographic(projection(ortho, zclip::zero));
 	}
 	else
@@ -115,7 +139,6 @@ void CameraController::Update(double delta)
 void CameraController::Attach(CameraComponent* cam)
 {
 	_Camera = cam;
-	_Camera->InitCameraTransform();
 }
 
 void CameraController::Detach()
@@ -126,6 +149,7 @@ void CameraController::Detach()
 CameraController::CameraController()
 {
 	InputManager::Instance().AddHandler(this);
+	_Type = CameraControlType::Orbit;
 }
 
 CameraController::~CameraController()

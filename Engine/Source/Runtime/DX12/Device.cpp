@@ -27,7 +27,7 @@ D3D12_COMMAND_LIST_TYPE TranslateCommandType(const CommandType t)
 
 #ifdef NV_Aftermath
 
-void AftermathWriteFile(const std::string& filecategory, const void* data, const u32 size)
+void AftermathWriteFile(const std::string& filecategory, const std::string& fileext, const void* data, const u32 size)
 {
     std::filesystem::path path = PathUtil::NvAftermathOutput();
     if (!std::filesystem::exists(path))
@@ -36,12 +36,12 @@ void AftermathWriteFile(const std::string& filecategory, const void* data, const
     }
 
     std::string now = PlatformUtils::DateNowString();
-    std::filesystem::path fileName = path / std::format("{}_{}.dump",filecategory, now);
+    std::filesystem::path fileName = path / std::format("{}_{}.{}",filecategory, now,fileext);
     std::filesystem::path original = fileName;
     u32 try_count = 0;
     while (std::filesystem::exists(fileName))
     {
-        fileName = path / std::format("{}_{}_{}.txt", filecategory, now, try_count);
+        fileName = path / std::format("{}_{}_{}.{}", filecategory, now, try_count,fileext);
         try_count++;
     }
 
@@ -58,12 +58,12 @@ void AftermathWriteFile(const std::string& filecategory, const void* data, const
 
 void GpuCrashDumpCallback(const void* pGpuCrashDump, const uint32_t gpuCrashDumpSize, void* pUserData)
 {
-    AftermathWriteFile("GpuCrashDump", pGpuCrashDump, gpuCrashDumpSize);
+    AftermathWriteFile("GpuCrashDump", "nv-gpudmp",pGpuCrashDump, gpuCrashDumpSize);
 }
 
 void ShaderDebugInfoCallback(const void* pShaderDebugInfo, const uint32_t shaderDebugInfoSize, void* pUserData)
 {
-    AftermathWriteFile("ShaderDebugInfo", pShaderDebugInfo, shaderDebugInfoSize);
+    AftermathWriteFile("ShaderDebugInfo", "shaderdump",pShaderDebugInfo, shaderDebugInfoSize);
 }
 
 void CrashDumpDescriptionCallback(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addDescription, void* pUserData)
@@ -250,12 +250,13 @@ DX12Device::~DX12Device()
     ReportLiveObjects();
 }
 
-Fence* DX12Device::CreateFence(u64 initValue)
+Fence* DX12Device::CreateFence(const std::string& name, u64 initValue)
 {
     check(_Device);
  
     ComPtr<ID3D12Fence> fence;
     check(SUCCEEDED(_Device->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))));
+    fence->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
 
     HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     check(fenceEvent);
@@ -338,7 +339,7 @@ void DX12Device::EndFrame(RenderContext* ctx, Swapchain* sc)
 
 }
 
-CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
+CommandQueue* DX12Device::CreateCommandQueue(const std::string& name, const CommandType type)
 {
     check(_Device);
     D3D12_COMMAND_QUEUE_DESC queueDesc = {
@@ -349,6 +350,7 @@ CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
     ComPtr<ID3D12CommandQueue> commandQueue;
     if (SUCCEEDED(_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue))))
     {
+        commandQueue->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
         return new DX12CommandQueue(type,commandQueue);
     }
      
@@ -356,12 +358,13 @@ CommandQueue* DX12Device::CreateCommandQueue(const CommandType type)
     return nullptr;
 }
 
-CommandAllocator* DX12Device::CreateCommandAllocator(const CommandType type)
+CommandAllocator* DX12Device::CreateCommandAllocator(const std::string& name, const CommandType type)
 {
     check(_Device);
     ComPtr<ID3D12CommandAllocator> commandAlloc;
     if (SUCCEEDED(_Device->CreateCommandAllocator(TranslateCommandType(type), IID_PPV_ARGS(&commandAlloc))))
     {
+        commandAlloc->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
         return new DX12CommandAllocator(type,commandAlloc);
     }
 
@@ -369,12 +372,13 @@ CommandAllocator* DX12Device::CreateCommandAllocator(const CommandType type)
     return nullptr;
 }
 
-RenderContext* DX12Device::CreateCommandContext(CommandAllocator* allocator, const CommandType type)
+RenderContext* DX12Device::CreateCommandContext(const std::string& name, CommandAllocator* allocator, const CommandType type)
 {
     check(_Device);
     ComPtr<ID3D12GraphicsCommandList> commandList;
     if (SUCCEEDED(_Device->CreateCommandList(0,TranslateCommandType(type), std::any_cast<ID3D12CommandAllocator*>(allocator->Handle()), nullptr, IID_PPV_ARGS(&commandList))))
     {
+        commandList->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
         commandList->Close();
         return new DX12CommandList(allocator, type, _ContextManager,this,commandList);
     }

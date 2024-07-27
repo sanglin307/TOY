@@ -7,18 +7,18 @@ public :
 	DX12Device();
 	virtual ~DX12Device();
 	virtual void WaitGPUIdle() override;
-    virtual CommandQueue* CreateCommandQueue(const CommandType type) override;
-	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) override;
-	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) override;
-	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) override;
-	virtual DynamicDescriptorHeap* CreateDynamicDescriptorHeap(u32 size, DescriptorType type) override;
+    virtual CommandQueue* CreateCommandQueue(const std::string& name, const CommandType type) override;
+	virtual CommandAllocator* CreateCommandAllocator(const std::string& name, const CommandType type) override;
+	virtual RenderContext* CreateCommandContext(const std::string& name, CommandAllocator* allocator, const CommandType type) override;
+	virtual DescriptorHeap* CreateDescriptorHeap(const std::string& name, const DescriptorHeap::Config& c) override;
+	virtual DynamicDescriptorHeap* CreateDynamicDescriptorHeap(const std::string& name, u32 size, DescriptorType type) override;
 	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& desc) override;
 	virtual RenderPipeline* CreateGraphicPipeline(const std::string& name,const GraphicPipeline::Desc& desc) override;
 	virtual RenderPipeline* CreateComputePipeline(const std::string& name,const ComputePipeline::Desc& desc) override;
 	virtual RenderBuffer* CreateBuffer(const std::string& name, const RenderBuffer::Desc& info) override;
 	virtual RenderTexture* CreateTexture(const std::string& name,const RenderTexture::Desc& desc) override;
 	virtual Sampler* CreateSampler(const Sampler::Desc& desc) override;
-	virtual Fence* CreateFence(u64 initValue) override;
+	virtual Fence* CreateFence(const std::string& name, u64 initValue) override;
 
 	virtual RenderContext* BeginFrame(Swapchain* viewport) override;
 	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) override;

@@ -3,25 +3,25 @@
 DescriptorManager::DescriptorManager(RenderDevice* device, u32 dynamicHeapCount)
 {
     _Device = device;
-    _CPUSRVHeap = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
+    _CPUSRVHeap = _Device->CreateDescriptorHeap("CPU_SRVHeap",DescriptorHeap::Config{
         .Type = DescriptorType::CBV_SRV_UAV,
         .Number = cCPUSRVDescriptorNum,
         .GPUVisible = false
         });
 
-    _CPUSamplerHeap = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
+    _CPUSamplerHeap = _Device->CreateDescriptorHeap("CPU_SamplerHeap",DescriptorHeap::Config{
         .Type = DescriptorType::Sampler,
         .Number = cCPUSamplerDescriptorNum,
         .GPUVisible = false
         });
 
-    _GPURTVHeap = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
+    _GPURTVHeap = _Device->CreateDescriptorHeap("GPU_RTVHeap",DescriptorHeap::Config{
         .Type = DescriptorType::RTV,
         .Number = cGPURTVDSVDescriptorNum,
         .GPUVisible = false
         });
 
-    _GPUDSVHeap = _Device->CreateDescriptorHeap(DescriptorHeap::Config{
+    _GPUDSVHeap = _Device->CreateDescriptorHeap("GPU_DSVHeap",DescriptorHeap::Config{
         .Type = DescriptorType::DSV,
         .Number = cGPURTVDSVDescriptorNum,
         .GPUVisible = false
@@ -29,8 +29,8 @@ DescriptorManager::DescriptorManager(RenderDevice* device, u32 dynamicHeapCount)
 
     for (u32 i = 0; i < dynamicHeapCount; i++)
     {
-        _SRVDynamicHeap.push_back(_Device->CreateDynamicDescriptorHeap(cDynamicSRVDescriptorNum, DescriptorType::CBV_SRV_UAV));
-        _SamplerDynamicHeap.push_back(_Device->CreateDynamicDescriptorHeap(cDynamicSamplerDescriptorNum, DescriptorType::Sampler));
+        _SRVDynamicHeap.push_back(_Device->CreateDynamicDescriptorHeap(std::format("DynamicSRVDescriptorHeap_{}",i),cDynamicSRVDescriptorNum, DescriptorType::CBV_SRV_UAV));
+        _SamplerDynamicHeap.push_back(_Device->CreateDynamicDescriptorHeap(std::format("DynamicSamplerDescriptorHeap_{}", i),cDynamicSamplerDescriptorNum, DescriptorType::Sampler));
     }
 }
 

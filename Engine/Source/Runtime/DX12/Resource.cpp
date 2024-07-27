@@ -75,6 +75,11 @@ void DX12Swapchain::Present(bool vSync)
             LOG_FATAL(NVAftermath, std::format("Device Lost for DX12, Nv aftermath crash dump timeout :{}!", (u32)status));
         }
 #endif
+        check(0);
+    }
+    else if (FAILED(hr))
+    {
+        LOG_FATAL("DeviceRemoval", std::format("Swapchain::Present failed {}", (long)hr));
     }
      
 }
@@ -109,7 +114,7 @@ D3D12_DESCRIPTOR_HEAP_TYPE TranslateDescriptorType(DescriptorType type)
     return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
 }
 
-DescriptorHeap* DX12Device::CreateDescriptorHeap(const DescriptorHeap::Config& c)
+DescriptorHeap* DX12Device::CreateDescriptorHeap(const std::string& name, const DescriptorHeap::Config& c)
 {
     check(_Device);
  
@@ -120,11 +125,12 @@ DescriptorHeap* DX12Device::CreateDescriptorHeap(const DescriptorHeap::Config& c
         .Flags = c.GPUVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE
     };
     check(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
+    heap->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
 
     return new DX12DescriptorHeap(c, _Device->GetDescriptorHandleIncrementSize(heapDesc.Type),heap);
 }
 
-DynamicDescriptorHeap* DX12Device::CreateDynamicDescriptorHeap(u32 size, DescriptorType type)
+DynamicDescriptorHeap* DX12Device::CreateDynamicDescriptorHeap(const std::string& name, u32 size, DescriptorType type)
 {
     check(_Device);
     check(type == DescriptorType::CBV_SRV_UAV || type == DescriptorType::Sampler);
@@ -135,6 +141,7 @@ DynamicDescriptorHeap* DX12Device::CreateDynamicDescriptorHeap(u32 size, Descrip
         .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
     };
     check(SUCCEEDED(_Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap))));
+    heap->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
 
     return new DX12DynamicDescriptorHeap(size, _Device->GetDescriptorHandleIncrementSize(heapDesc.Type), heap);
 }

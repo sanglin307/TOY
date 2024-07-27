@@ -11,6 +11,7 @@ class CameraComponent : public Component
 {
 	friend class CameraController;
 public:
+
 	struct Desc
 	{
 		CameraType Type;
@@ -41,21 +42,38 @@ public:
 	}
 
 	void GetViewInfo(ViewInfo& info);
+
+	void LookAt(const float3& eyePos, const float3& lookAt, const float3& up);
+	void SetSpeed(float speed) { _Speed = speed; }
  
 private:
-
-	void InitCameraTransform();
-
 	std::string  _Name;
-	Desc _Desc;
+	
+	Desc _Info;
 
-	float3 _Position;
+	float3 _EyePos;
 	quaternion _Rotation;
 
+	float3 _Direction;
+	float3 _Up;
+	float3 _Right;
+
+	float  _Distance;
+	float  _Speed = 1.0f;
+
+	float4x4 _PreViewMatrix;
 	float4x4 _ViewMatrix;
 	float4x4 _ViewInverseMatrix;
 	float4x4 _ProjectMatrix;
 	float4x4 _ViewProjectMatrix;
+
+
+};
+
+enum class CameraControlType
+{
+	Orbit,
+	Free
 };
 
 class CameraController : public InputHandler
@@ -73,6 +91,6 @@ public:
 
 protected:
 	CameraComponent* _Camera = nullptr;
-	float3 _Velocity = {};
-
+	CameraControlType _Type;
+	float _MouseScrollDelta = 0.f;
 };

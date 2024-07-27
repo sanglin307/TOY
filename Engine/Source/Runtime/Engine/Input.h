@@ -170,7 +170,6 @@ public:
     {
         return _MousePosition;
     }
-
  
 
 private:

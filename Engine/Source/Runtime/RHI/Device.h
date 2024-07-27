@@ -14,17 +14,17 @@ public:
 	virtual void EndFrame(RenderContext* ctx, Swapchain* viewport) = 0;
 
 	virtual Swapchain* CreateSwapchain(const Swapchain::Desc& info) = 0;
-	virtual CommandQueue* CreateCommandQueue(const CommandType type) = 0;
-	virtual CommandAllocator* CreateCommandAllocator(const CommandType type) = 0;
-	virtual RenderContext* CreateCommandContext(CommandAllocator* allocator, const CommandType type) = 0;
-	virtual DescriptorHeap* CreateDescriptorHeap(const DescriptorHeap::Config& c) = 0;
-	virtual DynamicDescriptorHeap* CreateDynamicDescriptorHeap(u32 size, DescriptorType type) = 0;
+	virtual CommandQueue* CreateCommandQueue(const std::string& name, const CommandType type) = 0;
+	virtual CommandAllocator* CreateCommandAllocator(const std::string& name, const CommandType type) = 0;
+	virtual RenderContext* CreateCommandContext(const std::string& name, CommandAllocator* allocator, const CommandType type) = 0;
+	virtual DescriptorHeap* CreateDescriptorHeap(const std::string& name, const DescriptorHeap::Config& c) = 0;
+	virtual DynamicDescriptorHeap* CreateDynamicDescriptorHeap(const std::string& name, u32 size, DescriptorType type) = 0;
 	virtual RenderPipeline* CreateGraphicPipeline(const std::string& name,const GraphicPipeline::Desc& desc) = 0;
 	virtual RenderPipeline* CreateComputePipeline(const std::string& name,const ComputePipeline::Desc& desc) = 0;
 	virtual RenderBuffer* CreateBuffer(const std::string& name, const RenderBuffer::Desc& info) = 0;
 	virtual RenderTexture* CreateTexture(const std::string& name, const RenderTexture::Desc& desc) = 0;
 	virtual Sampler* CreateSampler(const Sampler::Desc& desc) = 0;
-	virtual Fence* CreateFence(u64 initValue) = 0;
+	virtual Fence* CreateFence(const std::string& name, u64 initValue) = 0;
 
 	RHI_API void CreateInputLayout(const ShaderResource* shader, InputSlotMapping slotMapping, InputLayout& inputLayout);
 
