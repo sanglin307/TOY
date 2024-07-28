@@ -77,6 +77,11 @@ public:
 	virtual void SetIndexBuffer(RenderBuffer* indexBuffer) override;
 
 	void UpdateSubresource(RenderTexture* destResource, RenderBuffer* tempResource, u64 tempResOffset, u32 firstSubresource, u32 numSubresources, const D3D12_SUBRESOURCE_DATA* srcData);
+
+	virtual void BeginRenderMarker(const float3& color, const std::string& name) override;
+	virtual void EndRenderMarker() override;
+	virtual void SetRenderMarker(const float3& color, const std::string& name) override;
+	 
 private:
 	virtual void Reset() override;
 

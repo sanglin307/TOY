@@ -601,3 +601,20 @@ void DX12CommandList::TransitionStencilState(ResourceState destState, RenderReso
         res->StencilState = destState;
     }
 }
+
+void DX12CommandList::BeginRenderMarker(const float3& color, const std::string& name)
+{
+    UINT32 c = PIX_COLOR(BYTE(color.x * 255), BYTE(color.y * 255), BYTE(color.z * 255));
+    PIXBeginEvent(_Handle.Get(), c, name.c_str());
+}
+
+void DX12CommandList::EndRenderMarker()
+{
+    PIXEndEvent(_Handle.Get());
+}
+
+void DX12CommandList::SetRenderMarker(const float3& color, const std::string& name)
+{
+    UINT32 c = PIX_COLOR(BYTE(color.x * 255), BYTE(color.y * 255), BYTE(color.z * 255));
+    PIXSetMarker(_Handle.Get(), c, name.c_str());
+}

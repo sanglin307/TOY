@@ -69,6 +69,10 @@ public:
 	virtual void SetVertexBuffers(u32 vbNum, RenderBuffer** vbs) = 0;
 	virtual void SetIndexBuffer(RenderBuffer* indexBuffer) = 0;
 
+	virtual void BeginRenderMarker(const float3& color, const std::string& name) {};
+	virtual void EndRenderMarker() {};
+	virtual void SetRenderMarker(const float3& color, const std::string& name) {};
+	 
 	RenderContext* Open();
 
 protected:
@@ -132,4 +136,14 @@ private:
 
 	RenderDevice* _Device;
 	
+};
+
+class RenderMarker
+{
+public:
+	RHI_API RenderMarker(RenderContext* ctx, const float3& color, const std::string& name);
+	RHI_API ~RenderMarker();
+
+private:
+	RenderContext* _Context;
 };

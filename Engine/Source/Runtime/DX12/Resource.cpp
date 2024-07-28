@@ -206,8 +206,8 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
     };
 
     D3D12_CLEAR_VALUE clearValueRT = {
-   .Format = texDesc.Format,
-   .Color = { 0.f,0.f,0.f,1.f}
+       .Format = texDesc.Format,
+       .Color = { 0.f,0.f,0.f,1.f}
     };
 
     D3D12_CLEAR_VALUE clearValueDS = {

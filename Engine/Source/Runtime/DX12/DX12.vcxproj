@@ -109,7 +109,7 @@
       <PreprocessorDefinitions>_DEBUG;WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/DirectX12/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Source/Thirdparty/NVAftermath/include;$(SolutionDir)Engine/Source/Thirdparty/DirectXTex/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/DirectX12/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Source/Thirdparty/NVAftermath/include;$(SolutionDir)Engine/Source/Thirdparty/DirectXTex/include;$(SolutionDir)Engine/Source/Thirdparty/WinPixEventRuntime/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>Private.h</PrecompiledHeaderFile>
     </ClCompile>
@@ -117,13 +117,14 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
-      <AdditionalDependencies>Core.lib;RHI.lib;GFSDK_Aftermath_Lib.x64.lib;DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)Bin/Win64/;$(SolutionDir)Engine/Source/Thirdparty/NVAftermath/lib/x64;$(SolutionDir)Engine/Source/Thirdparty/DirectXTex/lib/x64/Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Core.lib;RHI.lib;GFSDK_Aftermath_Lib.x64.lib;DirectXTex.lib;WinPixEventRuntime.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin/Win64/;$(SolutionDir)Engine/Source/Thirdparty/NVAftermath/lib/x64;$(SolutionDir)Engine/Source/Thirdparty/DirectXTex/lib/x64/Debug;$(SolutionDir)Engine/Source/Thirdparty/WinPixEventRuntime/bin/x64</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y $(SolutionDir)Engine\Source\Thirdparty\DirectX12\bin\x64\D3D12Core.dll $(SolutionDir)Bin\Win64
 copy /Y $(SolutionDir)Engine\Source\Thirdparty\DirectX12\bin\x64\d3d12SDKLayers.dll $(SolutionDir)Bin\Win64
-copy /Y $(SolutionDir)Engine\Source\Thirdparty\NVAftermath\lib\x64\GFSDK_Aftermath_Lib.x64.dll $(SolutionDir)Bin\Win64</Command>
+copy /Y $(SolutionDir)Engine\Source\Thirdparty\NVAftermath\lib\x64\GFSDK_Aftermath_Lib.x64.dll $(SolutionDir)Bin\Win64
+copy /Y $(SolutionDir)Engine\Source\Thirdparty\WinPixEventRuntime\bin\x64\WinPixEventRuntime.dll $(SolutionDir)Bin\Win64</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

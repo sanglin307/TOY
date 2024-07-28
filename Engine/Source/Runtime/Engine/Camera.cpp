@@ -3,9 +3,9 @@
 #if _DEBUG
 #include <Windows.h>
 #endif
-
-using namespace hlslpp;
  
+using namespace hlslpp;
+
 CameraComponent::CameraComponent(const std::string& name, const Desc& desc)
 {
 	_Name = name;
@@ -23,8 +23,6 @@ void CameraComponent::LookAt(const float3& eyePos, const float3& lookAt, const f
 	_Right = normalize(_Right);
 	_Up = cross(_Direction, _Right);
 
-	float3x3 mat(_Right, _Up, _Direction);
-	_Rotation = quaternion(mat);
 	_ViewMatrix = float4x4::look_at(_EyePos, lookAt, _Up);
 }
 
@@ -59,9 +57,7 @@ bool CameraController::OnMouse(const MouseEvent& mev)
 
 	return true;
 }
-
  
-
 void CameraController::Update(double delta)
 {
 	if (!_Camera)
@@ -118,9 +114,8 @@ void CameraController::Update(double delta)
 
 	if (_Camera->_Info.Type == CameraType::Perspective)
 	{
-		frustum persp = frustum::field_of_view_y(_Camera->_Info.YFov, _Camera->_Info.AspectRatio, _Camera->_Info.ZNear, _Camera->_Info.ZFar);
-		_Camera->_ProjectMatrix = float4x4::perspective(projection(persp, zclip::zero, zdirection::forward, _Camera->_Info.ZFar <= 0 ? zplane::infinite: zplane::finite));
-		
+		frustum persp = frustum::field_of_view_y(_Camera->_Info.YFov, _Camera->_Info.AspectRatio, _Camera->_Info.ZFar, _Camera->_Info.ZNear);
+		_Camera->_ProjectMatrix = float4x4::perspective(projection(persp, zclip::zero, zdirection::reverse,  zplane::finite));		
 	}
 	else if(_Camera->_Info.Type == CameraType::Orthographic)
 	{

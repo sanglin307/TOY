@@ -52,7 +52,6 @@ private:
 	Desc _Info;
 
 	float3 _EyePos;
-	quaternion _Rotation;
 
 	float3 _Direction;
 	float3 _Up;

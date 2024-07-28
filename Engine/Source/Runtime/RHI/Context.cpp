@@ -167,3 +167,14 @@ ContextManager::~ContextManager()
 	}
 
 }
+
+RenderMarker::RenderMarker(RenderContext* ctx, const float3& color, const std::string& name)
+{
+	_Context = ctx;
+	ctx->BeginRenderMarker(color, name);
+}
+
+RenderMarker::~RenderMarker()
+{
+	_Context->EndRenderMarker();
+}

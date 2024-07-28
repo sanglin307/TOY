@@ -21,6 +21,9 @@ using namespace Microsoft::WRL;
 #include <GFSDK_Aftermath_GpuCrashDumpDecoding.h>
 #endif
 
+#define USE_PIX
+#include "WinPixEventRuntime/pix3.h"
+
 #include "DirectXTex.h"
 
 #define HLSLPP_FEATURE_TRANSFORM

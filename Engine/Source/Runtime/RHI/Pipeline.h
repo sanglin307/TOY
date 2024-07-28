@@ -122,8 +122,8 @@ enum class PrimitiveTopology
 struct RasterizerDesc
 {
 	FillMode Fill = FillMode::Solid;
-	CullMode Cull = CullMode::Back;
-	bool FrontCounterClockwise = true; // default to gltf spec.
+	CullMode Cull = CullMode::Back;  // gltf model default winding.
+	bool FrontCounterClockwise = true; 
 	bool DepthClip = true;
 	bool Multisample = false;
 	bool LineAA = false;

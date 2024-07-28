@@ -64,7 +64,7 @@ void GameWorld::SetupWorld()
 		.Type = LightType::Point,
 		.Color = float3(1,0,0),
 		.Intensity = 10,
-		.Range = 1000,
+		.Range = 100,
 		.InnerConeAngle = 0,
 		.OuterConeAngle = 0
 	};

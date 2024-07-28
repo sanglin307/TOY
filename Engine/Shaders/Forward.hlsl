@@ -31,8 +31,8 @@ struct VertexInput
 
 struct PSInput
 {
-	float4 Position : SV_POSITION;
-    float3 WorldPosition : POSITION;
+    float4 Position : SV_POSITION;
+    float3 WorldPosition : WORLDPOS;
     float3 Normal : NORMAL;
     float3 Color : COLOR;
     float2 UV : TEXCOORD;
@@ -184,9 +184,9 @@ PSInput VSMain(VertexInput vertex)
 	PSInput result;
     PrimitiveData pd = PrimitiveBuffer[DrawCB.PrimitiveId];
     result.WorldPosition = mul(pd.LocalToWorld, float4(vertex.Position, 1.0f)).xyz;
-    result.Position = mul(ViewCB.ViewProject, float4(result.WorldPosition,1.0f));
-    result.Normal = normalize(mul((float3x3) pd.LocalToWorld, vertex.Normal));
-    result.Tangent = float4(normalize(mul((float3x3) pd.LocalToWorld,vertex.Tangent.xyz)), vertex.Tangent.w);
+    result.Position = mul(ViewCB.ViewProject, float4(result.WorldPosition, 1.0f));
+    result.Normal = normalize(mul(pd.LocalToWorld, float4(vertex.Normal, 0)).xyz);
+    result.Tangent = float4(normalize(mul(pd.LocalToWorld, float4(vertex.Tangent.xyz, 0)).xyz), vertex.Tangent.w);
     result.Color = vertex.Color;
     result.UV = vertex.UV;
 

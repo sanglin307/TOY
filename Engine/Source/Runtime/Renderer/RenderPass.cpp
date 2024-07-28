@@ -45,69 +45,79 @@ void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
 	RenderScene* scene = _Renderer->GetScene();
 
-	RenderTexture* rts[] = { sceneTextures.SceneColor };
-	ctx->SetRenderTargets(1, rts, RenderTargetColorFlags::Clear,sceneTextures.SceneDepth,RenderTargetDepthStencilFlags::Clear);
-
-	RenderBuffer* drawDataBuffer = _Renderer->GetDrawDataBuffer();
-	ctx->SetRootSignature(ScenePso->GetRootSignature(),PipelineType::Graphic);
-	ScenePso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
-	ScenePso->BindParameter("LightsBuffer", _Renderer->GetLightsBuffer());
-	ScenePso->BindParameter("PrimitiveBuffer", _Renderer->GetPrimitivesBuffer());
-	ScenePso->BindParameter("DrawCB", drawDataBuffer);
-	ctx->SetPrimitiveTopology(ScenePso->Info.Topology);
-	ctx->SetRenderPipeline(ScenePso);
-
-	for (auto c : _Commands)
 	{
-		MaterialBuffer->UploadData((u8*)&(c->Material), sizeof(c->Material));
-		if (c->Material.TextureMask & BaseColorTextureMask)
-			ScenePso->BindParameter("BaseColorTexture", c->BaseColor);
-		else
-			ScenePso->BindParameter("BaseColorTexture", DefaultResource::Instance().GetColorBlackTexture());
+		RenderMarker marker(ctx, float3(1, 0, 0), "BasePass");
+		RenderTexture* rts[] = { sceneTextures.SceneColor };
+		ctx->SetRenderTargets(1, rts, RenderTargetColorFlags::Clear, sceneTextures.SceneDepth, RenderTargetDepthStencilFlags::Clear);
 
-		if (c->Material.TextureMask & NormalTextureMask)
-			ScenePso->BindParameter("NormalTexture", c->Normal);
-		else
-			ScenePso->BindParameter("NormalTexture", DefaultResource::Instance().GetColorBlackTexture());
-
-		if (c->Material.TextureMask & RoughnessMetalnessTextureMask)
-			ScenePso->BindParameter("RoughnessMetalnessTexture", c->RoughMetelness);
-		else
-			ScenePso->BindParameter("RoughnessMetalnessTexture", DefaultResource::Instance().GetColorBlackTexture());
-
-		if (c->Material.TextureMask & EmissiveTextureMask)
-			ScenePso->BindParameter("EmissiveTexture", c->Emissive);
-		else
-			ScenePso->BindParameter("EmissiveTexture", DefaultResource::Instance().GetColorBlackTexture());
-
-		ScenePso->CommitParameter(ctx);
-
-		DrawData dd = {
-			.PrimitiveId = c->PrimitiveID
-		};
-		drawDataBuffer->UploadData((u8*)&dd, sizeof(dd));
-
-		ctx->SetVertexBuffers((u32)c->VertexBuffers.size(), c->VertexBuffers.data());
-		if (c->IndexBuffer)
+		RenderBuffer* drawDataBuffer = _Renderer->GetDrawDataBuffer();
+		ctx->SetRootSignature(ScenePso->GetRootSignature(), PipelineType::Graphic);
+		ScenePso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+		ScenePso->BindParameter("LightsBuffer", _Renderer->GetLightsBuffer());
+		ScenePso->BindParameter("PrimitiveBuffer", _Renderer->GetPrimitivesBuffer());
+		ScenePso->BindParameter("DrawCB", drawDataBuffer);
+		ctx->SetPrimitiveTopology(ScenePso->Info.Topology);
+		ctx->SetRenderPipeline(ScenePso);
+ 
+		for (auto c : _Commands)
 		{
-			ctx->SetIndexBuffer(c->IndexBuffer);
-			u32 indexCount = u32(c->IndexBuffer->GetSize() / c->IndexBuffer->GetStride());
-			ctx->DrawIndexedInstanced(indexCount);
-		}
-		else
-		{
-			u32 vertexCount = u32(c->VertexBuffers[0]->GetSize() / c->VertexBuffers[0]->GetStride());
-			ctx->DrawInstanced(vertexCount);
+			MaterialBuffer->UploadData((u8*)&(c->Material), sizeof(c->Material));
+			if (c->Material.TextureMask & BaseColorTextureMask)
+				ScenePso->BindParameter("BaseColorTexture", c->BaseColor);
+			else
+				ScenePso->BindParameter("BaseColorTexture", DefaultResource::Instance().GetColorBlackTexture());
+
+			if (c->Material.TextureMask & NormalTextureMask)
+				ScenePso->BindParameter("NormalTexture", c->Normal);
+			else
+				ScenePso->BindParameter("NormalTexture", DefaultResource::Instance().GetColorBlackTexture());
+
+			if (c->Material.TextureMask & RoughnessMetalnessTextureMask)
+				ScenePso->BindParameter("RoughnessMetalnessTexture", c->RoughMetelness);
+			else
+				ScenePso->BindParameter("RoughnessMetalnessTexture", DefaultResource::Instance().GetColorBlackTexture());
+
+			if (c->Material.TextureMask & EmissiveTextureMask)
+				ScenePso->BindParameter("EmissiveTexture", c->Emissive);
+			else
+				ScenePso->BindParameter("EmissiveTexture", DefaultResource::Instance().GetColorBlackTexture());
+
+			ScenePso->CommitParameter(ctx);
+
+			DrawData dd = {
+				.PrimitiveId = c->PrimitiveID
+			};
+			drawDataBuffer->UploadData((u8*)&dd, sizeof(dd));
+			
+			ctx->SetVertexBuffers((u32)c->VertexBuffers.size(), c->VertexBuffers.data());
+
+			ctx->SetRenderMarker(float3(0, 0, 1), "BeginDrawCommand");
+
+			if (c->IndexBuffer)
+			{
+				ctx->SetIndexBuffer(c->IndexBuffer);
+				u32 indexCount = u32(c->IndexBuffer->GetSize() / c->IndexBuffer->GetStride());
+				ctx->DrawIndexedInstanced(indexCount);
+			}
+			else
+			{
+				u32 vertexCount = u32(c->VertexBuffers[0]->GetSize() / c->VertexBuffers[0]->GetStride());
+				ctx->DrawInstanced(vertexCount);
+			}
+			
 		}
 	}
 
-	ctx->SetRootSignature(TonemapPso->GetRootSignature(),PipelineType::Compute);
-	ctx->SetRenderPipeline(TonemapPso);
-	TonemapPso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
-	TonemapPso->BindParameter("SceneColor", sceneTextures.SceneColor);
-	TonemapPso->BindParameter("ColorUAV", sceneTextures.ColorOutput);
-	TonemapPso->CommitParameter(ctx);
-	ctx->Dispatch(DivideRoundup(view.ViewportSize.x, 16), DivideRoundup(view.ViewportSize.y, 16), 1);
+	{
+		RenderMarker marker(ctx, float3(0, 1, 0), "Tonemapping");
+		ctx->SetRootSignature(TonemapPso->GetRootSignature(), PipelineType::Compute);
+		ctx->SetRenderPipeline(TonemapPso);
+		TonemapPso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+		TonemapPso->BindParameter("SceneColor", sceneTextures.SceneColor);
+		TonemapPso->BindParameter("ColorUAV", sceneTextures.ColorOutput);
+		TonemapPso->CommitParameter(ctx);
+		ctx->Dispatch(DivideRoundup(view.ViewportSize.x, 16), DivideRoundup(view.ViewportSize.y, 16), 1);
+	}
 
 }
 
