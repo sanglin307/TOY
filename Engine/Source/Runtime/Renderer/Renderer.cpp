@@ -33,7 +33,6 @@ void RendererModule::Init()
 {
 	_RenderConfig = GameEngine::Instance().GetRenderConfig();
 	_Device = GetRHI(_RenderConfig.API).GetDevice();
-	_Device->InitPipelineCache();
 	DefaultResource::Instance().Init(_Device);
 	_SceneRender = new SceneRenderer(_Device);
 }

@@ -6,12 +6,26 @@ void RenderPassForward::Init(RenderDevice* device,SceneRenderer* renderer)
 	_Device = device;
 	_Renderer = renderer;
 
-	GraphicPipeline::Desc desc = {};
-	ScenePso = static_cast<GraphicPipeline*>(device->CreateGraphicPipeline("ForwardPass",desc));
+	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
 
-	Sampler::Desc sd;
-	_Sampler = device->CreateSampler(sd);
-	ScenePso->BindParameter("DefaultSampler", _Sampler);
+	GraphicPipeline::Desc desc = {
+		.VS = {
+		   .Profile = ShaderProfile::Vertex,
+		   .Path = "ForwardPass.hlsl",
+		   .Entry = "VSMain"
+        },
+		.PS = {
+			.Profile = ShaderProfile::Pixel,
+			.Path = "ForwardPass.hlsl",
+			.Entry = "PSMain"
+	    },
+		.DepthStencilState = {
+			.DepthEnable = true
+        },
+		.RVTFormats = { sceneTextures.SceneColor->GetFormat() },
+		.DSVFormat = sceneTextures.SceneDepth->GetFormat()
+	};
+	_ScenePso = static_cast<GraphicPipeline*>(device->CreateGraphicPipeline("ForwardPass",desc));
 
 	RenderBuffer::Desc bd = {
 		.Size = sizeof(MaterialData),
@@ -20,11 +34,17 @@ void RenderPassForward::Init(RenderDevice* device,SceneRenderer* renderer)
 		.CpuAccess = CpuAccessFlags::Write,
 		.Alignment = true
 	};
-	MaterialBuffer = device->CreateBuffer("MaterialBuffer", bd);
-	ScenePso->BindParameter("MaterialCB", MaterialBuffer);
+	_MaterialBuffer = device->CreateBuffer("MaterialBuffer", bd);
+	_ScenePso->BindParameter("MaterialCB", _MaterialBuffer);
 
-	ComputePipeline::Desc cd = {};
-	TonemapPso = static_cast<ComputePipeline*>(device->CreateComputePipeline("TonemapCS", cd));
+	ComputePipeline::Desc cd = {
+		.CS = {
+		   .Profile = ShaderProfile::Compute,
+		   .Path = "Tonemap.hlsl",
+		   .Entry = "CSMain"
+        }
+	};
+	_TonemapPso = static_cast<ComputePipeline*>(device->CreateComputePipeline("TonemapCS", cd));
 }
 
 RenderPassForward::~RenderPassForward()
@@ -34,7 +54,7 @@ RenderPassForward::~RenderPassForward()
 		delete iter;
 	}
 
-	delete MaterialBuffer;
+	delete _MaterialBuffer;
 }
 
 void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
@@ -46,43 +66,43 @@ void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 	RenderScene* scene = _Renderer->GetScene();
 
 	{
-		RenderMarker marker(ctx, float3(1, 0, 0), "BasePass");
+		RenderMarker marker(ctx, float3(0.18, 0.18, 0.18), "ForwardPass");
 		RenderTexture* rts[] = { sceneTextures.SceneColor };
 		ctx->SetRenderTargets(1, rts, RenderTargetColorFlags::Clear, sceneTextures.SceneDepth, RenderTargetDepthStencilFlags::Clear);
 
 		RenderBuffer* drawDataBuffer = _Renderer->GetDrawDataBuffer();
-		ctx->SetRootSignature(ScenePso->GetRootSignature(), PipelineType::Graphic);
-		ScenePso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
-		ScenePso->BindParameter("LightsBuffer", _Renderer->GetLightsBuffer());
-		ScenePso->BindParameter("PrimitiveBuffer", _Renderer->GetPrimitivesBuffer());
-		ScenePso->BindParameter("DrawCB", drawDataBuffer);
-		ctx->SetPrimitiveTopology(ScenePso->Info.Topology);
-		ctx->SetRenderPipeline(ScenePso);
+		ctx->SetRootSignature(_ScenePso->GetRootSignature(), PipelineType::Graphic);
+		_ScenePso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+		_ScenePso->BindParameter("LightsBuffer", _Renderer->GetLightsBuffer());
+		_ScenePso->BindParameter("PrimitiveBuffer", _Renderer->GetPrimitivesBuffer());
+		_ScenePso->BindParameter("DrawCB", drawDataBuffer);
+		ctx->SetPrimitiveTopology(_ScenePso->Info.Topology);
+		ctx->SetRenderPipeline(_ScenePso);
  
 		for (auto c : _Commands)
 		{
-			MaterialBuffer->UploadData((u8*)&(c->Material), sizeof(c->Material));
+			_MaterialBuffer->UploadData((u8*)&(c->Material), sizeof(c->Material));
 			if (c->Material.TextureMask & BaseColorTextureMask)
-				ScenePso->BindParameter("BaseColorTexture", c->BaseColor);
+				_ScenePso->BindParameter("BaseColorTexture", c->BaseColor);
 			else
-				ScenePso->BindParameter("BaseColorTexture", DefaultResource::Instance().GetColorBlackTexture());
+				_ScenePso->BindParameter("BaseColorTexture", DefaultResource::Instance().GetColorBlackTexture());
 
 			if (c->Material.TextureMask & NormalTextureMask)
-				ScenePso->BindParameter("NormalTexture", c->Normal);
+				_ScenePso->BindParameter("NormalTexture", c->Normal);
 			else
-				ScenePso->BindParameter("NormalTexture", DefaultResource::Instance().GetColorBlackTexture());
+				_ScenePso->BindParameter("NormalTexture", DefaultResource::Instance().GetColorBlackTexture());
 
 			if (c->Material.TextureMask & RoughnessMetalnessTextureMask)
-				ScenePso->BindParameter("RoughnessMetalnessTexture", c->RoughMetelness);
+				_ScenePso->BindParameter("RoughnessMetalnessTexture", c->RoughMetelness);
 			else
-				ScenePso->BindParameter("RoughnessMetalnessTexture", DefaultResource::Instance().GetColorBlackTexture());
+				_ScenePso->BindParameter("RoughnessMetalnessTexture", DefaultResource::Instance().GetColorBlackTexture());
 
 			if (c->Material.TextureMask & EmissiveTextureMask)
-				ScenePso->BindParameter("EmissiveTexture", c->Emissive);
+				_ScenePso->BindParameter("EmissiveTexture", c->Emissive);
 			else
-				ScenePso->BindParameter("EmissiveTexture", DefaultResource::Instance().GetColorBlackTexture());
+				_ScenePso->BindParameter("EmissiveTexture", DefaultResource::Instance().GetColorBlackTexture());
 
-			ScenePso->CommitParameter(ctx);
+			_ScenePso->CommitParameter(ctx);
 
 			DrawData dd = {
 				.PrimitiveId = c->PrimitiveID
@@ -90,9 +110,7 @@ void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 			drawDataBuffer->UploadData((u8*)&dd, sizeof(dd));
 			
 			ctx->SetVertexBuffers((u32)c->VertexBuffers.size(), c->VertexBuffers.data());
-
-			ctx->SetRenderMarker(float3(0, 0, 1), "BeginDrawCommand");
-
+ 
 			if (c->IndexBuffer)
 			{
 				ctx->SetIndexBuffer(c->IndexBuffer);
@@ -109,13 +127,13 @@ void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 	}
 
 	{
-		RenderMarker marker(ctx, float3(0, 1, 0), "Tonemapping");
-		ctx->SetRootSignature(TonemapPso->GetRootSignature(), PipelineType::Compute);
-		ctx->SetRenderPipeline(TonemapPso);
-		TonemapPso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
-		TonemapPso->BindParameter("SceneColor", sceneTextures.SceneColor);
-		TonemapPso->BindParameter("ColorUAV", sceneTextures.ColorOutput);
-		TonemapPso->CommitParameter(ctx);
+		RenderMarker marker(ctx, float3(0.3, 0.3, 0.3), "Tonemapping");
+		ctx->SetRootSignature(_TonemapPso->GetRootSignature(), PipelineType::Compute);
+		ctx->SetRenderPipeline(_TonemapPso);
+		_TonemapPso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+		_TonemapPso->BindParameter("SceneColor", sceneTextures.SceneColor);
+		_TonemapPso->BindParameter("ColorUAV", sceneTextures.ColorOutput);
+		_TonemapPso->CommitParameter(ctx);
 		ctx->Dispatch(DivideRoundup(view.ViewportSize.x, 16), DivideRoundup(view.ViewportSize.y, 16), 1);
 	}
 
@@ -125,9 +143,9 @@ void RenderPassForward::AddCluster(u32 primitiveID, RenderCluster* cluster)
 {
 	RenderCommand* command = new RenderCommand;
 	command->PrimitiveID = primitiveID;
-	for (u32 i = 0; i < ScenePso->Info.VertexLayout.Desc.size(); i++)
+	for (u32 i = 0; i < _ScenePso->Info.VertexLayout.Desc.size(); i++)
 	{
-		InputLayoutDesc& desc = ScenePso->Info.VertexLayout.Desc[i];
+		InputLayoutDesc& desc = _ScenePso->Info.VertexLayout.Desc[i];
 		VertexAttribute VA = _Device->TranslateSemanticToAttribute(desc.SemanticName, desc.SemanticIndex);
 		auto iter = std::find_if(cluster->VertexStreams.begin(), cluster->VertexStreams.end(), [&](RenderCluster::Stream& s) -> bool {
 

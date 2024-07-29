@@ -1,9 +1,7 @@
 
+#include "Common.hlsl"
 #include "Interop/CommonStruct.h"
 
-// root descriptor table use space 0
-// root descriptor use space 1
-// root constant use space 2
 ConstantBuffer<ViewInfo> ViewCB;
 Texture2D SceneColor;
 RWTexture2D<float4> ColorUAV;

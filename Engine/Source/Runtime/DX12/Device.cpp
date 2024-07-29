@@ -531,8 +531,6 @@ void DX12Device::CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)Sha
                             desc.TableSamplerNum = r.BindPoint + r.BindCount;
                         }
                     }
-                    else
-                        check(0);
                 }
                 else
                     check(0);
@@ -752,13 +750,16 @@ ComPtr<ID3DBlob> DX12Device::GenerateComputeRootSignatureBlob(const RootSignatur
          
     }
 
+    std::vector<D3D12_STATIC_SAMPLER_DESC> staticSamplers;
+    GenerateRootStaticSampler(staticSamplers);
+
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = {
         .Version = D3D_ROOT_SIGNATURE_VERSION_1_1,
         .Desc_1_1 = {
-           .NumParameters = (u32)param.size(),
+           .NumParameters = (UINT)param.size(),
            .pParameters = param.data(),
-           .NumStaticSamplers = 0,
-           .pStaticSamplers = nullptr,
+           .NumStaticSamplers = (UINT)staticSamplers.size(),
+           .pStaticSamplers = staticSamplers.data(),
            .Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
                     D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
                     D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
@@ -779,6 +780,121 @@ ComPtr<ID3DBlob> DX12Device::GenerateComputeRootSignatureBlob(const RootSignatur
 
     return signature;
 
+}
+
+void DX12Device::GenerateRootStaticSampler(std::vector<D3D12_STATIC_SAMPLER_DESC>& staticSamplers)
+{
+    staticSamplers.push_back(D3D12_STATIC_SAMPLER_DESC{
+            .Filter = D3D12_FILTER_MIN_MAG_MIP_POINT,
+            .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .MipLODBias = 0,
+            .MaxAnisotropy = 0,
+            .ComparisonFunc = D3D12_COMPARISON_FUNC_NONE,
+            .BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+            .MinLOD = 0,
+            .MaxLOD = D3D12_FLOAT32_MAX,
+            .ShaderRegister = 0,
+            .RegisterSpace = RootSignature::cRootStaticSamplerSpace,
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
+
+    staticSamplers.push_back(D3D12_STATIC_SAMPLER_DESC{
+            .Filter = D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT,
+            .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .MipLODBias = 0,
+            .MaxAnisotropy = 0,
+            .ComparisonFunc = D3D12_COMPARISON_FUNC_NONE,
+            .BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+            .MinLOD = 0,
+            .MaxLOD = D3D12_FLOAT32_MAX,
+            .ShaderRegister = 1,
+            .RegisterSpace = RootSignature::cRootStaticSamplerSpace,
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
+
+    staticSamplers.push_back(D3D12_STATIC_SAMPLER_DESC{
+            .Filter = D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR,
+            .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .MipLODBias = 0,
+            .MaxAnisotropy = 0,
+            .ComparisonFunc = D3D12_COMPARISON_FUNC_NONE,
+            .BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+            .MinLOD = 0,
+            .MaxLOD = D3D12_FLOAT32_MAX,
+            .ShaderRegister = 2,
+            .RegisterSpace = RootSignature::cRootStaticSamplerSpace,
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
+
+    staticSamplers.push_back(D3D12_STATIC_SAMPLER_DESC{
+            .Filter = D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT,
+            .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .MipLODBias = 0,
+            .MaxAnisotropy = 0,
+            .ComparisonFunc = D3D12_COMPARISON_FUNC_NONE,
+            .BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+            .MinLOD = 0,
+            .MaxLOD = D3D12_FLOAT32_MAX,
+            .ShaderRegister = 3,
+            .RegisterSpace = RootSignature::cRootStaticSamplerSpace,
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
+
+    staticSamplers.push_back(D3D12_STATIC_SAMPLER_DESC{
+            .Filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT,
+            .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .MipLODBias = 0,
+            .MaxAnisotropy = 0,
+            .ComparisonFunc = D3D12_COMPARISON_FUNC_NONE,
+            .BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+            .MinLOD = 0,
+            .MaxLOD = D3D12_FLOAT32_MAX,
+            .ShaderRegister = 4,
+            .RegisterSpace = RootSignature::cRootStaticSamplerSpace,
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
+
+    staticSamplers.push_back(D3D12_STATIC_SAMPLER_DESC{
+            .Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+            .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .MipLODBias = 0,
+            .MaxAnisotropy = 0,
+            .ComparisonFunc = D3D12_COMPARISON_FUNC_NONE,
+            .BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+            .MinLOD = 0,
+            .MaxLOD = D3D12_FLOAT32_MAX,
+            .ShaderRegister = 5,
+            .RegisterSpace = RootSignature::cRootStaticSamplerSpace,
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
+
+    staticSamplers.push_back(D3D12_STATIC_SAMPLER_DESC{
+            .Filter = D3D12_FILTER_ANISOTROPIC,
+            .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+            .MipLODBias = 0,
+            .MaxAnisotropy = 16,
+            .ComparisonFunc = D3D12_COMPARISON_FUNC_NONE,
+            .BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+            .MinLOD = 0,
+            .MaxLOD = D3D12_FLOAT32_MAX,
+            .ShaderRegister = 6,
+            .RegisterSpace = RootSignature::cRootStaticSamplerSpace,
+            .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+        });
 }
 
 ComPtr<ID3DBlob> DX12Device::GenerateGraphicRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc)
@@ -1030,13 +1146,16 @@ ComPtr<ID3DBlob> DX12Device::GenerateGraphicRootSignatureBlob(const RootSignatur
         }
     }
 
+    std::vector<D3D12_STATIC_SAMPLER_DESC> staticSamplers;
+    GenerateRootStaticSampler(staticSamplers);
+
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = {
         .Version = D3D_ROOT_SIGNATURE_VERSION_1_1,
         .Desc_1_1 = {
-           .NumParameters = (u32)param.size(),
+           .NumParameters = (UINT)param.size(),
            .pParameters = param.data(),
-           .NumStaticSamplers = 0,
-           .pStaticSamplers = nullptr,
+           .NumStaticSamplers = (UINT)staticSamplers.size(),
+           .pStaticSamplers = staticSamplers.data(),
            .Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
                     D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
                     D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
@@ -1550,11 +1669,6 @@ RenderPipeline* DX12Device::CreateComputePipeline(const std::string& name, const
 {
     check(_Device);
 
-    if (name.size() > 0 && desc.CS.Path.size() == 0)  // no shaders, find it using name only.
-    {
-        return LoadPipeline(name);
-    }
-
     u64 hash = desc.HashResult();
     RenderPipeline* cache = LoadPipeline(hash);
     if (cache != nullptr)
@@ -1589,12 +1703,6 @@ RenderPipeline* DX12Device::CreateComputePipeline(const std::string& name, const
     pipeline->AllocateParameters(rs, shaderRes);
 
     _PipelineCache[hash] = pipeline;
-
-    if (!name.empty() && _PipelineCacheByName.find(name) == _PipelineCacheByName.end())
-    {
-        _PipelineCacheByName[name] = pipeline;
-    }
-
     check(pipeline);
     return pipeline;
 }
@@ -1602,12 +1710,7 @@ RenderPipeline* DX12Device::CreateComputePipeline(const std::string& name, const
 RenderPipeline* DX12Device::CreateGraphicPipeline(const std::string& name,const GraphicPipeline::Desc& desc)
 {
     check(_Device);
-
-    if (name.size() > 0 && desc.VS.Path.size() == 0)  // no shaders, find it using name only.
-    {
-        return LoadPipeline(name);
-    }
-
+ 
     std::array<ShaderResource*, (u32)ShaderProfile::MAX> shaderRes = {};
     shaderRes[(u32)ShaderProfile::Vertex] = LoadShader(desc.VS);
 
@@ -1651,11 +1754,6 @@ RenderPipeline* DX12Device::CreateGraphicPipeline(const std::string& name,const 
     pipeline->AllocateParameters(rs, shaderRes);
     
     _PipelineCache[hash] = pipeline;
-    
-    if (!name.empty() && _PipelineCacheByName.find(name) == _PipelineCacheByName.end())
-    {
-        _PipelineCacheByName[name] = pipeline;
-    }
 
     return pipeline;
 }

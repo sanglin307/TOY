@@ -155,13 +155,15 @@ void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderReso
 				}
 				else if (res.Type == ShaderInputType::SAMPLER)
 				{
-					check(res.BindPoint + res.BindCount <= desc.TableSamplerNum);
-					check(res.BindSpace == RootSignature::cDescriptorTableSpace);
-					param->BindType = ShaderBindType::TableSampler;
-					param->RootParamIndex = GetRootParamIndex(ShaderBindType::TableSampler, ShaderProfile(i), res.BindPoint);
-					param->TableOffset = res.BindPoint;
-					param->DescriptorNum = res.BindCount;
-					_Samplers.push_back(param);
+					if (res.BindSpace == RootSignature::cDescriptorTableSpace)
+					{
+						check(res.BindPoint + res.BindCount <= desc.TableSamplerNum);
+						param->BindType = ShaderBindType::TableSampler;
+						param->RootParamIndex = GetRootParamIndex(ShaderBindType::TableSampler, ShaderProfile(i), res.BindPoint);
+						param->TableOffset = res.BindPoint;
+						param->DescriptorNum = res.BindCount;
+						_Samplers.push_back(param);
+					}
 				}
 			}
 		}

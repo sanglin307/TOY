@@ -1,12 +1,10 @@
 
+#include "Common.hlsl"
 #include "Interop/CommonStruct.h"
 
 static const float PI = 3.14159265359;
 static const float INV_PI = 0.31830988618379067154;
 
-// root descriptor table use space 0
-// root descriptor use space 1
-// root constant use space 2
 ConstantBuffer<ViewInfo> ViewCB;
 ConstantBuffer<MaterialData> MaterialCB;
 ConstantBuffer<DrawData> DrawCB;
@@ -17,8 +15,6 @@ Texture2D RoughnessMetalnessTexture;
 Texture2D EmissiveTexture;
 StructuredBuffer<LightData> LightsBuffer;
 StructuredBuffer<PrimitiveData> PrimitiveBuffer;
-
-SamplerState DefaultSampler;
 
 struct VertexInput
 {
@@ -132,13 +128,11 @@ float3x3 CreateTangentToWorld(float3 normal, float4 tangent)
 
 float3 TangentSpaceNormalMapping(float3 sampledNormal, float3x3 TBN)
 {
-	// Flip Y
-	//sampledNormal.y = 1 - sampledNormal.y;
-
-    float3 normal = UnpackBC5Normal(sampledNormal.xy);
+    //float3 normal = UnpackBC5Normal(sampledNormal.xy);
+    float3 normal = float3(0,0,0);
     normal.xy = sampledNormal.xy * 2.0f - 1.0f;
-    normal = normalize(normal);
-    return mul(normal, TBN);
+    normal.z = sqrt(1.0f - dot(normal.xy, normal.xy));
+    return normalize(mul(transpose(TBN), normal));
 }
 
 MaterialProperties EvaluateMaterial(PSInput input)
@@ -147,7 +141,7 @@ MaterialProperties EvaluateMaterial(PSInput input)
     float4 baseColor = MaterialCB.BaseColorFactor * float4(input.Color, 1);
     if (MaterialCB.TextureMask & BaseColorTextureMask)
     {
-        baseColor *= BaseColorTexture.Sample(DefaultSampler, input.UV);
+        baseColor *= BaseColorTexture.Sample(RootSampler_Linear, input.UV);
     }
     
     properties.BaseColor = baseColor.rgb;
@@ -157,24 +151,27 @@ MaterialProperties EvaluateMaterial(PSInput input)
     properties.Roughness = MaterialCB.RoughnessFactor;
     if (MaterialCB.TextureMask & RoughnessMetalnessTextureMask)
     {
-        float4 roughnessMetalnessSample = RoughnessMetalnessTexture.Sample(DefaultSampler, input.UV);
+        float4 roughnessMetalnessSample = RoughnessMetalnessTexture.Sample(RootSampler_Linear, input.UV);
         properties.Metalness *= roughnessMetalnessSample.b;
         properties.Roughness *= roughnessMetalnessSample.g;
     }
+    properties.Roughness = clamp(properties.Roughness, 0.0, 1.0);
+
     properties.Emissive = MaterialCB.EmissiveFactor.rgb;
     if (MaterialCB.TextureMask & EmissiveTextureMask)
     {
-        properties.Emissive *= EmissiveTexture.Sample(DefaultSampler, input.UV).rgb;
+        properties.Emissive *= EmissiveTexture.Sample(RootSampler_Linear, input.UV).rgb;
     }
     properties.Specular = 0.5f;
-
+    
     properties.Normal = normalize(input.Normal);
     if (MaterialCB.TextureMask & NormalTextureMask)
     {
-        float3 normalTS = NormalTexture.Sample(DefaultSampler, input.UV).rgb;
+        float3 normalTS = NormalTexture.Sample(RootSampler_Linear, input.UV).rgb;
         float3x3 TBN = CreateTangentToWorld(properties.Normal, float4(normalize(input.Tangent.xyz), input.Tangent.w));
         properties.Normal = TangentSpaceNormalMapping(normalTS, TBN);
     }
+    
     return properties;
 }
  

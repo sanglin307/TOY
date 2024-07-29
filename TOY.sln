@@ -54,11 +54,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utility", "Utility", "{8659
 		Engine\Source\Thirdparty\hlslpp\include\hlsl++.natvis = Engine\Source\Thirdparty\hlslpp\include\hlsl++.natvis
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PSO", "PSO", "{78BF6180-D1A5-4D4B-B849-6BAECE40121C}"
-	ProjectSection(SolutionItems) = preProject
-		Engine\Shaders\PSO\Forward.toml = Engine\Shaders\PSO\Forward.toml
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "USD", "Engine\Source\Plugins\USD\USD.vcxproj", "{FA82395F-24D2-48A2-914D-1E3D43411799}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interop", "Interop", "{F6B1D3E3-F8A7-41DD-AEBA-A56EDAB2333E}"
@@ -68,8 +63,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interop", "Interop", "{F6B1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sources", "Sources", "{333BC946-D5F7-4665-9E91-5AC3B52CE68B}"
 	ProjectSection(SolutionItems) = preProject
-		Engine\Shaders\Forward.hlsl = Engine\Shaders\Forward.hlsl
+		Engine\Shaders\Common.hlsl = Engine\Shaders\Common.hlsl
 		Engine\Shaders\Tonemap.hlsl = Engine\Shaders\Tonemap.hlsl
+		Engine\Shaders\ForwardPass.hlsl = Engine\Shaders\ForwardPass.hlsl
 	EndProjectSection
 EndProject
 Global
@@ -151,7 +147,6 @@ Global
 		{1D2949B5-8613-4E3A-847B-A4EAAD56C7E6} = {EA4F9986-C920-495D-9FC0-4BC9F6282B96}
 		{5407D91A-10F3-4144-816F-86294714D491} = {EA4F9986-C920-495D-9FC0-4BC9F6282B96}
 		{B66BDD9B-4024-479E-BA28-FD92F484D383} = {E52C8821-E035-4F15-9E3E-047149F4FD9A}
-		{78BF6180-D1A5-4D4B-B849-6BAECE40121C} = {E6359BD8-1834-439D-87A0-4D9622E03538}
 		{FA82395F-24D2-48A2-914D-1E3D43411799} = {DE228176-294A-425A-9BEC-C2E76C9B9AA9}
 		{F6B1D3E3-F8A7-41DD-AEBA-A56EDAB2333E} = {E6359BD8-1834-439D-87A0-4D9622E03538}
 		{333BC946-D5F7-4665-9E91-5AC3B52CE68B} = {E6359BD8-1834-439D-87A0-4D9622E03538}

@@ -58,6 +58,7 @@ private:
 
 	RootSignature* LoadRootSignature(const RootSignature::Desc& desc);
 	void CalculateRootSignatureDesc(std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders, RootSignature::Desc& desc);
+	void GenerateRootStaticSampler(std::vector<D3D12_STATIC_SAMPLER_DESC>& samplers);
 	ComPtr<ID3DBlob> GenerateGraphicRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc);
 	ComPtr<ID3DBlob> GenerateComputeRootSignatureBlob(const RootSignature::Desc& desc, std::vector<RootSignatureParamDesc>& paramDesc);
 

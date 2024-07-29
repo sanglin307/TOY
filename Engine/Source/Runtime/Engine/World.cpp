@@ -48,7 +48,7 @@ void GameWorld::SetupWorld()
 	LightComponent::Desc ldesc = {
 		.Type = LightType::Directional,
 		.Color = float3(1,1,1),
-		.Intensity = 10,
+		.Intensity = 50,
 		.Range = 0,
 		.InnerConeAngle = 0,
 		.OuterConeAngle = 0
@@ -62,8 +62,8 @@ void GameWorld::SetupWorld()
 
 	LightComponent::Desc lpdesc = {
 		.Type = LightType::Point,
-		.Color = float3(1,0,0),
-		.Intensity = 10,
+		.Color = float3(1,1,0.5),
+		.Intensity = 20,
 		.Range = 100,
 		.InnerConeAngle = 0,
 		.OuterConeAngle = 0
@@ -71,6 +71,7 @@ void GameWorld::SetupWorld()
 
 	LightComponent* pointLight = new LightComponent("PointLight", lpdesc);
 	Node* lpNode = new Node("PointLightNode");
+	lpNode->SetTranslate(float3(0, 5, 0));
 	pointLight->Attach(lpNode);
 	_Layers[0]->AddNode(lpNode);
 	pointLight->Registe();

@@ -79,16 +79,6 @@ ShaderResource* RenderDevice::LoadShader(const ShaderCreateDesc& desc)
 	return nullptr;
 }
 
-RenderPipeline* RenderDevice::LoadPipeline(const std::string& name)
-{
-	auto iter = _PipelineCacheByName.find(name);
-	if (iter != _PipelineCacheByName.end())
-	{
-		return iter->second;
-	}
-
-	return nullptr;
-}
 
 RenderPipeline* RenderDevice::LoadPipeline(const u64 hash)
 {
@@ -124,122 +114,6 @@ VertexAttribute RenderDevice::TranslateSemanticToAttribute(const std::string& se
 
 	check(0);
 	return VertexAttribute::Max;
-}
-
-void RenderDevice::InitPipelineCache()
-{
-	std::unordered_map<std::string, GraphicPipeline::Desc> graphicPipelines;
-	std::unordered_map<std::string, ComputePipeline::Desc> computePipelines;
-
-	// load all pso from PSO folder.
-	for (const auto& file : std::filesystem::directory_iterator(PathUtil::PSO()))
-	{
-		if (file.path().filename().string().find(".toml") == std::string::npos)
-			continue;
-
-		toml::parse_result pso = toml::parse_file(file.path().c_str());
-		if (!pso)
-		{
-			LOG_ERROR(PipelineManager, std::format("parse {} error {}", file.path().string(), pso.error().description()));
-			continue;
-		}
-
-		toml::table psotable = std::move(pso).table();
-		psotable.for_each([&graphicPipelines,&computePipelines,this](const toml::key& key, toml::table& val)
-			{
-				GraphicPipeline::Desc pd;
-				ComputePipeline::Desc cd;
-
-				auto parse_shader = [&val](ShaderCreateDesc& desc, const char* node_name, ShaderProfile profile) -> bool {
-					auto s_node = val.get(node_name);
-					if (s_node != nullptr)
-					{
-						check(s_node->is_table());
-						const toml::table* vst = s_node->as_table();
-						desc.Path = vst->at("Path").value_or("");
-						desc.Entry = vst->at("Entry").value_or("");
-						desc.Profile = profile;
-						const toml::array& ma = *(vst->at("Macros").as_array());
-						ma.for_each([&desc](toml::value<std::string> e)
-							{
-								desc.Macros.push_back(e.get());
-							});
-						return true;
-					}
-					return false;
-				};
-
-				auto parse_rvts = [&val,this](std::vector<PixelFormat>& rvtFormat, const char* node_name) -> bool {
-					auto s_node = val.get(node_name);
-					if (s_node != nullptr)
-					{
-						rvtFormat.clear();
-						check(s_node->is_array());
-						const toml::array& va = *(s_node->as_array());
-						va.for_each([&rvtFormat,this](toml::value<std::string> e)
-							{
-								rvtFormat.push_back(this->GetFormatByName(e.get()));
-							});
-						return true;
-					}
-					return false;
-					};
-
-				auto parse_dsv = [&val, this](PixelFormat& dsvFormat, const char* node_name) -> bool {
-					auto s_node = val.get(node_name);
-					if (s_node != nullptr)
-					{
-						dsvFormat = this->GetFormatByName(s_node->as_string()->value_or("D32_FLOAT_S8X24_UINT"));
-						return true;
-					}
-					return false;
-					};
-
-				auto parse_dsstate = [&val, this](DepthStencilDesc& state, const char* node_name) -> bool {
-					auto s_node = val.get(node_name);
-					if (s_node != nullptr)
-					{
-						check(s_node->is_table());
-						const toml::table* vst = s_node->as_table();
-						state.DepthEnable = vst->at("DepthEnable").as_boolean()->value_or(true);
-						state.StencilEnable = vst->at("StencilEnable").as_boolean()->value_or(true);
-						return true;
-					}
-					return false;
-					};
-
-				std::string name = key.data();
-				if (parse_shader(pd.VS, "VS", ShaderProfile::Vertex))
-				{
-					parse_shader(pd.PS, "PS", ShaderProfile::Pixel);
-					parse_rvts(pd.RVTFormats, "RVTFormats");
-					parse_dsv(pd.DSVFormat, "DSVFormat");
-					parse_dsstate(pd.DepthStencilState, "DepthStencilState");
-					graphicPipelines[name] = pd;
-				}
-
-				if (parse_shader(cd.CS, "CS", ShaderProfile::Compute))
-				{
-					computePipelines[name] = cd;
-				}
-			});
-	}
-
-	if (graphicPipelines.size() > 0)
-	{
-		for (auto& gp : graphicPipelines)
-		{
-			CreateGraphicPipeline(gp.first,gp.second);
-		}
-	}
-
-	if (computePipelines.size() > 0)
-	{
-		for (auto& cp : computePipelines)
-		{
-			CreateComputePipeline(cp.first, cp.second);
-		}
-	}
 }
 
 void RenderDevice::AddDelayDeleteResource(RenderResource* res, DelayDeleteResourceType type, u64 fenceValue)

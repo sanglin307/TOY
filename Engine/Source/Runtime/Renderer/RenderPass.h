@@ -53,8 +53,7 @@ public:
 
 private:
 	std::list<RenderCommand*> _Commands;
-	GraphicPipeline* ScenePso = nullptr;
-	ComputePipeline* TonemapPso = nullptr;
-	RenderBuffer* MaterialBuffer = nullptr;
-	Sampler* _Sampler;
+	GraphicPipeline* _ScenePso = nullptr;
+	ComputePipeline* _TonemapPso = nullptr;
+	RenderBuffer* _MaterialBuffer = nullptr;
 };

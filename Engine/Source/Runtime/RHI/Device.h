@@ -37,9 +37,7 @@ public:
 	RHI_API PixelFormat GetDepthResourceFormat(PixelFormat format);
 	RHI_API PixelFormat GetFormatByName(const std::string& name);
 
-	RHI_API void InitPipelineCache();
 	RHI_API RenderPipeline* LoadPipeline(const u64 hash);
-	RHI_API RenderPipeline* LoadPipeline(const std::string& name);
 	RHI_API ShaderResource* LoadShader(const ShaderCreateDesc& desc);
 
 	RHI_API VertexAttribute TranslateSemanticToAttribute(const std::string& semanticName, u32 semanticIndex);
@@ -83,7 +81,6 @@ protected:
 	ContextManager* _ContextManager;
 	DescriptorManager* _DescriptorManager;
 	std::unordered_map<u64, RenderPipeline*> _PipelineCache;
-	std::unordered_map<std::string, RenderPipeline*> _PipelineCacheByName;
 	std::unordered_map<u64, ShaderResource*> _ShaderCache;
 	std::unordered_map<u64, Sampler*> _SamplerCache;
 	std::unordered_map<u64, RootSignature*> _RootSignatureCache;

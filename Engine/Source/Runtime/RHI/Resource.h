@@ -377,6 +377,7 @@ public:
         u8* InitData;
     };
 
+    PixelFormat GetFormat() const { return _Desc.Format; }
     u64 GetSize() const { return _Desc.Size; }
     u32 GetStride() const { return _Desc.Stride; }
     virtual ResourceDimension GetDimension() override { return ResourceDimension::Buffer; }
@@ -481,6 +482,8 @@ public:
         u8* Data = nullptr;
         u64 Size = 0;
     };
+
+    PixelFormat GetFormat() const { return _Desc.Format; }
 
     virtual ResourceDimension GetDimension() override { return _Desc.Dimension; }
     virtual u32 GetUsage() override { return _Desc.Usage; }

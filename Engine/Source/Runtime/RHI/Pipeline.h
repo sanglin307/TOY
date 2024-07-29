@@ -306,6 +306,7 @@ public:
 	constexpr static u32 cDescriptorTableSpace = 0;
 	constexpr static u32 cRootDescriptorSpace = 1;
 	constexpr static u32 cRootConstantSpace = 2;
+	constexpr static u32 cRootStaticSamplerSpace = 3;
 
 	virtual ~RootSignature() {};
 	virtual std::any Handle() const { return nullptr; }
