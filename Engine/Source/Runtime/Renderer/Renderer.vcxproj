@@ -148,6 +148,8 @@
     <ClCompile Include="DefaultResources.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderPass.cpp" />
+    <ClCompile Include="RenderPassPostProcess.cpp" />
+    <ClCompile Include="RenderPassSky.cpp" />
     <ClCompile Include="RenderScene.cpp" />
     <ClCompile Include="SceneRendering.cpp" />
   </ItemGroup>

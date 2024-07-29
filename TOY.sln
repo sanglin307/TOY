@@ -64,6 +64,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sources", "Sources", "{333BC946-D5F7-4665-9E91-5AC3B52CE68B}"
 	ProjectSection(SolutionItems) = preProject
 		Engine\Shaders\Common.hlsl = Engine\Shaders\Common.hlsl
+		Engine\Shaders\PostProcess.hlsl = Engine\Shaders\PostProcess.hlsl
 		Engine\Shaders\Tonemap.hlsl = Engine\Shaders\Tonemap.hlsl
 		Engine\Shaders\ForwardPass.hlsl = Engine\Shaders\ForwardPass.hlsl
 	EndProjectSection

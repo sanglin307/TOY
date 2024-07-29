@@ -79,12 +79,9 @@ void SceneRenderer::InitSceneTextures()
 
 void SceneRenderer::InitRenderPass()
 {
-	_Passes[(u32)RenderPassType::Forward] = new RenderPassForward;
-
-	for (u32 p = 0; p < (u32)RenderPassType::Max; p++)
-	{
-		_Passes[p]->Init(_Device, this);
-	}
+	_Passes[(u32)RenderPassType::Forward] = new RenderPassForward(_Device,this);
+	_Passes[(u32)RenderPassType::Sky] = new RenderPassSky(_Device, this);
+	_Passes[(u32)RenderPassType::Tonemap] = new RenderPassTonemap(_Device, this);
 }
 
 SceneRenderer::SceneRenderer(RenderDevice* device)
@@ -140,7 +137,12 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 	_ViewUniformBuffer->UploadData((u8*)&view, sizeof(ViewInfo));
 
 	ctx->SetDescriptorHeap();
+
+	ctx->SetViewport(0, 0, view.ViewportSize.x, view.ViewportSize.y);
+	ctx->SetScissorRect(0, 0, view.ViewportSize.x, view.ViewportSize.y);
+
 	_Passes[(u32)RenderPassType::Forward]->Render(view, sc, ctx);
+	_Passes[(u32)RenderPassType::Tonemap]->Render(view, sc, ctx);
 	ctx->CopyResource(sc->GetCurrentBackBuffer(), _SceneTextures.ColorOutput);
 
 	_Device->EndFrame(ctx, sc);
