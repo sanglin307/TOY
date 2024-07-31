@@ -142,6 +142,7 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 	ctx->SetScissorRect(0, 0, view.ViewportSize.x, view.ViewportSize.y);
 
 	_Passes[(u32)RenderPassType::Forward]->Render(view, sc, ctx);
+	_Passes[(u32)RenderPassType::Sky]->Render(view, sc, ctx);
 	_Passes[(u32)RenderPassType::Tonemap]->Render(view, sc, ctx);
 	ctx->CopyResource(sc->GetCurrentBackBuffer(), _SceneTextures.ColorOutput);
 

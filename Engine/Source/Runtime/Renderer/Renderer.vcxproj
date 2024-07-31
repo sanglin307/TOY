@@ -147,7 +147,7 @@
   <ItemGroup>
     <ClCompile Include="DefaultResources.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="RenderPass.cpp" />
+    <ClCompile Include="RenderPassForward.cpp" />
     <ClCompile Include="RenderPassPostProcess.cpp" />
     <ClCompile Include="RenderPassSky.cpp" />
     <ClCompile Include="RenderScene.cpp" />

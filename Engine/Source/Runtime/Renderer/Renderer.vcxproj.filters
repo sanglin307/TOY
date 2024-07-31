@@ -44,7 +44,7 @@
     <ClCompile Include="RenderScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RenderPass.cpp">
+    <ClCompile Include="RenderPassForward.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SceneRendering.cpp">

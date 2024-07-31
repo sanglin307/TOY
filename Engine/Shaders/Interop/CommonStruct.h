@@ -72,3 +72,15 @@ struct PrimitiveData
 {
     float4x4 LocalToWorld;
 };
+
+struct ProceduralSky
+{
+    float3   SunDirection;
+    PAD
+    float Rayleigh;
+    float Turbidity;
+    float MieCoefficient;
+
+    float Luminance;
+    float MieDirectionalG;
+};
