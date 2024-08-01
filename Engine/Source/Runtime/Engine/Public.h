@@ -8,6 +8,7 @@
 #include "FrameRate.h"
 #include "Component.h"
 #include "Input.h"
+#include "UI.h"
 #include "Light.h"
 #include "Image.h"
 #include "Viewport.h"

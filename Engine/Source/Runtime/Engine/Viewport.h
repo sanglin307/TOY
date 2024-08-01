@@ -3,7 +3,7 @@
 class GameViewport
 {
 public:
-	GameViewport(std::any hwnd, const RenderConfig& config);
+	GameViewport(void* hwnd, const RenderConfig& config);
 	virtual ~GameViewport();
 
 	uint2 GetSize() 

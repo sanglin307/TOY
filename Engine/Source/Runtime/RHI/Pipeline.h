@@ -388,7 +388,7 @@ public:
 	RHI_API void CommitParameter(RenderContext* ctx);
 	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
 	RHI_API void AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
-
+ 
 protected:
 	RootSignature* _RootSignature;
 	std::string _Name;
@@ -401,6 +401,7 @@ protected:
 	std::vector<ShaderParameter*> _SRVs;
 	std::vector<ShaderParameter*> _UAVs;
 	std::vector<ShaderParameter*> _Samplers;
+ 
 };
 
 class GraphicPipeline : public RenderPipeline

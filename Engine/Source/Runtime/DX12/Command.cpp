@@ -67,6 +67,23 @@ void DX12CommandList::SetRenderPipeline(RenderPipeline* pipeline)
     _Handle->SetPipelineState(ps);
 }
 
+#include "imgui.h"
+#include "backends/imgui_impl_dx12.h"
+void DX12CommandList::ImGuiRenderDrawData()
+{
+    ImGui::Render();
+
+    u32 frameIndex = _Device->GetCurrentFrameIndex();
+    DX12DynamicDescriptorHeap* uiHeap = static_cast<DX12DynamicDescriptorHeap*>(_Device->_DescriptorManager->GetDynamicDescriptorHeap(DescriptorType::CBV_SRV_UAV, frameIndex));
+    u32 alloc = uiHeap->Allocate();
+    D3D12_CPU_DESCRIPTOR_HANDLE dest = uiHeap->CPUHandle(alloc);
+    _Device->CopyDescriptor(dest, _Device->_ImGuiFontDescriptor, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = uiHeap->GPUHandle(alloc);
+    ImGui_ImplDX12_SetDescriptorHeap(ImGui::GetDrawData(), gpuHandle);
+ 
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), _Handle.Get());
+}
+
 void DX12CommandList::SetRootDescriptorTableParameter(const std::vector<ShaderParameter*>& params, PipelineType type)
 {
     if (params.size() == 0)

@@ -404,8 +404,8 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
     CommandQueue* queue = _ContextManager->GetDirectQueue();
 
     ComPtr<IDXGISwapChain1> swapChain;
-    check(info.HWND.has_value());
-    const HWND Handle = std::any_cast<HWND>(info.HWND);
+    check(info.HWND);
+    const HWND Handle = static_cast<HWND>(info.HWND);
     if (SUCCEEDED(_Factory->CreateSwapChainForHwnd(std::any_cast<ID3D12CommandQueue*>(queue->Handle()),
         Handle,
         &swapChainDesc,
@@ -1761,6 +1761,28 @@ RenderPipeline* DX12Device::CreateGraphicPipeline(const std::string& name,const 
 DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
 {
     return std::any_cast<DXGI_FORMAT>(_Formats[static_cast<u32>(format)].PlatformFormat);
+}
+
+#include "backends/imgui_impl_dx12.h"
+
+void DX12Device::ImGuiInit(void* ctx)
+{
+    ImGui::SetCurrentContext((ImGuiContext*)ctx);
+    DX12DescriptorHeap* uiHeap = static_cast<DX12DescriptorHeap*>(_DescriptorManager->GetCPUSRVHeap());
+    DescriptorAllocation srvDescriptor = uiHeap->Allocate();
+    _ImGuiFontDescriptor = uiHeap->CPUHandle(srvDescriptor);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = {}; // set it later.
+    ImGui_ImplDX12_Init(_Device.Get(), cContextNumber, DXGI_FORMAT_R8G8B8A8_UNORM, nullptr, _ImGuiFontDescriptor, gpuHandle);
+}
+
+void DX12Device::ImGuiDestroy()
+{
+    ImGui_ImplDX12_Shutdown();
+}
+
+void DX12Device::ImGuiNewFrame()
+{
+    ImGui_ImplDX12_NewFrame();
 }
 
 void DX12Device::CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESCRIPTOR_HANDLE src, D3D12_DESCRIPTOR_HEAP_TYPE  heapType)

@@ -144,8 +144,15 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 	_Passes[(u32)RenderPassType::Forward]->Render(view, sc, ctx);
 	_Passes[(u32)RenderPassType::Sky]->Render(view, sc, ctx);
 	_Passes[(u32)RenderPassType::Tonemap]->Render(view, sc, ctx);
-	ctx->CopyResource(sc->GetCurrentBackBuffer(), _SceneTextures.ColorOutput);
+	
+	{
+		RenderMarker marker(ctx, float3(0.18, 0.18, 0.18), "ImGUIPass");
+		RenderTexture* rts[] = { _SceneTextures.ColorOutput };
+		ctx->SetRenderTargets(1, rts, RenderTargetColorFlags::None, nullptr, RenderTargetDepthStencilFlags::None);
+		ctx->ImGuiRenderDrawData();
+	}
 
+	ctx->CopyResource(sc->GetCurrentBackBuffer(), _SceneTextures.ColorOutput);
 	_Device->EndFrame(ctx, sc);
 }
 

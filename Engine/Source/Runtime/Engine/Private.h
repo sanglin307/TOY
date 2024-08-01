@@ -20,6 +20,7 @@ using namespace hlslpp;
 // inner dependency.
 #include "IRenderer.h"
 #include "FrameRate.h"
+#include "UI.h"
 #include "Component.h"
 #include "Node.h"
 #include "Input.h"

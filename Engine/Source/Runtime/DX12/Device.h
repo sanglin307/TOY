@@ -28,7 +28,11 @@ public :
 	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
 
 	void CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESCRIPTOR_HANDLE src, D3D12_DESCRIPTOR_HEAP_TYPE  heapType);
- 
+
+	void ImGuiInit(void* ctx);
+	void ImGuiDestroy();
+	void ImGuiNewFrame();
+
 private:
 	void GenerateMipmaps(const RenderTexture::Desc& desc, std::vector<D3D12_SUBRESOURCE_DATA>& mipData);
 
@@ -69,6 +73,7 @@ private:
 	RootSignature* _CachedGraphicRootSignature = nullptr; // if cache one satisfy our need ,use it.
 	RootSignature* _CachedComputeRootSignature = nullptr;
  
+	D3D12_CPU_DESCRIPTOR_HANDLE _ImGuiFontDescriptor;
 };
 
 

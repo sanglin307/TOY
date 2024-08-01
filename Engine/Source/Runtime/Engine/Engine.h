@@ -7,7 +7,7 @@ public:
 	ENGINE_API static GameEngine& Instance();
 
 	ENGINE_API void PreInit(const std::vector<std::string>& cmds);
-	ENGINE_API void Init(std::any hwnd);
+	ENGINE_API void Init(void* hwnd);
 	ENGINE_API void Destroy();
 
 	ENGINE_API void Update();

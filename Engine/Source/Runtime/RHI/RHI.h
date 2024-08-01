@@ -21,5 +21,8 @@ class IRHIModule : public ModuleInterface
 {
 public:
     virtual RenderDevice* GetDevice() = 0;
+    virtual void ImGuiInit(void* ctx) = 0;
+    virtual void ImGuiDestroy() = 0;
+    virtual void ImGuiNewFrame() = 0;
 };
  

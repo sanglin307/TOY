@@ -72,6 +72,8 @@ public:
 	virtual void BeginRenderMarker(const float3& color, const std::string& name) {};
 	virtual void EndRenderMarker() {};
 	virtual void SetRenderMarker(const float3& color, const std::string& name) {};
+
+	virtual void ImGuiRenderDrawData() = 0;
 	 
 	RenderContext* Open();
 

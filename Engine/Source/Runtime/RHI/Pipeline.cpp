@@ -16,7 +16,6 @@ void RenderPipeline::BindParameter(const std::string& name, RenderResource* reso
 
 void RenderPipeline::CommitParameter(RenderContext* ctx)
 {
- 
 	for (auto param : _RootParams)
 	{
 		ctx->SetRootDescriptorParameter(param, _Type);
@@ -26,7 +25,7 @@ void RenderPipeline::CommitParameter(RenderContext* ctx)
 	ctx->SetRootDescriptorTableParameter(_SRVs,_Type);
 	ctx->SetRootDescriptorTableParameter(_UAVs,_Type);
 	ctx->SetRootDescriptorTableParameter(_Samplers,_Type);
-
+ 
 }
 
 

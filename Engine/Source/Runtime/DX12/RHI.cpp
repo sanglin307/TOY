@@ -20,4 +20,17 @@ RenderDevice* DX12RHIModule::GetDevice()
     return sDevice;
 }
 
+void DX12RHIModule::ImGuiInit(void* ctx)
+{
+    sDevice->ImGuiInit(ctx);
+}
  
+void DX12RHIModule::ImGuiDestroy()
+{
+    sDevice->ImGuiDestroy();
+}
+
+void DX12RHIModule::ImGuiNewFrame()
+{
+    sDevice->ImGuiNewFrame();
+}

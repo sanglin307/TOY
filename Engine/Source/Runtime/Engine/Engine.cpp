@@ -54,7 +54,7 @@ void GameEngine::PreInit(const std::vector<std::string>& cmds)
 
 
 
-void GameEngine::Init(std::any hwnd)
+void GameEngine::Init(void* hwnd)
 {
 	ShaderCompiler::Init();
 	GetRHI().Init();
@@ -75,6 +75,8 @@ void GameEngine::Init(std::any hwnd)
 	}
 
 	GameWorld::Instance().Init(scenefile);
+
+	UI::Instance().Init(hwnd);
 }
 
 void GameEngine::Destroy()
@@ -84,6 +86,8 @@ void GameEngine::Destroy()
 	GameWorld::Instance().Destroy();
 
 	GetRenderer().Destroy();
+
+	UI::Instance().Destroy();
 
 	delete _GameViewport;
 	_GameViewport = nullptr;
@@ -98,6 +102,8 @@ void GameEngine::Update()
 {
 	double delta = _FrameRate.Update();
 	LogUtil::Update(delta);
+
+	UI::Instance().Update();
 
 	GameWorld::Instance().Update(delta);
 

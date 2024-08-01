@@ -110,13 +110,13 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableModules>false</EnableModules>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/stb;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Shaders/Interop</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/stb;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Shaders/Interop;$(SolutionDir)Engine/Source/Thirdparty/imgui-1.91.0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin/Win64/;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/lib/Debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Core.lib;fastgltf.lib;RHI.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Core.lib;fastgltf.lib;RHI.lib;ImGui.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
@@ -149,6 +149,7 @@
     <ClInclude Include="Node.h" />
     <ClInclude Include="Primitive.h" />
     <ClInclude Include="IRenderer.h" />
+    <ClInclude Include="UI.h" />
     <ClInclude Include="Viewport.h" />
     <ClInclude Include="World.h" />
     <ClInclude Include="Input.h" />
@@ -167,6 +168,7 @@
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Node.cpp" />
+    <ClCompile Include="UI.cpp" />
     <ClCompile Include="Viewport.cpp" />
     <ClCompile Include="World.cpp" />
     <ClCompile Include="Input.cpp" />

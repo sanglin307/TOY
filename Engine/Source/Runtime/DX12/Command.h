@@ -81,6 +81,8 @@ public:
 	virtual void BeginRenderMarker(const float3& color, const std::string& name) override;
 	virtual void EndRenderMarker() override;
 	virtual void SetRenderMarker(const float3& color, const std::string& name) override;
+
+	virtual void ImGuiRenderDrawData() override;
 	 
 private:
 	virtual void Reset() override;

@@ -1,6 +1,6 @@
 #include "Private.h"
 
-GameViewport::GameViewport(std::any hwnd, const RenderConfig& config)
+GameViewport::GameViewport(void* hwnd, const RenderConfig& config)
 {
 	_ViewportSize.x = config.FrameWidth;
 	_ViewportSize.y = config.FrameHeight;

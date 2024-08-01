@@ -1,5 +1,7 @@
 #include "Win64.h"
 
+#include "backends/imgui_impl_win32.h"
+
 // for DirectX12 Agility SDK.
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 611; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\"; }
@@ -122,8 +124,13 @@ static u32 KeyMods(void)
     return mods;
 }
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+        return true;
+
     switch (message)
     {
     case WM_KEYDOWN:
@@ -264,8 +271,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         hInstance,
         nullptr);
  
-    std::any awnd = hwnd;
-    GameEngine::Instance().Init(awnd);
+    GameEngine::Instance().Init((void*)hwnd);
+
+    void* uiContext = UI::Instance().GetContext();
+    ImGui::SetCurrentContext((ImGuiContext*)uiContext);
 
     ShowWindow(hwnd, nCmdShow);
 

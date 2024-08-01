@@ -209,6 +209,7 @@ public:
         return _GPUDSVHeap;
     }
 
+ 
     DynamicDescriptorHeap* GetDynamicDescriptorHeap(DescriptorType type, u32 index)
     {
         if (type == DescriptorType::CBV_SRV_UAV)
@@ -231,7 +232,7 @@ public:
     constexpr static u32 cGPUSRVDescriptorNum = 1000;
     constexpr static u32 cGPUSamplerDescriptorNum = 100;
     constexpr static u32 cGPURTVDSVDescriptorNum = 100;
-
+ 
     constexpr static u32 cDynamicSRVDescriptorNum = 8192;
     constexpr static u32 cDynamicSamplerDescriptorNum = 100;
 
@@ -240,7 +241,7 @@ private:
     DescriptorHeap* _CPUSamplerHeap;
     DescriptorHeap* _GPURTVHeap;
     DescriptorHeap* _GPUDSVHeap;
-
+ 
     std::vector<DynamicDescriptorHeap*> _SRVDynamicHeap;
     std::vector<DynamicDescriptorHeap*> _SamplerDynamicHeap;
     RenderDevice* _Device;
@@ -526,7 +527,7 @@ public:
         u32 Width;
         u32 Height;
         PixelFormat Format;
-        std::any HWND;
+        void* HWND;
         u32 FrameCount = 3;
         u16 SampleCount = 1;
         u16 SampleQuality = 0;
