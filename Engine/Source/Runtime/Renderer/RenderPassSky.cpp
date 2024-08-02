@@ -45,18 +45,12 @@ RenderPassSky::RenderPassSky(RenderDevice* device, SceneRenderer* renderer)
 void RenderPassSky::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
 {
 	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
+	ProceduralSky* sky = _Renderer->GetScene()->GetProceduralSkyData();
+	if (!sky)  return;
 
 	{
 		RenderMarker marker(ctx, float3(0.18, 0.18, 0.18), "SkyPass");
-		ProceduralSky skyCB = {
-			.SunDirection = float3(1.f,0.05f,0.f),
-			.Rayleigh = 2.f,
-			.Turbidity = 10.f,
-			.MieCoefficient = 0.005f,
-			.Luminance = 1.f,
-			.MieDirectionalG = 0.8f
-		};
-		_SkyCB->UploadData((u8*)&skyCB, sizeof(ProceduralSky));
+		_SkyCB->UploadData((u8*)sky, sizeof(ProceduralSky));
 
 		_SkyPso->CommitParameter(ctx);
 

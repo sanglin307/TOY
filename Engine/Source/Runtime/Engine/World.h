@@ -29,10 +29,15 @@ private:
 	GameWorld& operator=(GameWorld&& rhs) = delete;
 
 	void SetupWorld();
+
 private:
 	std::vector<Layer*> _Layers;
 	IRenderScene*  _RenderScene;
 
 	CameraComponent* _DefaultCamera = nullptr;
 	CameraController* _CameraController;
+
+	SkyComponent* _DefaultSkyComponent = nullptr;
+
+
 };

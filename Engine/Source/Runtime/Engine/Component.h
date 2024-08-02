@@ -14,6 +14,7 @@ enum class ComponentType
 	Camera = 0,
 	Light,
 	Primitive,
+	Sky,
 	Max
 };
 
@@ -25,6 +26,8 @@ public:
 	virtual ~Component();
 	void Attach(Node* node);
 	void Detach();
+
+	Node* GetOwner() { return _Owner; }
 
 	virtual ComponentType GetComponentType() {
 		return ComponentType::Max;

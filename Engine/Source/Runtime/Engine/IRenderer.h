@@ -3,6 +3,7 @@
 struct Transform;
 class PrimitiveComponent;
 class LightComponent;
+class SkyComponent;
 
 class IRenderScene
 {
@@ -12,6 +13,8 @@ public:
     virtual void RemovePrimitive(PrimitiveComponent* primitive) = 0;
     virtual void AddLight(const Transform& trans, LightComponent* light) = 0;
     virtual void RemoveLight(LightComponent* light) = 0;
+    virtual void AddSky(SkyComponent* sky) = 0;
+    virtual void RemoveSky(SkyComponent* sky) = 0;
 };
 
 class GameWorld;

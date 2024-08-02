@@ -17,7 +17,7 @@ public:
 	void Registe();
 	void UnRegiste();
 
-	float4x4& GetWorldMatrix();
+	ENGINE_API float4x4& GetWorldMatrix();
 
 	Component* FindFirstComponent(ComponentType type);
 

@@ -56,6 +56,7 @@ void GameWorld::SetupWorld()
 
 	LightComponent* sunLight = new LightComponent("SunLight", ldesc);
 	Node* lNode = new Node("SunLightNode");
+	lNode->SetRotation(quaternion::rotation_euler_zxy(float3(Math::Deg2Rad() * 120, Math::Deg2Rad() * 30, Math::Deg2Rad() * 30)));
 	sunLight->Attach(lNode);
 	_Layers[0]->AddNode(lNode);
 	sunLight->Registe();
@@ -75,6 +76,17 @@ void GameWorld::SetupWorld()
 	pointLight->Attach(lpNode);
 	_Layers[0]->AddNode(lpNode);
 	pointLight->Registe();
+
+	//sky
+	SkyComponent::Desc sDesc;
+	SkyComponent* skyComponent = new SkyComponent("SkyDome", sDesc);
+	skyComponent->SetDirectionalLight(sunLight);
+	Node* sNode = new Node("SkyNode");
+	skyComponent->Attach(sNode);
+	_Layers[0]->AddNode(sNode);
+	skyComponent->Registe();
+	_DefaultSkyComponent = skyComponent;
+
 }
 
 void GameWorld::Init(const std::string& scenefile)

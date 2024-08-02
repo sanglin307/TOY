@@ -69,7 +69,7 @@ void DX12CommandList::SetRenderPipeline(RenderPipeline* pipeline)
 
 #include "imgui.h"
 #include "backends/imgui_impl_dx12.h"
-void DX12CommandList::ImGuiRenderDrawData()
+void DX12CommandList::ImGuiRender()
 {
     ImGui::Render();
 

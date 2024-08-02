@@ -26,6 +26,7 @@ using namespace hlslpp;
 #include "Input.h"
 #include "Camera.h"
 #include "Light.h"
+#include "Sky.h"
 #include "Image.h"
 #include "Viewport.h"
 #include "Engine.h"

@@ -138,6 +138,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
     case WM_KEYUP:
     case WM_SYSKEYUP:
         {    
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureKeyboard)
+            return 0;
+
             const u32 key = static_cast<u32>(wParam);
             check(key < 0xff);
             i32 keyCode = sKeyCodeMap[key];
@@ -162,6 +166,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
     case WM_RBUTTONUP:
     case WM_MBUTTONUP:
         {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse)
+            return 0;
+
             auto action = MouseEvent::ActionType::Pressed;
             if (message == WM_LBUTTONUP || message == WM_RBUTTONUP || message == WM_MBUTTONUP)
                 action = MouseEvent::ActionType::Released;
@@ -187,6 +195,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
         return 0;
     case WM_MOUSEMOVE:
         {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse)
+            return 0;
+
             MouseEvent mouseEvent = {
                             .Type = MouseEvent::ActionType::Move,
                             .Key = KeyType::MousePosition,
@@ -199,6 +211,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
         return 0;
     case WM_MOUSEWHEEL:
         {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse)
+            return 0;
+
             const float delta = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
             auto action = KeyType::MouseScrollUp;
             if (delta < 0)

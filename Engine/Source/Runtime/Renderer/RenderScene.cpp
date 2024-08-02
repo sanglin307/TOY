@@ -40,6 +40,44 @@ RenderScene::~RenderScene()
 	{
 		delete l;
 	}
+
+	if (_Sky.SkyData)
+	{
+		delete _Sky.SkyData;
+	}
+}
+void RenderScene::AddSky(SkyComponent* sky)
+{
+	if (_Sky.Component != sky)
+	{
+		_Sky.Component = sky;
+		if (!_Sky.SkyData)
+		{
+			_Sky.SkyData = new ProceduralSky;
+		}
+		LightComponent* l = sky->GetDirectionalLight();
+		check(l);
+		float4x4& lightMat = l->GetOwner()->GetWorldMatrix();
+		SkyComponent::Desc desc = sky->GetDesc();
+
+		float4 direction = mul(float4(0,0,1,0), lightMat);
+		_Sky.SkyData->SunDirection = direction.xyz;
+		_Sky.SkyData->Rayleigh = desc.Rayleigh;
+		_Sky.SkyData->Turbidity = desc.Turbidity;
+		_Sky.SkyData->MieCoefficient = desc.MieCoefficient;
+		_Sky.SkyData->Luminance = desc.Luminance;
+		_Sky.SkyData->MieDirectionalG = desc.MieDirectionalG;
+	}
+}
+
+void RenderScene::RemoveSky(SkyComponent* sky)
+{
+	if (_Sky.Component == sky)
+	{
+		_Sky.Component = nullptr;
+		delete _Sky.SkyData;
+		_Sky.SkyData = nullptr;
+	}
 }
 
 void RenderScene::AddLight(const Transform& trans,LightComponent* light)

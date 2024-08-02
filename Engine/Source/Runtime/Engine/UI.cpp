@@ -1,9 +1,10 @@
 #include "Private.h"
 
 #include "imgui.h"
-#include "backends/imgui_impl_win32.h"
 
-#include "imgui_internal.h"
+#ifdef WINDOWS
+#include "backends/imgui_impl_win32.h"
+#endif
 
 UI& UI::Instance()
 {
@@ -19,8 +20,10 @@ void UI::Init(void* hwnd)
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+#ifdef WINDOWS
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(hwnd);
+#endif
 
 	GameEngine::Instance().GetRHI().ImGuiInit((void*)_ImGuiContext);
 }
@@ -28,14 +31,20 @@ void UI::Init(void* hwnd)
 void UI::Destroy()
 {
 	GameEngine::Instance().GetRHI().ImGuiDestroy();
+#ifdef WINDOWS
 	ImGui_ImplWin32_Shutdown();
+#endif
 	ImGui::DestroyContext((ImGuiContext*)_ImGuiContext);
 }
 
 void UI::Update()
 {
 	GameEngine::Instance().GetRHI().ImGuiNewFrame();
+
+#ifdef WINDOWS
 	ImGui_ImplWin32_NewFrame();
+#endif
+
 	ImGui::NewFrame();
 
 	ImGui::ShowDemoWindow();

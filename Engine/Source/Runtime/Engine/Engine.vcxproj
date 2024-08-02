@@ -149,6 +149,7 @@
     <ClInclude Include="Node.h" />
     <ClInclude Include="Primitive.h" />
     <ClInclude Include="IRenderer.h" />
+    <ClInclude Include="Sky.h" />
     <ClInclude Include="UI.h" />
     <ClInclude Include="Viewport.h" />
     <ClInclude Include="World.h" />
@@ -168,6 +169,7 @@
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Node.cpp" />
+    <ClCompile Include="Sky.cpp" />
     <ClCompile Include="UI.cpp" />
     <ClCompile Include="Viewport.cpp" />
     <ClCompile Include="World.cpp" />
