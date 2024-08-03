@@ -1,6 +1,5 @@
 #pragma once
 
-
 struct Image
 {
 	~Image()
@@ -15,6 +14,7 @@ struct Image
 	u8* Data = nullptr;
 	u32 Size;
 	PixelFormat Format;
+	ImageCompressType CompressType = ImageCompressType::None;
 };
 
 class ImageReader

@@ -105,6 +105,29 @@ enum class PixelFormat : u32
     MAX
 };
 
+
+enum class ImageCompressType
+{
+    None,
+    BC1,
+    BC1_SRGB,
+    BC2,
+    BC2_SRGB,
+    BC3,
+    BC3_SRGB,
+    BC4,
+    BC4_SNorm,
+    BC5,
+    BC5_SNorm,
+    BC6H,
+    BC6H_SF,
+    BC7,
+    BC7_SRGB,
+    Max
+
+};
+
+
 struct PixelFormatInfo
 {
     u8         ComponentBitSize;
@@ -476,6 +499,7 @@ public:
         u16 DepthOrArraySize;
         u16 MipLevels = 1;
         PixelFormat Format;
+        ImageCompressType CompressType;
         u32 Usage;
         ResourceDimension Dimension;
         u16 SampleCount = 1;

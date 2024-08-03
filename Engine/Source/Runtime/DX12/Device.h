@@ -27,6 +27,8 @@ public :
 
 	DXGI_FORMAT TranslatePixelFormat(PixelFormat format);
 
+	DXGI_FORMAT TranslateCompressPixelFormat(ImageCompressType format);
+
 	void CopyDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE dest, D3D12_CPU_DESCRIPTOR_HANDLE src, D3D12_DESCRIPTOR_HEAP_TYPE  heapType);
 
 	void ImGuiInit(void* ctx);
@@ -35,6 +37,8 @@ public :
 
 private:
 	void GenerateMipmaps(const RenderTexture::Desc& desc, std::vector<D3D12_SUBRESOURCE_DATA>& mipData);
+
+	void InitMemoryAllocator();
 
 	void ReportLiveObjects();
     void InitPixelFormat_Platform();
@@ -74,6 +78,8 @@ private:
 	RootSignature* _CachedComputeRootSignature = nullptr;
  
 	D3D12_CPU_DESCRIPTOR_HANDLE _ImGuiFontDescriptor;
+
+	ComPtr<D3D12MA::Allocator> _MemoryAlloc;
 };
 
 

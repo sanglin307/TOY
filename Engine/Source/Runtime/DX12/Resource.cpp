@@ -157,18 +157,36 @@ void DX12Device::GenerateMipmaps(const RenderTexture::Desc& desc,std::vector<D3D
     DirectX::ComputePitch(image.format, image.width, image.height, image.rowPitch, image.slicePitch);
 
     DirectX::ScratchImage mipChain;
-    SUCCEEDED(GenerateMipMaps(image, DirectX::TEX_FILTER_SEPARATE_ALPHA, desc.MipLevels, mipChain, true));
+    check(SUCCEEDED(GenerateMipMaps(image, DirectX::TEX_FILTER_SEPARATE_ALPHA, desc.MipLevels, mipChain, true)));
 
-    auto images = mipChain.GetImages();
-    u32 imageCount = (u32)mipChain.GetImageCount();
-
-    for (u32 i = 0; i < imageCount; i++)
+  /*  if (desc.CompressType != ImageCompressType::None)
     {
-        D3D12_SUBRESOURCE_DATA& sd = mipData.emplace_back();
-        sd.pData = std::malloc(images[i].slicePitch);
-        std::memcpy((void*)sd.pData, images[i].pixels, images[i].slicePitch);
-        sd.RowPitch = images[i].rowPitch;
-        sd.SlicePitch = images[i].slicePitch;
+        auto images = mipChain.GetImages();
+        u32 imageCount = (u32)mipChain.GetImageCount();
+        for (u32 i = 0; i < imageCount; i++)
+        {
+            DirectX::ScratchImage cImage;
+            check(SUCCEEDED(DirectX::Compress(images[i], TranslateCompressPixelFormat(desc.CompressType), DirectX::TEX_COMPRESS_PARALLEL, DirectX::TEX_THRESHOLD_DEFAULT,cImage)));
+            D3D12_SUBRESOURCE_DATA& sd = mipData.emplace_back();
+            sd.pData = std::malloc(cImage.GetImages()[0].slicePitch);
+            std::memcpy((void*)sd.pData, cImage.GetImages()[0].pixels, cImage.GetImages()[0].slicePitch);
+            sd.RowPitch = cImage.GetImages()[0].rowPitch;
+            sd.SlicePitch = cImage.GetImages()[0].slicePitch;
+        }
+    }
+    else*/
+    {
+        auto images = mipChain.GetImages();
+        u32 imageCount = (u32)mipChain.GetImageCount();
+
+        for (u32 i = 0; i < imageCount; i++)
+        {
+            D3D12_SUBRESOURCE_DATA& sd = mipData.emplace_back();
+            sd.pData = std::malloc(images[i].slicePitch);
+            std::memcpy((void*)sd.pData, images[i].pixels, images[i].slicePitch);
+            sd.RowPitch = images[i].rowPitch;
+            sd.SlicePitch = images[i].slicePitch;
+        }
     }
 }
 
@@ -189,7 +207,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
         DirectX::ComputePitch(TranslatePixelFormat(format), desc.Width, desc.Height, (size_t&)md.RowPitch, (size_t&)md.SlicePitch);
     }
 
-    ComPtr<ID3D12Resource> resource;
+ 
     D3D12_RESOURCE_DESC texDesc = {
         .Dimension = TranslateResourceDimension(desc.Dimension),
         .Width = desc.Width,
@@ -235,24 +253,28 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
         texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
-    D3D12_HEAP_PROPERTIES heap = {
-                .Type = D3D12_HEAP_TYPE_DEFAULT
+    D3D12MA::ALLOCATION_DESC allocDesc = {
+        .HeapType = D3D12_HEAP_TYPE_DEFAULT
     };
-
+ 
+    ComPtr<D3D12MA::Allocation> allocation;
+    ComPtr<ID3D12Resource> resource;
     if (desc.Usage & (u32)ResourceUsage::RenderTarget)
     {
-        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COMMON, &clearValueRT, IID_PPV_ARGS(&resource))));
+        check(SUCCEEDED(_MemoryAlloc->CreateResource(&allocDesc,&texDesc, D3D12_RESOURCE_STATE_COMMON, &clearValueRT, &allocation, IID_PPV_ARGS(&resource))));
     }
     else if (desc.Usage & (u32)ResourceUsage::DepthStencil)
     {
-        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COMMON, &clearValueDS, IID_PPV_ARGS(&resource))));
+        check(SUCCEEDED(_MemoryAlloc->CreateResource(&allocDesc, &texDesc, D3D12_RESOURCE_STATE_COMMON, &clearValueDS, &allocation, IID_PPV_ARGS(&resource))));
     }
     else
     {
-        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource))));
+        check(SUCCEEDED(_MemoryAlloc->CreateResource(&allocDesc, &texDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, &allocation, IID_PPV_ARGS(&resource))));
     }
 
-    resource->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
+    std::wstring rName = PlatformUtils::UTF8ToUTF16(name);
+    allocation->SetName(rName.c_str());
+    resource->SetName(rName.c_str());
 
     DX12RenderTexture* dstTexture = nullptr;
 
@@ -276,18 +298,20 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
             .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR
         };
         ComPtr<ID3D12Resource> tempRes;
-        D3D12_HEAP_PROPERTIES uploadHeap = {
-               .Type = D3D12_HEAP_TYPE_UPLOAD
+        D3D12MA::ALLOCATION_DESC uploadDesc = {
+              .HeapType = D3D12_HEAP_TYPE_UPLOAD
         };
-        check(SUCCEEDED(_Device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &tempDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&tempRes))));
-       
+
+        ComPtr<D3D12MA::Allocation> tempalloc;
+        check(SUCCEEDED(_MemoryAlloc->CreateResource(&uploadDesc, &tempDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, &tempalloc, IID_PPV_ARGS(&tempRes))));
+
         u64 copyFenceValue = 0;
         DX12CommandList* ctx = static_cast<DX12CommandList*>(_ContextManager->GetCopyContext(copyFenceValue));
-        dstTexture = new DX12RenderTexture(name, this, desc, ResourceState::CopyDest, resource);
+        dstTexture = new DX12RenderTexture(name, this, desc, ResourceState::CopyDest, allocation,resource);
         RenderBuffer::Desc buffDesc = {
             .Size = requiredSize
         };
-        RenderBuffer* srcBuffer = new DX12RenderBuffer("Texture_TempCopy", this, buffDesc, ResourceState::GenericRead, tempRes);
+        RenderBuffer* srcBuffer = new DX12RenderBuffer("Texture_TempCopy", this, buffDesc, ResourceState::GenericRead, tempalloc,tempRes);
         ctx->UpdateSubresource(dstTexture, srcBuffer, 0, 0, (u32)mipData.size(), mipData.data());
         AddDelayDeleteResource(srcBuffer, DelayDeleteResourceType::CopyQueue, copyFenceValue);
         if (desc.MipLevels != 1)
@@ -300,7 +324,7 @@ RenderTexture* DX12Device::CreateTexture(const std::string& name, const RenderTe
     }
     else
     {
-        dstTexture = new DX12RenderTexture(name, this, desc, ResourceState::Common, resource);
+        dstTexture = new DX12RenderTexture(name, this, desc, ResourceState::Common, allocation,resource);
     }
 
     if (desc.Usage & (u32)ResourceUsage::ShaderResource)
@@ -436,14 +460,18 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
     };
 
     DX12RenderBuffer* dstBuffer = nullptr;
-    if ( info.CpuAccess != CpuAccessFlags::None )
+    if ( ((u32)info.CpuAccess & (u32)CpuAccessFlags::Write) > 0)
     {
-        D3D12_HEAP_PROPERTIES heap = {
-            .Type = D3D12_HEAP_TYPE_UPLOAD
+        D3D12MA::ALLOCATION_DESC allocDesc = {
+           .HeapType = D3D12_HEAP_TYPE_UPLOAD
         };
 
-        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource))));
-        resource->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
+        ComPtr<D3D12MA::Allocation> allocation;
+        check(SUCCEEDED(_MemoryAlloc->CreateResource(&allocDesc, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, &allocation, IID_PPV_ARGS(&resource))));
+
+        std::wstring rName = PlatformUtils::UTF8ToUTF16(name);
+        resource->SetName(rName.c_str());
+        allocation->SetName(rName.c_str());
 
         if (info.InitData != nullptr)
         {
@@ -454,7 +482,7 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
             resource->Unmap(0, nullptr);
         }
 
-        dstBuffer = new DX12RenderBuffer(name,this, info, ResourceState::GenericRead, resource);
+        dstBuffer = new DX12RenderBuffer(name,this, info, ResourceState::GenericRead,allocation,resource);
         u8* uniformDataMap = nullptr;
         if (info.Usage & (u32)ResourceUsage::UniformBuffer)
         {
@@ -476,19 +504,26 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
     }
     else
     {
-        D3D12_HEAP_PROPERTIES heap = {
-                .Type = D3D12_HEAP_TYPE_DEFAULT
+        D3D12MA::ALLOCATION_DESC allocDesc = {
+           .HeapType = D3D12_HEAP_TYPE_DEFAULT
         };
-        check(SUCCEEDED(_Device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource))));
-        resource->SetName(PlatformUtils::UTF8ToUTF16(name).c_str());
+
+        ComPtr<D3D12MA::Allocation> allocation;
+        check(SUCCEEDED(_MemoryAlloc->CreateResource(&allocDesc, &desc, D3D12_RESOURCE_STATE_COMMON, nullptr, &allocation, IID_PPV_ARGS(&resource))));
+
+        std::wstring rName = PlatformUtils::UTF8ToUTF16(name);
+        resource->SetName(rName.c_str());
+        allocation->SetName(rName.c_str());
 
         if (info.InitData != nullptr)
         {
-            D3D12_HEAP_PROPERTIES uploadHeap = {
-                .Type = D3D12_HEAP_TYPE_UPLOAD
+            D3D12MA::ALLOCATION_DESC uploadHeap = {
+                .HeapType = D3D12_HEAP_TYPE_UPLOAD
             };
             ComPtr<ID3D12Resource> tempRes;
-            check(SUCCEEDED(_Device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&tempRes))));
+            ComPtr<D3D12MA::Allocation> tempalloc;
+            check(SUCCEEDED(_MemoryAlloc->CreateResource(&uploadHeap, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, &tempalloc, IID_PPV_ARGS(&tempRes))));
+
 
             u8* pData = nullptr;
             D3D12_RANGE range = {};
@@ -498,14 +533,14 @@ RenderBuffer* DX12Device::CreateBuffer(const std::string& name,const RenderBuffe
             
             u64 copyFenceValue = 0;
             RenderContext* ctx = _ContextManager->GetCopyContext(copyFenceValue);
-            dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
-            RenderBuffer* srcBuffer = new DX12RenderBuffer("Buffer_CopyTemp",this, info, ResourceState::GenericRead, tempRes);
+            dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, allocation, resource);
+            RenderBuffer* srcBuffer = new DX12RenderBuffer("Buffer_CopyTemp",this, info, ResourceState::GenericRead, tempalloc,tempRes);
             ctx->CopyResource(dstBuffer, srcBuffer);
             AddDelayDeleteResource(srcBuffer, DelayDeleteResourceType::CopyQueue, copyFenceValue);
         }
         else
         {
-            dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, resource);
+            dstBuffer = new DX12RenderBuffer(name,this,info, ResourceState::Common, allocation, resource);
         }
     }
 
@@ -560,7 +595,7 @@ D3D12_VERTEX_BUFFER_VIEW DX12RenderBuffer::GetVertexBufferView()
     check(_Desc.Usage & (u32)ResourceUsage::VertexBuffer);
 
     return D3D12_VERTEX_BUFFER_VIEW{
-        .BufferLocation = _Handle->GetGPUVirtualAddress(),
+        .BufferLocation = _ResourceHandle->GetGPUVirtualAddress(),
         .SizeInBytes = (UINT)_Desc.Size,
         .StrideInBytes = _Desc.Stride
     };
@@ -570,7 +605,7 @@ D3D12_INDEX_BUFFER_VIEW DX12RenderBuffer::GetIndexBufferView()
 {
     check(_Desc.Usage & (u32)ResourceUsage::IndexBuffer);
     return D3D12_INDEX_BUFFER_VIEW{
-         .BufferLocation = _Handle->GetGPUVirtualAddress(),
+         .BufferLocation = _ResourceHandle->GetGPUVirtualAddress(),
          .SizeInBytes = (UINT)_Desc.Size,
          .Format = _Desc.Stride == 2 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT
     };

@@ -109,7 +109,7 @@
       <PreprocessorDefinitions>_DEBUG;WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/DirectX12/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Source/Thirdparty/NVAftermath/include;$(SolutionDir)Engine/Source/Thirdparty/DirectXTex/include;$(SolutionDir)Engine/Source/Thirdparty/WinPixEventRuntime/Include;$(SolutionDir)Engine/Source/Thirdparty/imgui-1.91.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/DirectX12/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Source/Thirdparty/NVAftermath/include;$(SolutionDir)Engine/Source/Thirdparty/DirectXTex/include;$(SolutionDir)Engine/Source/Thirdparty/WinPixEventRuntime/Include;$(SolutionDir)Engine/Source/Thirdparty/imgui-1.91.0;$(SolutionDir)Engine/Shaders/Interop;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>Private.h</PrecompiledHeaderFile>
     </ClCompile>
@@ -145,6 +145,7 @@ copy /Y $(SolutionDir)Engine\Source\Thirdparty\WinPixEventRuntime\bin\x64\WinPix
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Command.h" />
+    <ClInclude Include="MemoryAllocator\D3D12MemAlloc.h" />
     <ClInclude Include="RHI.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Device.h" />
@@ -154,9 +155,13 @@ copy /Y $(SolutionDir)Engine\Source\Thirdparty\WinPixEventRuntime\bin\x64\WinPix
   <ItemGroup>
     <ClCompile Include="Command.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="MemoryAllocator\D3D12MemAlloc.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="RHI.cpp" />
     <ClCompile Include="Resource.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="MemoryAllocator\D3D12MemAlloc.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

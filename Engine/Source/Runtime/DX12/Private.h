@@ -26,12 +26,20 @@ using namespace Microsoft::WRL;
 
 #include "DirectXTex.h"
 
+#include "MemoryAllocator/D3D12MemAlloc.h"
+
 #define HLSLPP_FEATURE_TRANSFORM
 #include "hlsl++.h"
 using namespace hlslpp;
 
+
 #include "../Core/Public.h"
 #include "../RHI/Public.h"
+#include "CommonStruct.h"
+
+#include "../Engine/Public.h"
+
+
 
 #include "Device.h"
 #include "Resource.h"

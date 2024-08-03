@@ -78,6 +78,18 @@ void ResolveMarkerCallback(const void* pMarkerData, const uint32_t markerDataSiz
 }
 #endif
 
+void DX12Device::InitMemoryAllocator()
+{
+    D3D12MA::ALLOCATOR_DESC desc = {
+        .Flags = D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED,
+        .pDevice = _Device.Get(),
+        .PreferredBlockSize = 0,
+        .pAdapter = _Adapter.Get()
+    };
+
+    check(SUCCEEDED(D3D12MA::CreateAllocator(&desc, _MemoryAlloc.GetAddressOf())));
+}
+
 DX12Device::DX12Device()
 {
 
@@ -172,6 +184,8 @@ DX12Device::DX12Device()
         _Device.Get());
 #endif
 
+    InitMemoryAllocator();
+
     InitPixelFormat_Platform();
 
     _ContextManager = new ContextManager(this, cContextNumber);
@@ -243,6 +257,8 @@ DX12Device::~DX12Device()
     delete _DescriptorManager;
     delete _ContextManager;
 
+    _MemoryAlloc.Reset();
+
     _Device.Reset();
     _Adapter.Reset();
     _Factory.Reset();
@@ -299,8 +315,8 @@ void DX12Device::OnResize(Swapchain* swapchain, u32 width, u32 height)
              .Format = sc->_Info.Format,
              .Dimension = ResourceDimension::Texture2D
         };
-
-        DX12RenderTexture* dx12Resource = new DX12RenderTexture("SwapChainTexture", this, desc, ResourceState::Present, res);
+  
+        DX12RenderTexture* dx12Resource = new DX12RenderTexture("SwapChainTexture", this, desc, ResourceState::Present, nullptr,res);
         dx12Resource->SetRTV(da, cpuHandle);
 
         sc->_RenderTargets[n] = dx12Resource;
@@ -436,7 +452,8 @@ Swapchain* DX12Device::CreateSwapchain(const Swapchain::Desc& info)
                  .Dimension = ResourceDimension::Texture2D
             };
 
-            DX12RenderTexture* dx12Resource = new DX12RenderTexture("SwapChainTexture",this, desc, ResourceState::Present, res);
+ 
+            DX12RenderTexture* dx12Resource = new DX12RenderTexture("SwapChainTexture",this, desc, ResourceState::Present, nullptr,res);
             dx12Resource->SetRTV(da, cpuHandle);
 
             rtResources[n] = dx12Resource;
@@ -1761,6 +1778,49 @@ RenderPipeline* DX12Device::CreateGraphicPipeline(const std::string& name,const 
 DXGI_FORMAT DX12Device::TranslatePixelFormat(PixelFormat format)
 {
     return std::any_cast<DXGI_FORMAT>(_Formats[static_cast<u32>(format)].PlatformFormat);
+}
+
+DXGI_FORMAT DX12Device::TranslateCompressPixelFormat(ImageCompressType format)
+{
+    if (format == ImageCompressType::None || format == ImageCompressType::Max)
+        return DXGI_FORMAT_UNKNOWN;
+
+    switch (format)
+    {
+    case ImageCompressType::BC1:
+        return DXGI_FORMAT_BC1_UNORM;
+    case ImageCompressType::BC1_SRGB:
+        return DXGI_FORMAT_BC1_UNORM_SRGB;
+    case ImageCompressType::BC2:
+        return DXGI_FORMAT_BC2_UNORM;
+    case ImageCompressType::BC2_SRGB:
+        return DXGI_FORMAT_BC2_UNORM_SRGB;
+    case ImageCompressType::BC3:
+        return DXGI_FORMAT_BC3_UNORM;
+    case ImageCompressType::BC3_SRGB:
+        return DXGI_FORMAT_BC3_UNORM_SRGB;
+    case ImageCompressType::BC4:
+        return DXGI_FORMAT_BC4_UNORM;
+    case ImageCompressType::BC4_SNorm:
+        return DXGI_FORMAT_BC4_SNORM;
+    case ImageCompressType::BC5:
+        return DXGI_FORMAT_BC5_UNORM;
+    case ImageCompressType::BC5_SNorm:
+        return DXGI_FORMAT_BC5_SNORM;
+    case ImageCompressType::BC6H:
+        return DXGI_FORMAT_BC6H_UF16;
+    case ImageCompressType::BC6H_SF:
+        return DXGI_FORMAT_BC6H_SF16;
+    case ImageCompressType::BC7:
+        return DXGI_FORMAT_BC7_UNORM;
+    case ImageCompressType::BC7_SRGB:
+        return DXGI_FORMAT_BC7_UNORM_SRGB;
+    default:
+        check(0);
+        break;
+    }
+
+    return DXGI_FORMAT_UNKNOWN;
 }
 
 #include "backends/imgui_impl_dx12.h"

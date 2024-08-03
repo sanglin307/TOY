@@ -85,7 +85,7 @@ public:
 	{
 		if (_UniformDataMapPointer)
 		{
-			_Handle->Unmap(0, nullptr);
+			_ResourceHandle->Unmap(0, nullptr);
 		}
 
 		if (_Desc.Usage & (u32)ResourceUsage::UniformBuffer && _CBVDescriptor.Offset >= 0)
@@ -103,9 +103,10 @@ public:
 			_UAVDescriptor.Heap->Free(_UAVDescriptor);
 		}
 
-		_Handle.Reset(); 
+		_ResourceHandle.Reset();
+		_AllocHandle.Reset();
 	}
-	virtual std::any Handle() override { return _Handle.Get(); }
+	virtual std::any Handle() override { return _ResourceHandle.Get(); }
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView();
 	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView();
 
@@ -150,13 +151,14 @@ public:
 	virtual void UploadData(u8* data, size_t size) override;
 
 private:
-	DX12RenderBuffer(const std::string& name, RenderDevice* device, const RenderBuffer::Desc& desc,ResourceState state, ComPtr<ID3D12Resource> handle)
+	DX12RenderBuffer(const std::string& name, RenderDevice* device, const RenderBuffer::Desc& desc,ResourceState state, ComPtr<D3D12MA::Allocation> allocHandle, ComPtr<ID3D12Resource> resHandle)
 	{
 		_Name = name;
 		Device = device;
 		State = state;
 		_Desc = desc;
-		_Handle = handle;
+		_AllocHandle = allocHandle;
+		_ResourceHandle = resHandle;
 	}
 
 private:
@@ -170,7 +172,8 @@ private:
 	DescriptorAllocation _CBVDescriptor;
 	u8* _UniformDataMapPointer;
 
-	ComPtr<ID3D12Resource> _Handle;
+	ComPtr<D3D12MA::Allocation> _AllocHandle;
+	ComPtr<ID3D12Resource> _ResourceHandle;
 };
 
 class DX12RenderTexture : public RenderTexture
@@ -194,10 +197,11 @@ public:
 		if (_UAVDescriptor.Offset >= 0)
 			_UAVDescriptor.Heap->Free(_UAVDescriptor);
 
-		_Handle.Reset(); 
+		_ResourceHandle.Reset();
+		_AllocHandle.Reset();
 	}
 
-	virtual std::any Handle() override { return _Handle.Get(); } 
+	virtual std::any Handle() override { return _ResourceHandle.Get(); } 
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetRTVCPUHandle() 
 	{
@@ -267,13 +271,14 @@ public:
 
 private:
 
-	DX12RenderTexture(const std::string& name, RenderDevice* device, const Desc& desc, ResourceState state, ComPtr<ID3D12Resource> handle)
+	DX12RenderTexture(const std::string& name, RenderDevice* device, const Desc& desc, ResourceState state, ComPtr<D3D12MA::Allocation> allocHandle, ComPtr<ID3D12Resource> resHandle)
 	{
 		_Name = name;
 		Device = device;
 		_Desc = desc;
 		State = state;
-		_Handle = handle;
+		_AllocHandle = allocHandle;
+		_ResourceHandle = resHandle;
 	}
 
 	D3D12_CPU_DESCRIPTOR_HANDLE _SRVCPUHandle;
@@ -291,7 +296,8 @@ private:
 
 	D3D12_CPU_DESCRIPTOR_HANDLE _DSVCPUHandle;
 	DescriptorAllocation _DSVDescriptor;
-	ComPtr<ID3D12Resource> _Handle;
+	ComPtr<D3D12MA::Allocation> _AllocHandle;
+	ComPtr<ID3D12Resource> _ResourceHandle;
 };
 
 class DX12Sampler : public Sampler

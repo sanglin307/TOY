@@ -277,7 +277,7 @@ PixelFormat TranslateToSRGBFormat(PixelFormat format)
 	return format;
 }
 
-RenderTexture* loadTexture(RenderDevice* device, fastgltf::Asset& asset, u32 textureIndex, bool srgb, std::vector<gltfTexture>& gltfTextures, std::vector<Image*>& images, std::set<Image*>& imageSet, std::vector<Sampler*>& samplers,std::set<Sampler*>& samplerSet)
+RenderTexture* loadTexture(RenderDevice* device, fastgltf::Asset& asset, u32 textureIndex, bool srgb, ImageCompressType compressType, std::vector<gltfTexture>& gltfTextures, std::vector<Image*>& images, std::set<Image*>& imageSet, std::vector<Sampler*>& samplers,std::set<Sampler*>& samplerSet)
 {
 	if (gltfTextures[textureIndex].resource)
 		return gltfTextures[textureIndex].resource;
@@ -286,7 +286,8 @@ RenderTexture* loadTexture(RenderDevice* device, fastgltf::Asset& asset, u32 tex
 	check(tex.imageIndex.has_value());
 	Image* image = images[tex.imageIndex.value()];
 	imageSet.erase(image);
- 
+	image->CompressType = compressType;
+
 	RenderTexture::Desc desc = {
 		.Width = image->Width,
 		.Height = image->Height,
@@ -298,6 +299,8 @@ RenderTexture* loadTexture(RenderDevice* device, fastgltf::Asset& asset, u32 tex
 		.Data = image->Data,
 		.Size = image->Size
 	};
+
+	desc.CompressType = compressType;
 
 	RenderTexture* texture = device->CreateTexture(tex.name.c_str(), desc);
 	if (tex.samplerIndex.has_value())
@@ -326,28 +329,28 @@ Material* loadMaterial(RenderDevice* device, fastgltf::Asset& asset, fastgltf::M
 	{
 		mat->BaseColorTexture.TextureCoordIndex = (u32)material.pbrData.baseColorTexture->texCoordIndex;
 		u32 texIndex = (u32)material.pbrData.baseColorTexture->textureIndex;
-		mat->BaseColorTexture.Texture = loadTexture(device,asset,texIndex,true,gltfTextures,images,imageSet,samplers,samplerSet);
+		mat->BaseColorTexture.Texture = loadTexture(device,asset,texIndex,true,ImageCompressType::BC7_SRGB,gltfTextures,images,imageSet,samplers,samplerSet);
 	}
 
 	if (material.normalTexture.has_value())
 	{
 		mat->NormalTexture.TextureCoordIndex = (u32)material.normalTexture->texCoordIndex;
 		u32 texIndex = (u32)material.normalTexture->textureIndex;
-		mat->NormalTexture.Texture = loadTexture(device, asset, texIndex, false, gltfTextures, images, imageSet, samplers, samplerSet);
+		mat->NormalTexture.Texture = loadTexture(device, asset, texIndex, false, ImageCompressType::BC5_SNorm, gltfTextures, images, imageSet, samplers, samplerSet);
 	}
  
 	if (material.pbrData.metallicRoughnessTexture.has_value())
 	{
 		mat->RoughnessMetalnessTexture.TextureCoordIndex = (u32)material.pbrData.metallicRoughnessTexture->texCoordIndex;
 		u32 texIndex = (u32)material.pbrData.metallicRoughnessTexture->textureIndex;
-		mat->RoughnessMetalnessTexture.Texture = loadTexture(device, asset, texIndex, false, gltfTextures, images, imageSet, samplers, samplerSet);
+		mat->RoughnessMetalnessTexture.Texture = loadTexture(device, asset, texIndex, false, ImageCompressType::BC7, gltfTextures, images, imageSet, samplers, samplerSet);
 	}
 
 	if (material.emissiveTexture.has_value())
 	{
 		mat->EmissiveTexture.TextureCoordIndex = (u32)material.emissiveTexture->texCoordIndex;
 		u32 texIndex = (u32)material.emissiveTexture->textureIndex;
-		mat->EmissiveTexture.Texture = loadTexture(device, asset, texIndex, true, gltfTextures, images, imageSet, samplers, samplerSet);
+		mat->EmissiveTexture.Texture = loadTexture(device, asset, texIndex, true, ImageCompressType::BC7_SRGB, gltfTextures, images, imageSet, samplers, samplerSet);
 	}
 
 	if (material.anisotropy != nullptr)
@@ -356,7 +359,7 @@ Material* loadMaterial(RenderDevice* device, fastgltf::Asset& asset, fastgltf::M
 		{
 			mat->AnisotropyTexture.TextureCoordIndex = (u32)material.anisotropy->anisotropyTexture->texCoordIndex;
 			u32 texIndex = (u32)material.anisotropy->anisotropyTexture->textureIndex;
-			mat->AnisotropyTexture.Texture = loadTexture(device, asset, texIndex, false, gltfTextures, images, imageSet, samplers, samplerSet);
+			mat->AnisotropyTexture.Texture = loadTexture(device, asset, texIndex, false, ImageCompressType::None,gltfTextures, images, imageSet, samplers, samplerSet);
 		}
 
 		mat->AnisotropyRotation = material.anisotropy->anisotropyRotation;
