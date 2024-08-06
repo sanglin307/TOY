@@ -14,6 +14,7 @@ using namespace hlslpp;
 #include "../Engine/Public.h"
 
 #include "DefaultResources.h"
+#include "GVertexIndexBuffer.h"
 #include "RenderScene.h"
 #include "RenderPass.h"
 #include "SceneRendering.h"

@@ -20,6 +20,7 @@ struct RenderCommand
 	u32 PrimitiveID = 0;
 	PrimitiveComponent* Component = nullptr;
 	std::vector<RenderBuffer*> VertexBuffers;
+	RenderBuffer* PackedVertexBuffer = nullptr;
 	RenderBuffer* IndexBuffer = nullptr;
 	MaterialData   Material;
 	RenderTexture* BaseColor = nullptr;

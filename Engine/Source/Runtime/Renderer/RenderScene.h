@@ -8,12 +8,15 @@ struct RenderCluster
 	{
 		VertexAttribute Attribute;
 		RenderBuffer* Buffer;
-		u64 ByteOffset;
 	};
 
 	~RenderCluster();
 	std::vector<Stream>  VertexStreams;
+	RenderBuffer* PackedVertexBuffer = nullptr;  // don't include position attribute.
 	RenderBuffer* IndexBuffer = nullptr;
+	RenderBuffer* MeshletDescBuffer = nullptr;
+	RenderBuffer* MeshletVertexBuffer = nullptr;
+	RenderBuffer* MeshletTriangleBuffer = nullptr;
 	Material* Material = nullptr;
 	PrimitiveData* Primitive;
 	PrimitiveComponent* Component;

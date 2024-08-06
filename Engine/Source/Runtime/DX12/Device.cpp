@@ -1733,7 +1733,7 @@ RenderPipeline* DX12Device::CreateGraphicPipeline(const std::string& name,const 
 
     if (desc.VertexLayout.Desc.size() == 0)
     {
-        CreateInputLayout(shaderRes[(u32)ShaderProfile::Vertex], InputSlotMapping::Seperated, (InputLayout&)desc.VertexLayout);
+        CreateInputLayout(shaderRes[(u32)ShaderProfile::Vertex], desc.VertexSlotMapping,(InputLayout&)desc.VertexLayout);
     }
 
     u64 hash = desc.HashResult();

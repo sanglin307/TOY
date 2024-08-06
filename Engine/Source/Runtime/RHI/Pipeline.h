@@ -409,6 +409,7 @@ class GraphicPipeline : public RenderPipeline
 public:
 	struct Desc
 	{
+		InputSlotMapping  VertexSlotMapping = InputSlotMapping::Seperated;
 		InputLayout    VertexLayout;
 		ShaderCreateDesc VS;
 		ShaderCreateDesc PS;

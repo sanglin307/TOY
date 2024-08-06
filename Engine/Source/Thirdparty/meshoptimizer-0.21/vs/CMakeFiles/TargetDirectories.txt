@@ -1,0 +1,4 @@
+E:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/vs/CMakeFiles/meshoptimizer.dir
+E:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/vs/CMakeFiles/INSTALL.dir
+E:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/vs/CMakeFiles/ALL_BUILD.dir
+E:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/vs/CMakeFiles/ZERO_CHECK.dir

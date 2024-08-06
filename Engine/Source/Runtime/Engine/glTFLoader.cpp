@@ -87,7 +87,7 @@ MeshComponent* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vecto
 			std::free(vertices);
 		}
 
-		constexpr u32 UVCount = 5;
+		constexpr u32 UVCount = 1;
 		for (u32 i = 0; i < UVCount; i++) // uv0-4.
 		{
 			auto texcoordAttribute = std::string("TEXCOORD_") + std::to_string(i);
@@ -115,7 +115,7 @@ MeshComponent* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vecto
 			}
 		}
 
-		constexpr u32 ColorCount = 3;
+		constexpr u32 ColorCount = 1;
 		for (u32 i = 0; i < ColorCount; i++) 
 		{
 			auto colorAttribute = std::string("COLOR_") + std::to_string(i);
@@ -239,6 +239,8 @@ MeshComponent* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vecto
 
 		m->AddSegment(segment);
 	}
+
+	m->Build();
 
 	return m;
 }

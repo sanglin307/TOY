@@ -1,0 +1,20 @@
+﻿  Building Custom Rule E:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/CMakeLists.txt
+  allocator.cpp
+  clusterizer.cpp
+  indexcodec.cpp
+  indexgenerator.cpp
+  overdrawanalyzer.cpp
+  overdrawoptimizer.cpp
+  quantization.cpp
+  simplifier.cpp
+  spatialorder.cpp
+  stripifier.cpp
+  vcacheanalyzer.cpp
+  vcacheoptimizer.cpp
+  vertexcodec.cpp
+  vertexfilter.cpp
+  vfetchanalyzer.cpp
+  vfetchoptimizer.cpp
+  Generating Code...
+     Creating library E:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/vs/Debug/meshoptimizer.lib and object E:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/vs/Debug/meshoptimizer.exp
+  meshoptimizer.vcxproj -> E:\git\TOY\Engine\Source\Thirdparty\meshoptimizer-0.21\vs\Debug\meshoptimizer.dll

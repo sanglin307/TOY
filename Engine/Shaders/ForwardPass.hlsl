@@ -19,10 +19,10 @@ StructuredBuffer<PrimitiveData> PrimitiveBuffer;
 struct VertexInput
 {
     float3 Position : POSITION;
-    float3 Normal : NORMAL;
-    float3 Color : COLOR;
+    float3 Normal : NORMAL;  // order must same as packed attribute.
     float2 UV : TEXCOORD;
     float4 Tangent : TANGENT;
+    float3 Color : COLOR;
 };
 
 struct PSInput

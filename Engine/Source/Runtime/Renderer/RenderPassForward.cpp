@@ -6,6 +6,7 @@ RenderPassForward::RenderPassForward(RenderDevice* device,SceneRenderer* rendere
 	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
 
 	GraphicPipeline::Desc desc = {
+		.VertexSlotMapping = InputSlotMapping::Custom,
 		.VS = {
 		   .Profile = ShaderProfile::Vertex,
 		   .Path = "ForwardPass.hlsl",
@@ -97,17 +98,18 @@ void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 			};
 			drawDataBuffer->UploadData((u8*)&dd, sizeof(dd));
 			
-			ctx->SetVertexBuffers((u32)c->VertexBuffers.size(), c->VertexBuffers.data());
+			RenderBuffer* vbs[] = { c->VertexBuffers[0], c->PackedVertexBuffer };
+			ctx->SetVertexBuffers(2, vbs);
  
 			if (c->IndexBuffer)
 			{
 				ctx->SetIndexBuffer(c->IndexBuffer);
-				u32 indexCount = u32(c->IndexBuffer->GetSize() / c->IndexBuffer->GetStride());
+				u32 indexCount = u32(c->IndexBuffer->GetElementCount());
 				ctx->DrawIndexedInstanced(indexCount);
 			}
 			else
 			{
-				u32 vertexCount = u32(c->VertexBuffers[0]->GetSize() / c->VertexBuffers[0]->GetStride());
+				u32 vertexCount = u32(c->VertexBuffers[0]->GetElementCount());
 				ctx->DrawInstanced(vertexCount);
 			}
 			
@@ -132,7 +134,6 @@ void RenderPassForward::AddCluster(u32 primitiveID, RenderCluster* cluster)
 
 		if (iter != cluster->VertexStreams.end())
 		{
-			check(desc.SlotOffset == iter->ByteOffset);
 			command->VertexBuffers.push_back(iter->Buffer);
 		}
 		else
@@ -140,6 +141,7 @@ void RenderPassForward::AddCluster(u32 primitiveID, RenderCluster* cluster)
 			command->VertexBuffers.push_back(DefaultResource::Instance().GetVertexBuffer(VA));
 		}
 	}
+	command->PackedVertexBuffer = cluster->PackedVertexBuffer;
 	command->IndexBuffer = cluster->IndexBuffer;
 	command->Component = cluster->Component;
 	command->Material.BaseColorFactor = cluster->Material->BaseColorFactor;

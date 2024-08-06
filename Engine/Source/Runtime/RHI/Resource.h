@@ -404,6 +404,7 @@ public:
     PixelFormat GetFormat() const { return _Desc.Format; }
     u64 GetSize() const { return _Desc.Size; }
     u32 GetStride() const { return _Desc.Stride; }
+    u64 GetElementCount() const { return _Desc.Size / _Desc.Stride; }
     virtual ResourceDimension GetDimension() override { return ResourceDimension::Buffer; }
     virtual u32 GetUsage() override { return _Desc.Usage; }
     virtual void UploadData(u8* data, size_t size) = 0;

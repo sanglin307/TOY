@@ -7,7 +7,7 @@ enum class VertexFormat
 	Float32x2,
 	Float32,
 	U16,
-	U32,
+	U32
 };
 
 enum class VertexAttribute
@@ -15,14 +15,8 @@ enum class VertexAttribute
 	Position = 0,
 	Normal,
 	UV0,
-	UV1,
-	UV2,
-	UV3,
-	UV4,
 	Tangent,
 	Color0,
-	Color1,
-	Color2,
 	Max
 };
 
@@ -31,6 +25,11 @@ struct VertexData
 	VertexFormat    Format;
 	u8* Data;
 	u64 Size;
+
+	u64 GetCount() const
+	{
+		return Size / GetStride();
+	}
 
 	u32 GetStride() const 
 	{

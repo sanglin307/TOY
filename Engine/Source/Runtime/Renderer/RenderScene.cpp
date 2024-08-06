@@ -10,6 +10,18 @@ RenderCluster::~RenderCluster()
 	if (IndexBuffer)
 		delete IndexBuffer;
 
+	if (PackedVertexBuffer)
+		delete PackedVertexBuffer;
+
+	if (MeshletDescBuffer)
+		delete MeshletDescBuffer;
+ 
+	if (MeshletVertexBuffer)
+		delete MeshletVertexBuffer;
+
+	if (MeshletTriangleBuffer)
+		delete MeshletTriangleBuffer;
+
 	if (Primitive)
 		delete Primitive;
 
@@ -96,7 +108,7 @@ void RenderScene::AddLight(const Transform& trans,LightComponent* light)
 	l->Component = light;
 	LightData* ld = new LightData;
 	ld->Color = desc.Color;
-	ld->Direction = mul(Coordinate::Forward(), trans.Rotation);
+	ld->Direction = mul(float4(0, 0, 1, 0), trans.WorldMatrix).xyz;
 	ld->Position = trans.Translate;
 	ld->Range = desc.Range;
 	ld->SpotlightAngles = float2(desc.InnerConeAngle, desc.OuterConeAngle);
@@ -171,13 +183,23 @@ void RenderScene::AddPrimitive(const Transform& trans, PrimitiveComponent* primi
 					 .InitData = d.Data
 				};
 
-				// TODO , use seperate buffer first.
 				cluster->VertexStreams.push_back(RenderCluster::Stream{
 					.Attribute = (VertexAttribute)i,
 					.Buffer = device->CreateBuffer(std::format("VertexBuffer_{}_{}",(u64)(primitive),i),desc),
-					.ByteOffset = 0
 					});
 			}
+
+			const std::vector<u8>& packedData = s->GetPackedVertexData();
+			RenderBuffer::Desc pd = {
+					 .Size = packedData.size(),
+					 .Stride = (u32)(packedData.size() / vertexData[(u32)VertexAttribute::Position].GetCount()),
+					 .Usage = (u32)ResourceUsage::VertexBuffer,
+					 .CpuAccess = CpuAccessFlags::None,
+					 .Alignment = true,
+					 .InitData = (u8*)packedData.data()
+			};
+
+			cluster->PackedVertexBuffer = device->CreateBuffer(std::format("VertexAttributePackedBuffer_{}", (u64)(primitive)), pd);
 
 			const VertexData& indexData = s->GetIndexData();
 			if (indexData.Size > 0)
@@ -193,6 +215,25 @@ void RenderScene::AddPrimitive(const Transform& trans, PrimitiveComponent* primi
 
 				cluster->IndexBuffer = device->CreateBuffer(std::format("IndexBuffer_{}", (u64)(primitive)), desc);
 			}
+
+			const std::vector<MeshletDesc>& meshletDesc = s->GetMeshletDesc();
+			const std::vector<u32>& meshletVertex = s->GetMeshletVertices();
+			const std::vector<u8>& meshletTriangle = s->GetMeshletTriangles();
+
+			if (meshletDesc.size() > 0)
+			{
+				RenderBuffer::Desc mdesc = {
+					 .Size = meshletDesc.size() * sizeof(MeshletDesc),
+					 .Stride = sizeof(MeshletDesc),
+					 .Usage = (u32)ResourceUsage::ShaderResource,
+					 .CpuAccess = CpuAccessFlags::None,
+					 .Alignment = true,
+					 .StructuredBuffer = true,
+					 .InitData = (u8*)meshletDesc.data()
+				};
+				cluster->MeshletDescBuffer = device->CreateBuffer(std::format("MeshletDescBuffer_{}", (u64)primitive), mdesc);
+			}
+
 			cluster->Primitive = new PrimitiveData;
 			cluster->Primitive->LocalToWorld = trans.WorldMatrix;
 			_Clusters.push_back(cluster);

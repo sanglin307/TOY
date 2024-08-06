@@ -10,6 +10,7 @@
 #include "hlsl++.h"
 using namespace hlslpp;
 
+#include "meshoptimizer.h"
 
 // module dependency.
 #include "../Core/Public.h"

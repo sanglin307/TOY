@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\git\TOY\Engine\Source\Thirdparty\meshoptimizer-0.21\vs\CMakeFiles\77305e26c4c2365d94bf42748c831024\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{1F6F9D3A-BF74-3F96-A4C6-778E75E11F95}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -137,6 +137,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DefaultResources.h" />
+    <ClInclude Include="GVertexIndexBuffer.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Public.h" />
     <ClInclude Include="Renderer.h" />
@@ -146,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DefaultResources.cpp" />
+    <ClCompile Include="GVertexIndexBuffer.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderPassForward.cpp" />
     <ClCompile Include="RenderPassPostProcess.cpp" />

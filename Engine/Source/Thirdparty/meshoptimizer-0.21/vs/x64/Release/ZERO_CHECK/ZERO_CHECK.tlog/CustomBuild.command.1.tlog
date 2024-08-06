@@ -1,0 +1,10 @@
+^E:\GIT\TOY\ENGINE\SOURCE\THIRDPARTY\MESHOPTIMIZER-0.21\VS\CMAKEFILES\77305E26C4C2365D94BF42748C831024\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21 -BE:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/vs --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file E:/git/TOY/Engine/Source/Thirdparty/meshoptimizer-0.21/vs/meshoptimizer.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -84,3 +84,12 @@ struct ProceduralSky
     float Luminance;
     float MieDirectionalG;
 };
+
+struct MeshletDesc
+{
+    uint VertexOffset;
+    uint TriangleOffset;
+    uint VertexCount;
+    uint TriangleCount;
+    float4 CenterRadius;  // center plus radius.
+};

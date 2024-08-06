@@ -110,15 +110,18 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableModules>false</EnableModules>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/stb;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Shaders/Interop;$(SolutionDir)Engine/Source/Thirdparty/imgui-1.91.0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine/Source/Thirdparty/tomlplusplus-3.4.0/include;$(SolutionDir)Engine/Source/Thirdparty/stb;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/include;$(SolutionDir)Engine/Source/Thirdparty/hlslpp/include;$(SolutionDir)Engine/Shaders/Interop;$(SolutionDir)Engine/Source/Thirdparty/imgui-1.91.0;$(SolutionDir)Engine/Source/Thirdparty/meshoptimizer-0.21/src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Bin/Win64/;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/lib/Debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Core.lib;fastgltf.lib;RHI.lib;ImGui.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin/Win64/;$(SolutionDir)Engine/Source/Thirdparty/fastgltf-0.7.2/lib/Debug;$(SolutionDir)Engine/Source/Thirdparty/meshoptimizer-0.21/vs/Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Core.lib;fastgltf.lib;RHI.lib;ImGui.lib;meshoptimizer.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>Core.dll</DelayLoadDLLs>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y $(SolutionDir)Engine\Source\Thirdparty\meshoptimizer-0.21\vs\Debug\meshoptimizer.dll $(SolutionDir)Bin\Win64</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

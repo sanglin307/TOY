@@ -521,7 +521,34 @@ void RenderDevice::CreateInputLayout(const ShaderResource* shader, InputSlotMapp
 		}
 		else if (slotMapping == InputSlotMapping::Custom)
 		{
-			check(0); // todo.
+			if (input.SemanticName == "POSITION")
+			{
+				PixelFormat pixel = GetInputLayoutPixelFormat(input.ComponentType, input.ComponentMask);
+				inputLayout.Desc.push_back(InputLayoutDesc{
+					.SemanticName = input.SemanticName,
+					.SemanticIndex = input.SemanticIndex,
+					.Format = pixel,
+					.SlotIndex = 0,
+					.SlotOffset = 0,
+					.SlotClass = GetSlotClass(input.SemanticName,input.SemanticIndex),
+					.InstanceStepRate = 0
+					});
+			}
+			else
+			{
+				PixelFormat pixel = GetInputLayoutPixelFormat(input.ComponentType, input.ComponentMask);
+				inputLayout.Desc.push_back(InputLayoutDesc{
+					.SemanticName = input.SemanticName,
+					.SemanticIndex = input.SemanticIndex,
+					.Format = pixel,
+					.SlotIndex = 1,
+					.SlotOffset = offset,
+					.SlotClass = GetSlotClass(input.SemanticName,input.SemanticIndex),
+					.InstanceStepRate = 0
+					});
+
+				offset += GetPixelBitSize(pixel) / 8;
+			}
 		}
 		else
 			check(0); // todo.

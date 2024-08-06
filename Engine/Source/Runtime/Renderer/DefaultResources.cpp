@@ -41,7 +41,7 @@ void DefaultResource::Init(RenderDevice* device)
 		.Alignment = true,
 		.InitData = (u8*)&colorValue
 	};
-	_VertexBuffers[(u32)VertexAttribute::Color0] = _VertexBuffers[(u32)VertexAttribute::Color1] = _VertexBuffers[(u32)VertexAttribute::Color2] = device->CreateBuffer("DefaultVertexBuffer_Color", dc);
+	_VertexBuffers[(u32)VertexAttribute::Color0] = device->CreateBuffer("DefaultVertexBuffer_Color", dc);
 	_Resources.insert(_VertexBuffers[(u32)VertexAttribute::Color0]);
 
 	float2 uvValue = {0.f, 0.f};
@@ -53,11 +53,9 @@ void DefaultResource::Init(RenderDevice* device)
 		.Alignment = true,
 		.InitData = (u8*)&uvValue
 	};
+
 	RenderBuffer* uvBuffer = device->CreateBuffer("DefaultVertexBuffer_UV", duv);
-	for (u32 i = (u32)VertexAttribute::UV0; i <= (u32)VertexAttribute::UV4; i++)
-	{
-		_VertexBuffers[i] = uvBuffer;
-	}
+	_VertexBuffers[(u32)VertexAttribute::UV0] = uvBuffer;
 	_Resources.insert(uvBuffer);
 
 	float value = 0;
