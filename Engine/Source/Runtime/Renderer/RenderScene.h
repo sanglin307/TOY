@@ -11,8 +11,9 @@ struct RenderCluster
 	};
 
 	~RenderCluster();
+	RenderBuffer* PositionBuffer = nullptr;
 	std::vector<Stream>  VertexStreams;
-	RenderBuffer* PackedVertexBuffer = nullptr;  // don't include position attribute.
+	RenderBuffer* CompactVertexAttributeBuffer = nullptr; 
 	RenderBuffer* IndexBuffer = nullptr;
 	RenderBuffer* MeshletDescBuffer = nullptr;
 	RenderBuffer* MeshletVertexBuffer = nullptr;
@@ -43,6 +44,7 @@ public:
 
 	virtual void AddPrimitive(const Transform& trans, PrimitiveComponent* primitive) override;
 	virtual void RemovePrimitive(PrimitiveComponent* primitive) override;
+	virtual void BuildPrimitiveCache() override;
 
 	virtual void AddLight(const Transform& trans,LightComponent* light) override;
 	virtual void RemoveLight(LightComponent* light) override;

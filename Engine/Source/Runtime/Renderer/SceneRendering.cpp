@@ -2,6 +2,8 @@
 
 SceneRenderer::~SceneRenderer()
 {
+	GVertexIndexBuffer::Instance().Destroy();
+
 	if (_ViewUniformBuffer)
 	{
 		delete _ViewUniformBuffer;
@@ -104,6 +106,7 @@ SceneRenderer::SceneRenderer(RenderDevice* device)
 	};
 	_DrawDataBuffer = device->CreateBuffer("DrawData", ddesc);
 
+	GVertexIndexBuffer::Instance().Init(device);
 	InitSceneTextures();
 	InitRenderPass();
 }

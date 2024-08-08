@@ -10,8 +10,11 @@ RenderCluster::~RenderCluster()
 	if (IndexBuffer)
 		delete IndexBuffer;
 
-	if (PackedVertexBuffer)
-		delete PackedVertexBuffer;
+	if (PositionBuffer)
+		delete PositionBuffer;
+
+	if (CompactVertexAttributeBuffer)
+		delete CompactVertexAttributeBuffer;
 
 	if (MeshletDescBuffer)
 		delete MeshletDescBuffer;
@@ -183,10 +186,15 @@ void RenderScene::AddPrimitive(const Transform& trans, PrimitiveComponent* primi
 					 .InitData = d.Data
 				};
 
-				cluster->VertexStreams.push_back(RenderCluster::Stream{
+				if (VertexAttribute(i) == VertexAttribute::Position)
+					cluster->PositionBuffer = device->CreateBuffer(std::format("VertexBuffer_{}_{}", (u64)(primitive), i), desc);
+				else
+				{
+					cluster->VertexStreams.push_back(RenderCluster::Stream{
 					.Attribute = (VertexAttribute)i,
 					.Buffer = device->CreateBuffer(std::format("VertexBuffer_{}_{}",(u64)(primitive),i),desc),
-					});
+						});
+				}
 			}
 
 			const std::vector<u8>& packedData = s->GetPackedVertexData();
@@ -199,7 +207,7 @@ void RenderScene::AddPrimitive(const Transform& trans, PrimitiveComponent* primi
 					 .InitData = (u8*)packedData.data()
 			};
 
-			cluster->PackedVertexBuffer = device->CreateBuffer(std::format("VertexAttributePackedBuffer_{}", (u64)(primitive)), pd);
+			cluster->CompactVertexAttributeBuffer = device->CreateBuffer(std::format("CompactVertexAttributeBuffer_{}", (u64)(primitive)), pd);
 
 			const VertexData& indexData = s->GetIndexData();
 			if (indexData.Size > 0)
@@ -249,6 +257,11 @@ void RenderScene::AddPrimitive(const Transform& trans, PrimitiveComponent* primi
 
 	_Renderer->UpdatePrimitivesBuffer(_PrimitiveDataBuffer);
 	
+}
+
+void RenderScene::BuildPrimitiveCache()
+{
+	GVertexIndexBuffer::Instance().Create(_Clusters);
 }
 
 void RenderScene::RemovePrimitive(PrimitiveComponent* primitive)

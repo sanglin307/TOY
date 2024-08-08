@@ -52,6 +52,11 @@ public:
 		_ContextManager = manager;
 	}
 
+	ContextManager* GetContextManager()
+	{
+		return _ContextManager;
+	}
+
 	RHI_API void AddDelayDeleteResource(RenderResource* res, DelayDeleteResourceType type, u64 fenceValue);
 	RHI_API void CleanDelayDeleteResource();
 

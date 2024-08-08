@@ -6,11 +6,11 @@ RenderPassForward::RenderPassForward(RenderDevice* device,SceneRenderer* rendere
 	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
 
 	GraphicPipeline::Desc desc = {
-		.VertexSlotMapping = InputSlotMapping::Custom,
+		.VertexSlotMapping = InputSlotMapping::NoMapping,
 		.VS = {
 		   .Profile = ShaderProfile::Vertex,
 		   .Path = "ForwardPass.hlsl",
-		   .Entry = "VSMain"
+		   .Entry = "VSMain_Buffer"
         },
 		.PS = {
 			.Profile = ShaderProfile::Pixel,
@@ -68,6 +68,7 @@ void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 		ctx->SetPrimitiveTopology(_ScenePso->Info.Topology);
 		ctx->SetRenderPipeline(_ScenePso);
  
+		const std::vector<ClusterAllocInfo>& allocInfo = GVertexIndexBuffer::Instance().GetClusterAllocInfo();
 		for (auto c : _Commands)
 		{
 			_MaterialBuffer->UploadData((u8*)&(c->Material), sizeof(c->Material));
@@ -91,26 +92,40 @@ void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 			else
 				_ScenePso->BindParameter("EmissiveTexture", DefaultResource::Instance().GetColorBlackTexture());
 
+			_ScenePso->BindParameter("GlobalPositionBuffer", GVertexIndexBuffer::Instance().GetPositionBuffer());
+			_ScenePso->BindParameter("GlobalVertexAttributeBuffer", GVertexIndexBuffer::Instance().GetVertexAttributeBuffer());
+			_ScenePso->BindParameter("GlobalIndexBuffer", GVertexIndexBuffer::Instance().GetIndexBuffer());
+
 			_ScenePso->CommitParameter(ctx);
 
 			DrawData dd = {
-				.PrimitiveId = c->PrimitiveID
+				.PrimitiveId = c->PrimitiveID,
+				.VertexOffset = allocInfo[0].VertexOffset
 			};
+
 			drawDataBuffer->UploadData((u8*)&dd, sizeof(dd));
 			
-			RenderBuffer* vbs[] = { c->VertexBuffers[0], c->PackedVertexBuffer };
-			ctx->SetVertexBuffers(2, vbs);
- 
-			if (c->IndexBuffer)
+			if (_ScenePso->Info.VertexSlotMapping == InputSlotMapping::NoMapping)
 			{
-				ctx->SetIndexBuffer(c->IndexBuffer);
-				u32 indexCount = u32(c->IndexBuffer->GetElementCount());
-				ctx->DrawIndexedInstanced(indexCount);
-			}
-			else
-			{
-				u32 vertexCount = u32(c->VertexBuffers[0]->GetElementCount());
+				u32 vertexCount = u32(c->IndexBuffer->GetElementCount());
 				ctx->DrawInstanced(vertexCount);
+			}
+			else if (_ScenePso->Info.VertexSlotMapping == InputSlotMapping::PositionSeperated)
+			{
+				RenderBuffer* vbs[] = { c->PositionBuffer, c->CompactVertexAttributeBuffer };
+				ctx->SetVertexBuffers(2, vbs);
+
+				if (c->IndexBuffer)
+				{
+					ctx->SetIndexBuffer(c->IndexBuffer);
+					u32 indexCount = u32(c->IndexBuffer->GetElementCount());
+					ctx->DrawIndexedInstanced(indexCount);
+				}
+				else
+				{
+					u32 vertexCount = u32(c->PositionBuffer->GetElementCount());
+					ctx->DrawInstanced(vertexCount);
+				}
 			}
 			
 		}
@@ -121,27 +136,34 @@ void RenderPassForward::AddCluster(u32 primitiveID, RenderCluster* cluster)
 {
 	RenderCommand* command = new RenderCommand;
 	command->PrimitiveID = primitiveID;
-	for (u32 i = 0; i < _ScenePso->Info.VertexLayout.Desc.size(); i++)
+	if (_ScenePso->Info.VertexSlotMapping == InputSlotMapping::Seperated)
 	{
-		InputLayoutDesc& desc = _ScenePso->Info.VertexLayout.Desc[i];
-		VertexAttribute VA = _Device->TranslateSemanticToAttribute(desc.SemanticName, desc.SemanticIndex);
-		auto iter = std::find_if(cluster->VertexStreams.begin(), cluster->VertexStreams.end(), [&](RenderCluster::Stream& s) -> bool {
-
-			if (s.Attribute == VA)
-				return true;
-			return false;
-			});
-
-		if (iter != cluster->VertexStreams.end())
+		for (u32 i = 0; i < _ScenePso->Info.VertexLayout.Desc.size(); i++)
 		{
-			command->VertexBuffers.push_back(iter->Buffer);
-		}
-		else
-		{
-			command->VertexBuffers.push_back(DefaultResource::Instance().GetVertexBuffer(VA));
+			InputLayoutDesc& desc = _ScenePso->Info.VertexLayout.Desc[i];
+			VertexAttribute VA = _Device->TranslateSemanticToAttribute(desc.SemanticName, desc.SemanticIndex);
+			if (VA == VertexAttribute::Position)
+				continue;
+
+			auto iter = std::find_if(cluster->VertexStreams.begin(), cluster->VertexStreams.end(), [&](RenderCluster::Stream& s) -> bool {
+
+				if (s.Attribute == VA)
+					return true;
+				return false;
+				});
+
+			if (iter != cluster->VertexStreams.end())
+			{
+				command->VertexAttributeBuffers.push_back(iter->Buffer);
+			}
+			else
+			{
+				command->VertexAttributeBuffers.push_back(DefaultResource::Instance().GetVertexBuffer(VA));
+			}
 		}
 	}
-	command->PackedVertexBuffer = cluster->PackedVertexBuffer;
+	command->PositionBuffer = cluster->PositionBuffer;
+	command->CompactVertexAttributeBuffer = cluster->CompactVertexAttributeBuffer;
 	command->IndexBuffer = cluster->IndexBuffer;
 	command->Component = cluster->Component;
 	command->Material.BaseColorFactor = cluster->Material->BaseColorFactor;

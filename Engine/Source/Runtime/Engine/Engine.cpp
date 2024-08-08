@@ -103,12 +103,14 @@ void GameEngine::Update()
 	double delta = _FrameRate.Update();
 	LogUtil::Update(delta);
 
-	UI::Instance().Update();
+	
 
 	GameWorld::Instance().Update(delta);
 
 	if (_WindowsVisible)
 	{
+		UI::Instance().Update();
+
 		ViewInfo view;
 		GameWorld::Instance().GetViewInfo(view);
 		view.ViewportSize = _GameViewport->GetSize();

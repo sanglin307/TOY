@@ -10,7 +10,8 @@ enum class InputSlotMapping
 {
 	Interleaved = 0,
 	Seperated,
-	Custom
+	PositionSeperated,
+	NoMapping      // use vertex buffer srv, read by VertexId.
 };
 
 struct InputLayoutDesc

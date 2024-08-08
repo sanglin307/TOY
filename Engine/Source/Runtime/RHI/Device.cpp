@@ -504,7 +504,7 @@ void RenderDevice::CreateInputLayout(const ShaderResource* shader, InputSlotMapp
 
 			offset += GetPixelBitSize(pixel)/8;
 		}
-		else if (slotMapping == InputSlotMapping::Seperated)
+		else if (slotMapping == InputSlotMapping::Seperated || slotMapping == InputSlotMapping::NoMapping)
 		{
 			PixelFormat pixel = GetInputLayoutPixelFormat(input.ComponentType, input.ComponentMask);
 			inputLayout.Desc.push_back(InputLayoutDesc{
@@ -519,7 +519,7 @@ void RenderDevice::CreateInputLayout(const ShaderResource* shader, InputSlotMapp
 
 			offset++;
 		}
-		else if (slotMapping == InputSlotMapping::Custom)
+		else if (slotMapping == InputSlotMapping::PositionSeperated)  // Position in a buffer, remain vertex attribute compact in a buffer.
 		{
 			if (input.SemanticName == "POSITION")
 			{

@@ -3,8 +3,7 @@
 struct RenderCluster;
 struct ClusterAllocInfo
 {
-	u64  PositionOffset;
-	u64  VertexAttributeOffset;
+	u32  VertexOffset;
 	u32  IndexOffset;
 };
 
@@ -17,9 +16,28 @@ public:
 
 	void Create(const std::vector<RenderCluster*>& clusters);
 
+	const std::vector<ClusterAllocInfo>& GetClusterAllocInfo() const
+	{
+		return _ClusterAlloc;
+	}
+
+	RenderBuffer* GetPositionBuffer()
+	{
+		return _PositionBuffer;
+	}
+
+	RenderBuffer* GetVertexAttributeBuffer()
+	{
+		return _VertexAttributesBuffer;
+	}
+
+	RenderBuffer* GetIndexBuffer()
+	{
+		return _IndexBuffer;
+	}
+
 private:
 	RenderDevice* _Device;
-	u64  _AllocCount;
 	RenderBuffer* _PositionBuffer = nullptr;
 	RenderBuffer* _VertexAttributesBuffer = nullptr;
 	RenderBuffer* _IndexBuffer = nullptr;

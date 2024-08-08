@@ -57,6 +57,7 @@ public:
 	virtual void ClearUnorderedAccessView(RenderResource* uavRes, const Vector4f& values) override;
 	virtual void ClearUnorderedAccessView(RenderResource* uavRes, const Vector4u& values) override;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) override;
+	virtual void CopyBufferRegion(RenderBuffer* dstBuffer, u64 dstOffset, RenderBuffer* srcBuffer, u64 srcOffset, u64 numBytes) override;
 
 	void TransitionStencilState(ResourceState destState, RenderResource* res);
 	void TransitionState(ResourceState destState, RenderResource* res);

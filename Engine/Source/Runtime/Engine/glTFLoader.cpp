@@ -213,12 +213,13 @@ MeshComponent* loadMesh(fastgltf::Asset& asset, fastgltf::Mesh& mesh, std::vecto
 
 			if (indexAccessor.componentType == fastgltf::ComponentType::UnsignedByte || indexAccessor.componentType == fastgltf::ComponentType::UnsignedShort) 
 			{
-				u16* data = (u16*)std::malloc(sizeof(u16) * indexAccessor.count);
-				fastgltf::copyFromAccessor<u16>(asset, indexAccessor, data);
+				// use u32 always.
+				u32* data = (u32*)std::malloc(sizeof(u32) * indexAccessor.count);
+				fastgltf::copyFromAccessor<u32>(asset, indexAccessor, data);
 				VertexData tdata = {
-					.Format = VertexFormat::U16,
+					.Format = VertexFormat::U32,
 					.Data = (u8*)data,
-					.Size = indexAccessor.count * sizeof(u16)
+					.Size = indexAccessor.count * sizeof(u32)
 				};
 				segment->AddIndicesData(tdata);
 				std::free(data);

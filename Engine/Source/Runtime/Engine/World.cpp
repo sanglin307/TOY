@@ -101,6 +101,7 @@ void GameWorld::Init(const std::string& scenefile)
 	}
 
 	SetupWorld();
+	_RenderScene->BuildPrimitiveCache();
 }
 
 void GameWorld::Destroy()

@@ -538,6 +538,22 @@ void DX12CommandList::UpdateSubresource(RenderTexture* destResource, RenderBuffe
     std::free(tempMem);
 }
 
+void DX12CommandList::CopyBufferRegion(RenderBuffer* dstBuffer, u64 dstOffset, RenderBuffer* srcBuffer, u64 srcOffset, u64 numBytes)
+{
+    if (!((u32)srcBuffer->State & (u32)ResourceState::CopySource))
+    {
+        TransitionState(ResourceState::CopySource, srcBuffer);
+    }
+
+    if (!((u32)dstBuffer->State & (u32)ResourceState::CopyDest))
+    {
+        TransitionState(ResourceState::CopyDest, dstBuffer);
+    }
+
+    ID3D12Resource* srcResource = std::any_cast<ID3D12Resource*>(srcBuffer->Handle());
+    ID3D12Resource* dstResource = std::any_cast<ID3D12Resource*>(dstBuffer->Handle());
+    _Handle->CopyBufferRegion(dstResource,dstOffset,srcResource,srcOffset,numBytes);
+}
 
 void DX12CommandList::CopyResource(RenderResource* dstRes, RenderResource* srcRes)
 {

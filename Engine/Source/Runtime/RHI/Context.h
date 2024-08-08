@@ -56,6 +56,7 @@ public:
 	virtual void ClearUnorderedAccessView(RenderResource* uavRes, const Vector4f& value) = 0;
 	virtual void ClearUnorderedAccessView(RenderResource* uavRes, const Vector4u& values) = 0;
 	virtual void CopyResource(RenderResource* dstRes, RenderResource* srcRes) = 0;
+	virtual void CopyBufferRegion(RenderBuffer* dstBuffer, u64 dstOffset,RenderBuffer* srcBuffer, u64 srcOffset, u64 numBytes) = 0;
 	virtual void SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type) = 0;
 	virtual void SetRootDescriptorTableParameter(const std::vector<ShaderParameter*>& params, PipelineType type) = 0;
 	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) = 0;
