@@ -4,7 +4,9 @@ struct RenderCluster;
 struct ClusterAllocInfo
 {
 	u32  VertexOffset;
+	u32  VertexCount;
 	u32  IndexOffset;
+	u32  IndexCount;
 };
 
 class GVertexIndexBuffer

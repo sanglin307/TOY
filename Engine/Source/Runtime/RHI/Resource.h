@@ -408,6 +408,7 @@ public:
     virtual ResourceDimension GetDimension() override { return ResourceDimension::Buffer; }
     virtual u32 GetUsage() override { return _Desc.Usage; }
     virtual void UploadData(u8* data, size_t size) = 0;
+    virtual u8* GetMappingData() = 0;
 
     virtual const std::string& GetName() const override
     {

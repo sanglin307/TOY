@@ -35,7 +35,7 @@ void GameWorld::SetupWorld()
 			.ZNear = 0.1f
 		};
 		_DefaultCamera = new CameraComponent("DefaultCamera",desc);
-		_DefaultCamera->LookAt(float3(0, 0, 4), float3(0, 0, 0), float3(0,1,0));
+		_DefaultCamera->LookAt(float3(0, 0, 50), float3(0, 0, 0), float3(0,1,0));
 		Node* node = new Node("DefaultCameraNode");
 		_DefaultCamera->Attach(node);
 		_Layers[0]->AddNode(node);

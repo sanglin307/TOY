@@ -185,40 +185,20 @@ void DX12CommandList::SetRootDescriptorTableParameter(const std::vector<ShaderPa
 
 void DX12CommandList::SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type)
 {
+    if (!param->Resource)
+        return;
+
     if (param->BindType == ShaderBindType::RootCBV)
     {
         ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
+        D3D12_GPU_VIRTUAL_ADDRESS dst = res->GetGPUVirtualAddress() + param->DynamicOffset;
         if (type == PipelineType::Graphic)
         {
-            _Handle->SetGraphicsRootConstantBufferView(param->RootParamIndex, res->GetGPUVirtualAddress());
+            _Handle->SetGraphicsRootConstantBufferView(param->RootParamIndex, dst);
         }
         else if (type == PipelineType::Compute)
         {
-            _Handle->SetComputeRootConstantBufferView(param->RootParamIndex, res->GetGPUVirtualAddress());
-        }
-    }
-    else if (param->BindType == ShaderBindType::RootSRV)
-    {
-        ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
-        if (type == PipelineType::Graphic)
-        {
-            _Handle->SetGraphicsRootShaderResourceView(param->RootParamIndex, res->GetGPUVirtualAddress());
-        }
-        else if (type == PipelineType::Compute)
-        {
-            _Handle->SetComputeRootShaderResourceView(param->RootParamIndex, res->GetGPUVirtualAddress());
-        }
-    }
-    else if (param->BindType == ShaderBindType::RootUAV)
-    {
-        ID3D12Resource* res = std::any_cast<ID3D12Resource*>(param->Resource->Handle());
-        if (type == PipelineType::Graphic)
-        {
-            _Handle->SetGraphicsRootUnorderedAccessView(param->RootParamIndex, res->GetGPUVirtualAddress());
-        }
-        else if (type == PipelineType::Compute)
-        {
-            _Handle->SetComputeRootUnorderedAccessView(param->RootParamIndex, res->GetGPUVirtualAddress());
+            _Handle->SetComputeRootConstantBufferView(param->RootParamIndex, dst);
         }
     }
     else
@@ -260,9 +240,9 @@ void DX12CommandList::Dispatch(u32 ThreadGroupCountX, u32 ThreadGroupCountY, u32
     _Handle->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
 }
 
-void DX12CommandList::DrawIndexedInstanced(u32 indexCount, u32 instanceCount, u32 vertexOffset, u32 instanceOffset)
+void DX12CommandList::DrawIndexedInstanced(u32 indexCount, u32 instanceCount, u32 indexOffset, u32 vertexOffset, u32 instanceOffset)
 {
-    _Handle->DrawIndexedInstanced(indexCount, instanceCount, 0,vertexOffset, instanceOffset);
+    _Handle->DrawIndexedInstanced(indexCount, instanceCount, indexOffset, vertexOffset, instanceOffset);
 }
 
 void DX12CommandList::SetViewport(u32 x, u32 y, u32 width, u32 height, float minDepth, float maxDepth)

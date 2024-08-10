@@ -46,17 +46,21 @@ void GVertexIndexBuffer::Create(const std::vector<RenderCluster*>& clusters)
 	u64 possize = 0;
 	u64 attrisize = 0;
 	u64 indexsize = 0;
-	u32 vertexCount = 0;
-	u32 indexCount = 0;
+	u32 vertexOffset = 0;
+	u32 indexOffset = 0;
 	for (RenderCluster* cluster : clusters)
 	{
+		u32 vc = (u32)cluster->PositionBuffer->GetElementCount();
+		u32 ic = (u32)cluster->IndexBuffer->GetElementCount();
 		_ClusterAlloc.push_back(ClusterAllocInfo{
-        .VertexOffset = vertexCount,
-		.IndexOffset = indexCount
+        .VertexOffset = vertexOffset,
+		.VertexCount = vc,
+		.IndexOffset = indexOffset,
+		.IndexCount = ic
 		});
 
-		vertexCount += (u32)cluster->PositionBuffer->GetElementCount();
-		indexCount += (u32)cluster->IndexBuffer->GetElementCount();
+		vertexOffset += vc;
+		indexOffset += ic;
 		possize += cluster->PositionBuffer->GetSize();
 		attrisize += cluster->CompactVertexAttributeBuffer->GetSize();
 		indexsize += cluster->IndexBuffer->GetSize();
@@ -66,7 +70,7 @@ void GVertexIndexBuffer::Create(const std::vector<RenderCluster*>& clusters)
 	RenderBuffer::Desc pd = {
 		.Size = possize,
 		.Stride = sizeof(float) * 3,
-		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Usage = (u32)ResourceUsage::ShaderResource | (u32)ResourceUsage::VertexBuffer,
 		.Format = PixelFormat::R32G32B32_FLOAT,
 		.CpuAccess = CpuAccessFlags::None,
 		.Alignment = true
@@ -77,7 +81,7 @@ void GVertexIndexBuffer::Create(const std::vector<RenderCluster*>& clusters)
 	RenderBuffer::Desc vd = {
 		.Size = attrisize,
 		.Stride = MeshSegment::cVertexAttributeStride,
-		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Usage = (u32)ResourceUsage::ShaderResource | (u32)ResourceUsage::VertexBuffer,
 		.CpuAccess = CpuAccessFlags::None,
 		.Alignment = true,
 		.StructuredBuffer = true
@@ -88,7 +92,7 @@ void GVertexIndexBuffer::Create(const std::vector<RenderCluster*>& clusters)
 	RenderBuffer::Desc id = {
 		.Size = indexsize,
 		.Stride = sizeof(u32),
-		.Usage = (u32)ResourceUsage::ShaderResource,
+		.Usage = (u32)ResourceUsage::ShaderResource | (u32)ResourceUsage::IndexBuffer,
 		.Format = PixelFormat::R32_UINT,
 		.CpuAccess = CpuAccessFlags::None,
 		.Alignment = true

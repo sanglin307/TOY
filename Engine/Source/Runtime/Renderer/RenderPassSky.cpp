@@ -25,19 +25,6 @@ RenderPassSky::RenderPassSky(RenderDevice* device, SceneRenderer* renderer)
 	};
 
 	_SkyPso = static_cast<GraphicPipeline*>(device->CreateGraphicPipeline("ProceduralSky", desc));
-
-	ProceduralSky skyCB = {};
-	RenderBuffer::Desc rd = {
-		.Size = sizeof(ProceduralSky),
-		.Stride = sizeof(ProceduralSky),
-		.Usage = (u32)ResourceUsage::UniformBuffer,
-		.CpuAccess = CpuAccessFlags::Write,
-		.Alignment = true
-	};
-	_SkyCB = _Device->CreateBuffer("SkyCB", rd);
-
-	_SkyPso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
-	_SkyPso->BindParameter("SkyCB", _SkyCB);
 }
 
 
@@ -50,16 +37,21 @@ void RenderPassSky::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
 
 	{
 		RenderMarker marker(ctx, float3(0.18, 0.18, 0.18), "SkyPass");
-		_SkyCB->UploadData((u8*)sky, sizeof(ProceduralSky));
-
-		_SkyPso->CommitParameter(ctx);
 
 		RenderTexture* rts[] = { sceneTextures.SceneColor };
 		ctx->SetRenderTargets(1, rts, RenderTargetColorFlags::None, sceneTextures.SceneDepth, RenderTargetDepthStencilFlags::None);
- 
 		ctx->SetRootSignature(_SkyPso->GetRootSignature(), PipelineType::Graphic);
 		ctx->SetPrimitiveTopology(_SkyPso->Info.Topology);
 		ctx->SetRenderPipeline(_SkyPso);
+
+		u32 voff = _Device->GetDynamicRingBuffer()->AllocateConstBuffer((u8*)&view, sizeof(ViewInfo));
+		_SkyPso->BindParameter("ViewCB", _Device->GetDynamicRingBuffer()->GetResource(), voff);
+
+		u32 soff = _Device->GetDynamicRingBuffer()->AllocateConstBuffer((u8*)sky, sizeof(ProceduralSky));
+		_SkyPso->BindParameter("SkyCB", _Device->GetDynamicRingBuffer()->GetResource(), soff);
+
+		_SkyPso->CommitParameter(ctx);
+
 		ctx->DrawInstanced(3);
 	}
 

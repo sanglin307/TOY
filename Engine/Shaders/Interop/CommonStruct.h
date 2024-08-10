@@ -30,7 +30,6 @@ struct ViewInfo
 struct DrawData
 {
     uint PrimitiveId;
-    uint VertexOffset;
 };
 
 #define BaseColorTextureMask  0x1

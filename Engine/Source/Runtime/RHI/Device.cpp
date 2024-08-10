@@ -504,7 +504,7 @@ void RenderDevice::CreateInputLayout(const ShaderResource* shader, InputSlotMapp
 
 			offset += GetPixelBitSize(pixel)/8;
 		}
-		else if (slotMapping == InputSlotMapping::Seperated || slotMapping == InputSlotMapping::NoMapping)
+		else if (slotMapping == InputSlotMapping::Seperated)
 		{
 			PixelFormat pixel = GetInputLayoutPixelFormat(input.ComponentType, input.ComponentMask);
 			inputLayout.Desc.push_back(InputLayoutDesc{

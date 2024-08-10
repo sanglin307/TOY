@@ -83,10 +83,10 @@ void CameraController::Update(double delta)
 
 				_Camera->_Distance -= float(_MouseScrollDelta * delta * 8);
 
-				if (_Camera->_Distance < 1)
-					_Camera->_Distance = 1;
-				if (_Camera->_Distance > 10)
-					_Camera->_Distance = 10;
+				if (_Camera->_Distance < 2)
+					_Camera->_Distance = 2;
+				if (_Camera->_Distance > 500)
+					_Camera->_Distance = 500;
 
 				float limit = 3.0f;
 				limit = limit * Math::Deg2Rad();

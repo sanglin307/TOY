@@ -13,6 +13,20 @@ void RenderPipeline::BindParameter(const std::string& name, RenderResource* reso
 	}
 }
 
+void RenderPipeline::BindParameter(const std::string& name, RenderResource* resource, u32 offset)
+{
+	auto iter = _ShaderParameters.find(name);
+	//check(iter != _ShaderParameters.end());
+	if (iter == _ShaderParameters.end())
+		return;
+
+	for (auto s : *iter->second)
+	{
+		s->Resource = resource;
+		s->DynamicOffset = offset;
+	}
+}
+
 
 void RenderPipeline::CommitParameter(RenderContext* ctx)
 {
@@ -40,12 +54,25 @@ void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderReso
 	auto GetRootParamIndex = [&paramDesc](ShaderBindType bindType, ShaderProfile profile, u32 bindPoint) -> u32 {
 		for (u32 i = 0; i < paramDesc.size(); i++)
 		{
-			if (bindType == ShaderBindType::RootConstant || bindType == ShaderBindType::RootCBV || bindType == ShaderBindType::RootSRV || bindType == ShaderBindType::RootUAV)
+			if (bindType == ShaderBindType::RootConstant || bindType == ShaderBindType::RootSRV || bindType == ShaderBindType::RootUAV)
 			{
 				if (paramDesc[i].Type == bindType && paramDesc[i].BindPoint == bindPoint)
 					return i;
 			}
-			else
+			else if (bindType == ShaderBindType::RootCBV)
+			{
+				if (profile == ShaderProfile::Compute)
+				{
+					if (paramDesc[i].Type == bindType && paramDesc[i].BindPoint == bindPoint)
+						return i;
+				}
+				else // vs ps.
+				{
+					if (paramDesc[i].Profile == profile && paramDesc[i].Type == bindType && paramDesc[i].BindPoint == bindPoint)
+						return i;
+				}
+			}
+			else // table
 			{
 				if (paramDesc[i].Profile == profile && paramDesc[i].Type == bindType)
 					return i;
@@ -84,26 +111,13 @@ void RenderPipeline::AllocateParameters(RootSignature* rs, std::array<ShaderReso
 		
 				if (res.Type == ShaderInputType::CBUFFER)
 				{
-					if (res.BindSpace == RootSignature::cRootDescriptorSpace)
-					{
-						check(res.BindPoint + res.BindCount <= desc.RootCBVNum);
-						param->BindType = ShaderBindType::RootCBV;
-						param->RootParamIndex = GetRootParamIndex(ShaderBindType::RootCBV, ShaderProfile(i),res.BindPoint);
-						param->TableOffset = 0;
-						param->DescriptorNum = 1;
-						_RootParams.push_back(param);
-					}
-					else if (res.BindSpace == RootSignature::cDescriptorTableSpace)
-					{
-						check(res.BindPoint + res.BindCount <= desc.TableCBVNum);
-						param->BindType = ShaderBindType::TableCBV;
-						param->RootParamIndex = GetRootParamIndex(ShaderBindType::TableCBV, ShaderProfile(i), res.BindPoint);
-						param->TableOffset = res.BindPoint;
-						param->DescriptorNum = res.BindCount;
-						_CBVs.push_back(param);
-					}
-					else
-						check(0);
+					// always use root cbv.
+					check(res.BindPoint + res.BindCount <= desc.RootCBVNum);
+					param->BindType = ShaderBindType::RootCBV;
+					param->RootParamIndex = GetRootParamIndex(ShaderBindType::RootCBV, ShaderProfile(i),res.BindPoint);
+					param->TableOffset = 0;
+					param->DescriptorNum = 1;
+					_RootParams.push_back(param);
 				}
 				else if ((res.Type == ShaderInputType::TBUFFER || res.Type == ShaderInputType::TEXTURE || res.Type == ShaderInputType::STRUCTURED ||
 					res.Type == ShaderInputType::BYTEADDRESS))

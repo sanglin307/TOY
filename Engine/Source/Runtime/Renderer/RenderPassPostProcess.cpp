@@ -23,7 +23,8 @@ void RenderPassTonemap::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 		RenderMarker marker(ctx, float3(0.3, 0.3, 0.3), "Tonemapping");
 		ctx->SetRootSignature(_TonemapPso->GetRootSignature(), PipelineType::Compute);
 		ctx->SetRenderPipeline(_TonemapPso);
-		_TonemapPso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+		u32 voff = _Device->GetDynamicRingBuffer()->AllocateConstBuffer((u8*)&view, sizeof(ViewInfo));
+		_TonemapPso->BindParameter("ViewCB", _Device->GetDynamicRingBuffer()->GetResource(), voff);
 		_TonemapPso->BindParameter("SceneColor", sceneTextures.SceneColor);
 		_TonemapPso->BindParameter("ColorUAV", sceneTextures.ColorOutput);
 		_TonemapPso->CommitParameter(ctx);

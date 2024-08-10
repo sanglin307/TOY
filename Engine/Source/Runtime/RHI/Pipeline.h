@@ -10,8 +10,7 @@ enum class InputSlotMapping
 {
 	Interleaved = 0,
 	Seperated,
-	PositionSeperated,
-	NoMapping      // use vertex buffer srv, read by VertexId.
+	PositionSeperated
 };
 
 struct InputLayoutDesc
@@ -359,6 +358,7 @@ struct ShaderParameter
 	u32 TableOffset;
 	u32 DescriptorNum;
 	RenderResource* Resource = nullptr;
+	u32 DynamicOffset;
 };
 
 class RenderContext;
@@ -388,6 +388,7 @@ public:
 
 	RHI_API void CommitParameter(RenderContext* ctx);
 	RHI_API void BindParameter(const std::string& name, RenderResource* resource);
+	RHI_API void BindParameter(const std::string& name, RenderResource* resource, u32 offset);
 	RHI_API void AllocateParameters(RootSignature* rs, std::array<ShaderResource*, (u32)ShaderProfile::MAX>& shaders);
  
 protected:

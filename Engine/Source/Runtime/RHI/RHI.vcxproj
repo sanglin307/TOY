@@ -139,6 +139,7 @@
     <ClInclude Include="Compiler.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Device.h" />
+    <ClInclude Include="DynamicRingBuffer.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Private.h" />
     <ClInclude Include="Public.h" />
@@ -153,6 +154,7 @@
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="Descriptor.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="DynamicRingBuffer.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="Resource.cpp" />
   </ItemGroup>

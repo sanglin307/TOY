@@ -75,8 +75,14 @@ public:
 		return _DescriptorManager;
 	}
 
+	DynamicRingBuffer* GetDynamicRingBuffer()
+	{
+		return _DynamicRingBuffer;
+	}
+
 protected:
 	static const u32 cContextNumber = 3;  // equal to swap chain render target number.
+	static const u32 cDynamicRingBufferSize = 64 * 1024 * 1024;
 
 	u32 _CurrentFrameIndex; // related to dynamic descriptor heap and swapchain render target number.
 	u64 _FrameNum = 0;
@@ -85,6 +91,7 @@ protected:
 	std::list<DelayDeleteResource> _DelayDeleteResources;
 	ContextManager* _ContextManager;
 	DescriptorManager* _DescriptorManager;
+	DynamicRingBuffer* _DynamicRingBuffer;
 	std::unordered_map<u64, RenderPipeline*> _PipelineCache;
 	std::unordered_map<u64, ShaderResource*> _ShaderCache;
 	std::unordered_map<u64, Sampler*> _SamplerCache;

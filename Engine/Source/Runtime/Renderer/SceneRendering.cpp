@@ -4,16 +4,6 @@ SceneRenderer::~SceneRenderer()
 {
 	GVertexIndexBuffer::Instance().Destroy();
 
-	if (_ViewUniformBuffer)
-	{
-		delete _ViewUniformBuffer;
-	}
-
-	if (_DrawDataBuffer)
-	{
-		delete _DrawDataBuffer;
-	}
-
 	if (_PrimitivesBuffer)
 	{
 		delete _PrimitivesBuffer;
@@ -89,23 +79,6 @@ void SceneRenderer::InitRenderPass()
 SceneRenderer::SceneRenderer(RenderDevice* device)
 {
 	_Device = device;
-
-	RenderBuffer::Desc udesc = {
-		.Size = sizeof(ViewInfo),
-		.Usage = (u32)ResourceUsage::UniformBuffer,
-		.CpuAccess = CpuAccessFlags::Write,
-		.Alignment = true
-	};
-	_ViewUniformBuffer = device->CreateBuffer("ViewInfo", udesc);
-
-	RenderBuffer::Desc ddesc = {
-		.Size = sizeof(DrawData),
-		.Usage = (u32)ResourceUsage::UniformBuffer,
-		.CpuAccess = CpuAccessFlags::Write,
-		.Alignment = true
-	};
-	_DrawDataBuffer = device->CreateBuffer("DrawData", ddesc);
-
 	GVertexIndexBuffer::Instance().Init(device);
 	InitSceneTextures();
 	InitRenderPass();
@@ -137,7 +110,6 @@ void SceneRenderer::Render(ViewInfo& view, Swapchain* sc)
 	RenderContext* ctx = _Device->BeginFrame(sc);
 	
 	view.LightNum = _Scene->GetLightNum();
-	_ViewUniformBuffer->UploadData((u8*)&view, sizeof(ViewInfo));
 
 	ctx->SetDescriptorHeap();
 

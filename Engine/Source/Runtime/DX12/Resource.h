@@ -149,6 +149,14 @@ public:
 	}
 
 	virtual void UploadData(u8* data, size_t size) override;
+	virtual u8* GetMappingData() override
+	{
+		if (!_UniformDataMapPointer)
+		{
+			check(SUCCEEDED(_ResourceHandle->Map(0, nullptr, (void**)&_UniformDataMapPointer)));
+		}
+		return _UniformDataMapPointer;
+	}
 
 private:
 	DX12RenderBuffer(const std::string& name, RenderDevice* device, const RenderBuffer::Desc& desc,ResourceState state, ComPtr<D3D12MA::Allocation> allocHandle, ComPtr<ID3D12Resource> resHandle)
@@ -170,7 +178,7 @@ private:
 
 	D3D12_CPU_DESCRIPTOR_HANDLE _CBVCPUHandle;
 	DescriptorAllocation _CBVDescriptor;
-	u8* _UniformDataMapPointer;
+	u8* _UniformDataMapPointer = nullptr;
 
 	ComPtr<D3D12MA::Allocation> _AllocHandle;
 	ComPtr<ID3D12Resource> _ResourceHandle;

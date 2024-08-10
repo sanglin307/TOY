@@ -129,7 +129,9 @@ void Node::UpdateWorldMatrix()
 	if (_Parent)
 		parentMat = _Parent->GetWorldMatrix();
 
-	_Transform.WorldMatrix = parentMat * float4x4::translation(_Transform.Translate) * float4x4(_Transform.Rotation) * float4x4::scale(_Transform.Scale);
+	float4x4 local = mul(float4x4::translation(_Transform.Translate), float4x4(_Transform.Rotation));
+	local = mul(local, float4x4::scale(_Transform.Scale));
+	_Transform.WorldMatrix = mul(parentMat, local);
 	for (auto n : _Children)
 	{
 		n->UpdateWorldMatrix();

@@ -6,11 +6,11 @@ RenderPassForward::RenderPassForward(RenderDevice* device,SceneRenderer* rendere
 	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
 
 	GraphicPipeline::Desc desc = {
-		.VertexSlotMapping = InputSlotMapping::NoMapping,
+		.VertexSlotMapping = InputSlotMapping::PositionSeperated,
 		.VS = {
 		   .Profile = ShaderProfile::Vertex,
 		   .Path = "ForwardPass.hlsl",
-		   .Entry = "VSMain_Buffer"
+		   .Entry = "VSMain"
         },
 		.PS = {
 			.Profile = ShaderProfile::Pixel,
@@ -27,16 +27,6 @@ RenderPassForward::RenderPassForward(RenderDevice* device,SceneRenderer* rendere
 		.DSVFormat = sceneTextures.SceneDepth->GetFormat()
 	};
 	_ScenePso = static_cast<GraphicPipeline*>(device->CreateGraphicPipeline("ForwardPass",desc));
-
-	RenderBuffer::Desc bd = {
-		.Size = sizeof(MaterialData),
-		.Stride = sizeof(MaterialData),
-		.Usage = (u32)ResourceUsage::UniformBuffer,
-		.CpuAccess = CpuAccessFlags::Write,
-		.Alignment = true
-	};
-	_MaterialBuffer = device->CreateBuffer("MaterialBuffer", bd);
-	_ScenePso->BindParameter("MaterialCB", _MaterialBuffer);
 }
 
 RenderPassForward::~RenderPassForward()
@@ -45,33 +35,44 @@ RenderPassForward::~RenderPassForward()
 	{
 		delete iter;
 	}
-
-	delete _MaterialBuffer;
 }
 
 void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx)
 {
 	const SceneTextures& sceneTextures = _Renderer->GetSceneTextures();
 	RenderScene* scene = _Renderer->GetScene();
-
+	DynamicRingBuffer* ringBuffer = _Device->GetDynamicRingBuffer();
 	{
 		RenderMarker marker(ctx, float3(0.18, 0.18, 0.18), "ForwardPass");
 		RenderTexture* rts[] = { sceneTextures.SceneColor };
 		ctx->SetRenderTargets(1, rts, RenderTargetColorFlags::Clear, sceneTextures.SceneDepth, RenderTargetDepthStencilFlags::Clear);
 
-		RenderBuffer* drawDataBuffer = _Renderer->GetDrawDataBuffer();
 		ctx->SetRootSignature(_ScenePso->GetRootSignature(), PipelineType::Graphic);
-		_ScenePso->BindParameter("ViewCB", _Renderer->GetViewUniformBuffer());
+		 
+		u32 voff = ringBuffer->AllocateConstBuffer((u8*)&view, sizeof(ViewInfo));
+		_ScenePso->BindParameter("ViewCB", ringBuffer->GetResource(), voff);
+
 		_ScenePso->BindParameter("LightsBuffer", _Renderer->GetLightsBuffer());
 		_ScenePso->BindParameter("PrimitiveBuffer", _Renderer->GetPrimitivesBuffer());
-		_ScenePso->BindParameter("DrawCB", drawDataBuffer);
 		ctx->SetPrimitiveTopology(_ScenePso->Info.Topology);
 		ctx->SetRenderPipeline(_ScenePso);
  
 		const std::vector<ClusterAllocInfo>& allocInfo = GVertexIndexBuffer::Instance().GetClusterAllocInfo();
-		for (auto c : _Commands)
+		for (u32 i=0;i < _Commands.size();i++)
 		{
-			_MaterialBuffer->UploadData((u8*)&(c->Material), sizeof(c->Material));
+			RenderCommand* c = _Commands[i];
+			ClusterAllocInfo alloc = allocInfo[i];
+
+			DrawData dd = {
+				.PrimitiveId = c->PrimitiveID,
+			};
+
+			u32 offset = ringBuffer->AllocateConstBuffer((u8*)&dd, sizeof(dd));
+			_ScenePso->BindParameter("DrawCB", ringBuffer->GetResource(), offset);
+
+			u32 matoff = ringBuffer->AllocateConstBuffer((u8*)&(c->Material), sizeof(c->Material));
+			_ScenePso->BindParameter("MaterialCB", ringBuffer->GetResource(), matoff);
+
 			if (c->Material.TextureMask & BaseColorTextureMask)
 				_ScenePso->BindParameter("BaseColorTexture", c->BaseColor);
 			else
@@ -91,42 +92,24 @@ void RenderPassForward::Render(ViewInfo& view, Swapchain* sc, RenderContext* ctx
 				_ScenePso->BindParameter("EmissiveTexture", c->Emissive);
 			else
 				_ScenePso->BindParameter("EmissiveTexture", DefaultResource::Instance().GetColorBlackTexture());
-
-			_ScenePso->BindParameter("GlobalPositionBuffer", GVertexIndexBuffer::Instance().GetPositionBuffer());
-			_ScenePso->BindParameter("GlobalVertexAttributeBuffer", GVertexIndexBuffer::Instance().GetVertexAttributeBuffer());
-			_ScenePso->BindParameter("GlobalIndexBuffer", GVertexIndexBuffer::Instance().GetIndexBuffer());
-
+ 
 			_ScenePso->CommitParameter(ctx);
 
-			DrawData dd = {
-				.PrimitiveId = c->PrimitiveID,
-				.VertexOffset = allocInfo[0].VertexOffset
-			};
+			RenderBuffer* vbs[] = { GVertexIndexBuffer::Instance().GetPositionBuffer(), GVertexIndexBuffer::Instance().GetVertexAttributeBuffer() };
+			ctx->SetVertexBuffers(2, vbs);
 
-			drawDataBuffer->UploadData((u8*)&dd, sizeof(dd));
-			
-			if (_ScenePso->Info.VertexSlotMapping == InputSlotMapping::NoMapping)
+			if (c->IndexBuffer)
 			{
-				u32 vertexCount = u32(c->IndexBuffer->GetElementCount());
+				ctx->SetIndexBuffer(GVertexIndexBuffer::Instance().GetIndexBuffer());
+				u32 indexCount = u32(c->IndexBuffer->GetElementCount());
+				ctx->DrawIndexedInstanced(alloc.IndexCount,1,alloc.IndexOffset,alloc.VertexOffset);
+			}
+			else
+			{
+				u32 vertexCount = u32(c->PositionBuffer->GetElementCount());
 				ctx->DrawInstanced(vertexCount);
 			}
-			else if (_ScenePso->Info.VertexSlotMapping == InputSlotMapping::PositionSeperated)
-			{
-				RenderBuffer* vbs[] = { c->PositionBuffer, c->CompactVertexAttributeBuffer };
-				ctx->SetVertexBuffers(2, vbs);
-
-				if (c->IndexBuffer)
-				{
-					ctx->SetIndexBuffer(c->IndexBuffer);
-					u32 indexCount = u32(c->IndexBuffer->GetElementCount());
-					ctx->DrawIndexedInstanced(indexCount);
-				}
-				else
-				{
-					u32 vertexCount = u32(c->PositionBuffer->GetElementCount());
-					ctx->DrawInstanced(vertexCount);
-				}
-			}
+			 
 			
 		}
 	}

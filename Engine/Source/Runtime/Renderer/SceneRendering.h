@@ -18,11 +18,6 @@ public:
 	void AddCluster(u32 primitiveId,RenderCluster* cluster);
 	void RemoveCluster(RenderCluster* cluster);
 
-	RenderBuffer* GetViewUniformBuffer()
-	{
-		return _ViewUniformBuffer;
-	}
-
 	RenderBuffer* GetLightsBuffer()
 	{
 		return _LightsBuffer;
@@ -38,11 +33,6 @@ public:
 		return _SceneTextures;
 	}
 
-	RenderBuffer* GetDrawDataBuffer()
-	{
-		return _DrawDataBuffer;
-	}
-
 	RenderDevice* GetDevice() { return _Device; }
 	RenderScene* GetScene() { return _Scene; }
 	void InitSceneTextures();
@@ -55,8 +45,6 @@ private:
 
 	RenderDevice* _Device;
 	RenderScene* _Scene;
-	RenderBuffer* _DrawDataBuffer = nullptr;
-	RenderBuffer* _ViewUniformBuffer = nullptr;
 	RenderBuffer* _LightsBuffer = nullptr;
 	RenderBuffer* _PrimitivesBuffer = nullptr;
 	SceneTextures _SceneTextures = {};

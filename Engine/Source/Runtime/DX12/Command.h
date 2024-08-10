@@ -67,7 +67,7 @@ public:
 	virtual void SetRootDescriptorParameter(const ShaderParameter* param, PipelineType type) override;
 	virtual void SetRootDescriptorTableParameter(const std::vector<ShaderParameter*>& params, PipelineType type) override;
 	virtual void DrawInstanced(u32 vertexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
-	virtual void DrawIndexedInstanced(u32 indexCount, u32 instanceCount = 1, u32 vertexOffset = 0, u32 instanceOffset = 0) override;
+	virtual void DrawIndexedInstanced(u32 indexCount, u32 instanceCount = 1, u32 indexOffset = 0,u32 vertexOffset = 0, u32 instanceOffset = 0) override;
 	virtual void Dispatch(u32 ThreadGroupCountX, u32 ThreadGroupCountY, u32 ThreadGroupCountZ) override;
 
 	virtual void SetPrimitiveTopology(const PrimitiveTopology topology) override;

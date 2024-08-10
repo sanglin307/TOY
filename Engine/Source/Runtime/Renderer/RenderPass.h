@@ -59,9 +59,8 @@ public:
 	virtual void RemoveCluster(RenderCluster* cluster) override;
 
 private:
-	std::list<RenderCommand*> _Commands;
+	std::vector<RenderCommand*> _Commands;
 	GraphicPipeline* _ScenePso = nullptr;
-	RenderBuffer* _MaterialBuffer = nullptr;
 };
 
 class RenderPassTonemap final : public RenderPass
@@ -84,5 +83,4 @@ public:
 
 private:
 	GraphicPipeline* _SkyPso = nullptr;
-	RenderBuffer* _SkyCB = nullptr;
 };

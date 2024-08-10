@@ -9,6 +9,7 @@ ConstantBuffer<ViewInfo> ViewCB;
 ConstantBuffer<MaterialData> MaterialCB;
 ConstantBuffer<DrawData> DrawCB;
 
+
 Texture2D BaseColorTexture;
 Texture2D NormalTexture;
 Texture2D RoughnessMetalnessTexture;
@@ -201,31 +202,31 @@ PSInput VSMain(VertexInput vertex)
 	return result;
 }
 
-VertexAttribute LoadVertexAttribute(uint vertexId)
-{
-    return GlobalVertexAttributeBuffer.Load(DrawCB.VertexOffset + vertexId);
-}
+//VertexAttribute LoadVertexAttribute(uint vertexId)
+//{
+//    return GlobalVertexAttributeBuffer.Load(DrawCB.VertexOffset + vertexId);
+//}
 
-float3 LoadVertexPosition(uint vertexId)
-{
-    return GlobalPositionBuffer.Load(DrawCB.VertexOffset + vertexId);
-}
+//float3 LoadVertexPosition(uint vertexId)
+//{
+//    return GlobalPositionBuffer.Load(DrawCB.VertexOffset + vertexId);
+//}
 
-PSInput VSMain_Buffer(uint vertexId : SV_VertexID)
-{
-    PSInput result;
-    PrimitiveData pd = PrimitiveBuffer[DrawCB.PrimitiveId];
-    uint Index = GlobalIndexBuffer.Load(vertexId);
-    float3 Position = LoadVertexPosition(Index);
-    VertexAttribute attribute = LoadVertexAttribute(Index);
-    result.WorldPosition = mul(pd.LocalToWorld, float4(Position, 1.0f)).xyz;
-    result.Position = mul(ViewCB.ViewProject, float4(result.WorldPosition, 1.0f));
-    result.Normal = normalize(mul(pd.LocalToWorld, float4(attribute.Normal, 0)).xyz);
-    result.Tangent = float4(normalize(mul(pd.LocalToWorld, float4(attribute.Tangent.xyz, 0)).xyz), attribute.Tangent.w);
-    result.Color = attribute.Color;
-    result.UV = attribute.UV;
-    return result;
-}
+//PSInput VSMain_Buffer(uint vertexId : SV_VertexID)
+//{
+//    PSInput result;
+//    PrimitiveData pd = PrimitiveBuffer[DrawCB.PrimitiveId];
+//    uint Index = GlobalIndexBuffer.Load(vertexId);
+//    float3 Position = LoadVertexPosition(Index);
+//    VertexAttribute attribute = LoadVertexAttribute(Index);
+//    result.WorldPosition = mul(pd.LocalToWorld, float4(Position, 1.0f)).xyz;
+//    result.Position = mul(ViewCB.ViewProject, float4(result.WorldPosition, 1.0f));
+//    result.Normal = normalize(mul(pd.LocalToWorld, float4(attribute.Normal, 0)).xyz);
+//    result.Tangent = float4(normalize(mul(pd.LocalToWorld, float4(attribute.Tangent.xyz, 0)).xyz), attribute.Tangent.w);
+//    result.Color = attribute.Color;
+//    result.UV = attribute.UV;
+//    return result;
+//}
 
 //Distance between rays is proportional to distance squared
 //Extra windowing function to make light radius finite

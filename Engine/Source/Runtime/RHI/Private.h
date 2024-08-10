@@ -15,6 +15,7 @@ using namespace hlslpp;
 #include "Shader.h"
 #include "VertexFormat.h"
 #include "Compiler.h"
+#include "DynamicRingBuffer.h"
 #include "Pipeline.h"
 #include "Context.h"
 #include "Device.h"
