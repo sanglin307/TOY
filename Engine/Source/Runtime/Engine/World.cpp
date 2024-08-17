@@ -30,7 +30,7 @@ void GameWorld::SetupWorld()
 		CameraComponent::Desc desc = {
 			.Type = CameraType::Perspective,
 			.AspectRatio = config.AspectRatio,
-			.YFov = Math::Pi() / 4,
+			.YFov = Math::Pi() / 3,
 			.ZFar = 1000,
 			.ZNear = 0.1f
 		};

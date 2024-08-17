@@ -52,10 +52,10 @@ private:
 	Desc _Info;
 
 	float3 _EyePos;
-
-	float3 _Direction;
-	float3 _Up;
-	float3 _Right;
+	quaternion _Rot;
+	float3 _ViewPos;
+	//float3 _Up;
+	//float3 _Right;
 
 	float  _Distance;
 	float  _Speed = 1.0f;
