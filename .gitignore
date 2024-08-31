@@ -7,3 +7,4 @@ Bin/Win64
 Intermediate
 x64/Debug
 Engine/Shaders/Output
+Engine/Source/Plugins/MayaLinker/build
